@@ -498,11 +498,6 @@ function adminLogin(){
 }
 function adminLogout(){ adminPass = null; sessionStorage.removeItem("bioelectric_admin"); loadPosts(); }
 
-// Recover the storage object path from a public URL so we can remove the file too.
-function storagePathFromUrl(url){
-  const m = (url||"").match(/\/object\/public\/captures\/(.+)$/);
-  return m ? decodeURIComponent(m[1]) : null;
-}
 async function postCapture(c){
   if(!supa){ alert("Posting isn't set up yet."); return; }
   const title = prompt("Title for this piece:", c.sig) || c.sig;
@@ -532,8 +527,6 @@ async function deletePost(p, btn){
     const { data, error } = await supa.rpc("admin_delete_post", { p_id: String(p.id), p_pass: adminPass });
     if(error) throw error;
     if(data === false){ alert("Wrong admin password."); adminLogout(); return; }
-    const path = storagePathFromUrl(p.file_url);
-    if(path){ try { await supa.storage.from("captures").remove([path]); } catch(e){ console.warn("File remove failed", e); } }
     loadPosts();
   } catch(e){
     console.error(e); alert("Delete failed: " + (e.message||e));
