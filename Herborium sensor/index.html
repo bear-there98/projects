@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mirrorcore</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+<style>
+  :root{
+    --bg:#faf9f7; --surface:#ffffff; --surface-2:#f3f1ed;
+    --border:#e9e6e0; --border-2:#ddd9d1;
+    --ink:#22201d; --muted:#7a756c; --faint:#a9a399;
+    --accent:#5a3fb0; --accent-soft:#efeafb;
+    --ok:#3f7d62; --ok-soft:#eaf2ee;
+    --art:#0c0f12;
+    --shadow:0 1px 2px rgba(40,35,30,.03),0 10px 30px rgba(40,35,30,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--ink);
+    font-family:"Inter",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.5;padding:28px 20px 60px}
+  .wrap{max-width:980px;margin:0 auto}
+
+  /* header */
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+  .brand h1{font-family:"Fraunces",Georgia,serif;font-size:27px;font-weight:500;letter-spacing:.01em}
+  .brand .eyebrow{font-size:10.5px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+  .brand p{font-size:13px;color:var(--muted);margin-top:5px;max-width:380px}
+  .right{display:flex;align-items:center;gap:10px}
+  .pill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;
+    color:var(--muted);background:var(--surface);border:1px solid var(--border);
+    padding:7px 12px;border-radius:999px}
+  .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--faint)}
+  .pill.live{color:var(--ok);background:var(--ok-soft);border-color:transparent}
+  .pill.live .dot{background:var(--ok);box-shadow:0 0 0 3px rgba(21,154,120,.18)}
+  .btn{font-family:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--surface);
+    border:1px solid var(--border-2);border-radius:9px;padding:9px 16px;cursor:pointer;transition:.15s}
+  .btn:hover{background:var(--surface-2)}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{background:#5a2fa0}
+  .btn:disabled{opacity:.5;cursor:default;transform:none}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  /* art */
+  .canvas-card{position:relative;border-radius:4px;overflow:hidden;background:var(--art);
+    box-shadow:var(--shadow);border:1px solid var(--border);padding:0}
+  .canvas-card::after{content:"";position:absolute;inset:0;pointer-events:none;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.04);border-radius:4px}
+  canvas#art{display:block;width:100%;height:500px}
+  .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:14px;color:#cdd8d2;text-align:center;padding:24px;background:rgba(8,16,14,.4)}
+  .overlay p{font-size:14px;color:#aebbb4;max-width:320px}
+  .rec{position:absolute;top:14px;right:14px;display:none;align-items:center;gap:7px;font-size:12px;font-weight:500;
+    color:#fff;background:rgba(220,70,70,.92);padding:5px 11px;border-radius:999px}
+  .rec .rd{width:7px;height:7px;border-radius:50%;background:#fff;animation:blink 1s infinite}
+  @keyframes blink{50%{opacity:.3}}
+  .live-cap{position:absolute;left:16px;bottom:15px;display:none;align-items:center;gap:9px;
+    font-size:11px;letter-spacing:.04em;color:rgba(255,255,255,.78);
+    background:rgba(10,14,16,.5);padding:7px 13px;border-radius:3px;backdrop-filter:blur(6px)}
+  .live-cap b{font-weight:600;color:#fff;font-style:normal}
+  .live-cap.on{display:flex}
+
+  /* controls */
+  .controls{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-top:20px;
+    padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:6px}
+  .styles{display:inline-flex;gap:2px;background:var(--surface-2);border-radius:6px;padding:3px}
+  .styles button{font-family:inherit;font-size:12.5px;font-weight:500;color:var(--muted);
+    background:transparent;border:none;border-radius:4px;padding:8px 14px;cursor:pointer;transition:.15s;letter-spacing:.01em}
+  .styles button:hover{color:var(--ink)}
+  .styles button.on{background:var(--surface);color:var(--accent);box-shadow:var(--shadow)}
+  .tools{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .field{display:flex;align-items:center;gap:9px;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
+  .field input[type=range]{accent-color:var(--accent);width:104px}
+  .field input[type=number]{width:50px;font-family:inherit;font-size:13px;color:var(--ink);
+    background:var(--surface-2);border:1px solid var(--border-2);border-radius:5px;padding:6px 8px;text-align:center;text-transform:none}
+
+  .about{margin-top:20px;font-size:13.5px;color:var(--muted);line-height:1.65;max-width:680px}
+  .styledesc{margin-top:13px;font-family:"Fraunces",Georgia,serif;font-size:14px;font-style:italic;
+    color:var(--muted);max-width:560px;line-height:1.5}
+  .about b{color:var(--ink);font-weight:600}
+
+  /* collection */
+  .collection{margin-top:44px}
+  .collection h2{font-family:"Fraunces",Georgia,serif;font-weight:500;font-size:19px;margin-bottom:16px;
+    padding-bottom:12px;border-bottom:1px solid var(--border)}
+  .grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:5px;overflow:hidden;
+    box-shadow:var(--shadow);transition:transform .18s,box-shadow .18s}
+  .card:hover{transform:translateY(-3px);box-shadow:0 14px 36px rgba(40,35,30,.12)}
+  .card video,.card img{display:block;width:100%;height:auto;background:#0c0f12}
+  .card .meta{padding:12px 14px 14px}
+  .card .meta .sig{font-family:"Fraunces",serif;font-size:14px;font-weight:500;color:var(--ink);letter-spacing:.04em}
+  .card .meta .sub{margin-top:4px;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint)}
+  .empty{grid-column:1/-1;color:var(--faint);font-size:13px;padding:36px;text-align:center;
+    border:1px dashed var(--border-2);border-radius:5px}
+
+  footer{margin-top:40px;font-size:12px;color:var(--faint);line-height:1.7}
+  @media(max-width:680px){ canvas#art{height:340px} .controls{flex-direction:column;align-items:stretch} .styles{justify-content:center} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="eyebrow">Bioelectric studio</div>
+      <h1>Mirrorcore</h1>
+      <p>A living portrait of the electrical field between two points.</p>
+    </div>
+    <div class="right">
+      <div class="pill" id="statusPill"><span class="dot"></span><span id="statusText">Not connected</span></div>
+      <button class="btn" id="soundBtn">Sound: off</button>
+      <button class="btn primary" id="connectBtn">Connect sensor</button>
+    </div>
+  </header>
+
+  <div class="canvas-card">
+    <canvas id="art"></canvas>
+    <div class="rec" id="rec"><span class="rd"></span><span id="recText">Recording</span></div>
+    <div class="live-cap" id="liveCap"></div>
+    <div class="overlay" id="overlay">
+      <p>Connect the sensor to begin. The artwork responds to the live signal, touch, movement, and the field around the electrodes.</p>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="styles" id="styles">
+      <button data-s="ink" class="on">Diffusion</button>
+      <button data-s="ripples">Resonance</button>
+      <button data-s="particles">Constellation</button>
+      <button data-s="aurora">Spectra</button>
+    </div>
+    <div class="tools">
+      <div class="field"><span>Sensitivity</span><input id="sens" type="range" min="1" max="40" value="14"></div>
+      <div class="field"><span>Length</span><input id="dur" type="number" min="1" max="12" value="5"><span>s</span></div>
+      <button class="btn" id="captureBtn" disabled>Capture</button>
+    </div>
+  </div>
+  <p class="styledesc" id="styledesc"></p>
+
+  <p class="about">
+    Mirrorcore reads the voltage between two electrodes and turns it into a moving image in real time.
+    <b>Sensitivity</b> sets how strongly small, real changes are magnified into motion. It amplifies what's
+    there, it doesn't invent it. Each <b>capture</b> saves a short animated GIF to your collection below.
+  </p>
+
+  <div class="collection">
+    <h2>Captures</h2>
+    <div class="grid" id="grid"><div class="empty">No captures yet. Connect, pick a style, and press Capture.</div></div>
+  </div>
+
+  <footer>
+    Live signal only, no simulated data. Works in Chrome and Edge. Sensor streams one channel from Arduino pin A0.
+  </footer>
+
+</div>
+
+<script>
+/* =========================================================
+   SIGNAL  (real FFT -> a few honest numbers that drive art)
+   ========================================================= */
+const N=512, RING=8192;
+const ring=new Float32Array(RING); let head=0,count=0;
+let connected=false;
+function push(v){ ring[head]=v; head=(head+1)%RING; if(count<RING)count++; }
+function latest(n){ const o=new Float32Array(n); for(let i=0;i<n;i++) o[n-1-i]=ring[(head-1-i+RING)%RING]; return o; }
+
+function fft(re,im){const n=re.length;
+  for(let i=1,j=0;i<n;i++){let b=n>>1;for(;j&b;b>>=1)j^=b;j^=b;if(i<j){const t=re[i];re[i]=re[j];re[j]=t;const u=im[i];im[i]=im[j];im[j]=u;}}
+  for(let len=2;len<=n;len<<=1){const a=-2*Math.PI/len,wr=Math.cos(a),wi=Math.sin(a);
+    for(let i=0;i<n;i+=len){let cr=1,ci=0;const h=len>>1;
+      for(let k=0;k<h;k++){const pr=re[i+k],pi=im[i+k];
+        const qr=re[i+k+h]*cr-im[i+k+h]*ci, qi=re[i+k+h]*ci+im[i+k+h]*cr;
+        re[i+k]=pr+qr;im[i+k]=pi+qi;re[i+k+h]=pr-qr;im[i+k+h]=pi-qi;
+        const ncr=cr*wr-ci*wi;ci=cr*wi+ci*wr;cr=ncr;}}}}
+
+const NB=N/2, SHOWN=Math.floor(NB*0.6);
+let mags=new Float32Array(NB), prev=new Float32Array(NB), adaptMax=1;
+function analyse(){
+  if(count<N) return false;
+  const s=latest(N); let mean=0; for(let i=0;i<N;i++)mean+=s[i]; mean/=N;
+  const re=new Float32Array(N), im=new Float32Array(N);
+  for(let i=0;i<N;i++){ const w=0.5-0.5*Math.cos(2*Math.PI*i/(N-1)); re[i]=(s[i]-mean)*w; }
+  fft(re,im); prev.set(mags); let mx=0;
+  for(let i=0;i<NB;i++){ const m=Math.hypot(re[i],im[i])/NB; mags[i]=m; if(m>mx)mx=m; }
+  adaptMax+=(Math.max(mx,adaptMax*0.4)-adaptMax)*0.15; if(adaptMax<1e-3)adaptMax=1e-3;
+  return true;
+}
+function centroid(){ let a=0,b=0; for(let i=1;i<SHOWN;i++){a+=i*mags[i];b+=mags[i];} return b>0?(a/b)/SHOWN:0.3; }
+function flux(){ let f=0; for(let i=1;i<SHOWN;i++){const d=mags[i]-prev[i]; if(d>0)f+=d;} return f/(adaptMax*SHOWN); }
+function peakBin(){ let p=0,pb=1; for(let i=1;i<SHOWN;i++)if(mags[i]>p){p=mags[i];pb=i;} return pb; }
+function measHz(){ if(times.length>20){const sp=(times[times.length-1]-times[0])/1000; if(sp>0)return (times.length-1)/sp;} return 1000; }
+
+let sens=14, energy=0, smEnergy=0, ampBase=10, lastLevel=0;
+document.getElementById("sens").addEventListener("input",e=>sens=parseInt(e.target.value,10)||14);
+function react(){
+  const nS=Math.min(count,90); let lo=Infinity,hi=-Infinity;
+  for(let i=0;i<nS;i++){ const v=ring[(head-1-i+RING)%RING]; if(v<lo)lo=v; if(v>hi)hi=v; }
+  const amp=(hi-lo)||0;                       // current short-term swing
+  ampBase+=(amp-ampBase)*0.004;               // slow "normal" swing
+  const excess=Math.max(0, amp-ampBase*1.1);  // how much livelier than normal
+  let e=Math.min(1, excess/(60/sens));
+  energy+=(e-energy)*0.5; smEnergy+=(energy-smEnergy)*0.12;
+  lastLevel=ring[(head-1+RING)%RING];
+}
+
+/* current signal snapshot for the art */
+let T=0;
+function sig(){
+  const cen=connected?centroid():0.3;
+  const E=connected? smEnergy : 0;
+  const ambient=0.05+0.04*Math.sin(T*0.6)+0.03*Math.sin(T*0.23+1);  // gentle idle breath (cosmetic)
+  const drive=Math.min(1, E+ambient);
+  const hue= connected ? (175+(cen-0.3)*150) : (165+18*Math.sin(T*0.15));
+  return { E, drive, cen, hue, fl: connected?flux():0 };
+}
+
+/* =========================================================
+   CANVAS
+   ========================================================= */
+const cv=document.getElementById("art");
+let ctx,W,H,DPR;
+function size(){
+  DPR=Math.min(2,window.devicePixelRatio||1);
+  const r=cv.getBoundingClientRect();
+  cv.width=Math.round(r.width*DPR); cv.height=Math.round(r.height*DPR);
+  ctx=cv.getContext("2d"); ctx.setTransform(DPR,0,0,DPR,0,0);
+  W=r.width; H=r.height;
+  initStyles();
+}
+window.addEventListener("resize",size);
+
+/* ---- style state ---- */
+let style="ink";
+let inkP=[], rings=[], dots=[], auroraPhase=0;
+function initStyles(){
+  inkP=[]; rings=[];
+  dots=[]; const nd=Math.round(Math.min(70,W*0.07));
+  for(let i=0;i<nd;i++) dots.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3});
+}
+function hsla(h,s,l,a){ return `hsla(${h.toFixed(0)},${s}%,${l}%,${a})`; }
+
+/* ---- INK : soft rising plumes ---- */
+function drawInk(S){
+  ctx.fillStyle="rgba(11,19,17,0.10)"; ctx.fillRect(0,0,W,H);
+  const spawn = 1 + Math.floor(S.drive*6);
+  for(let i=0;i<spawn;i++){
+    inkP.push({ x:W*0.5+(Math.random()-.5)*W*0.3, y:H*0.78,
+      vx:(Math.random()-.5)*(0.4+S.E*1.6), vy:-(0.4+Math.random()*1.4+S.E*2.2),
+      r:8+Math.random()*22, life:1, hue:S.hue+(Math.random()-.5)*70 });
+  }
+  ctx.globalCompositeOperation="lighter";
+  for(let p of inkP){
+    p.x+=p.vx+Math.sin((p.y+T*40)*0.01)*0.6; p.y+=p.vy; p.vy*=0.992; p.r*=1.012; p.life-=0.012;
+    if(p.life<=0) continue;
+    const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r);
+    g.addColorStop(0,hsla(p.hue,65,68,0.12*p.life));
+    g.addColorStop(0.5,hsla(p.hue+20,60,55,0.06*p.life));
+    g.addColorStop(1,hsla(p.hue,55,62,0));
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill();
+  }
+  ctx.globalCompositeOperation="source-over";
+  inkP=inkP.filter(p=>p.life>0 && p.y>-40);
+  if(inkP.length>900) inkP.splice(0,inkP.length-900);
+}
+
+/* ---- RIPPLES : liquid rings ---- */
+let ripTimer=0;
+function drawRipples(S){
+  ctx.fillStyle="rgba(11,19,17,0.085)"; ctx.fillRect(0,0,W,H);
+  ripTimer-=1;
+  if(S.fl>0.04 || S.E>0.4 || ripTimer<=0){
+    rings.push({r:4,life:1,hue:S.hue,w:1+S.E*3,spin:Math.random()*6});
+    ripTimer=Math.max(8, 40-S.drive*34);
+  }
+  const cx=W*0.5, cy=H*0.5;
+  ctx.globalCompositeOperation="lighter";
+  for(let r of rings){
+    r.r+=2.2+S.E*2.5; r.life-=0.006;
+    if(r.life<=0) continue;
+    const arms=10;
+    for(let s=0;s<arms;s++){
+      const h=r.hue + s*(360/arms) + r.r*1.4 + T*30;
+      ctx.strokeStyle=hsla(h,70,62,0.4*r.life);
+      ctx.lineWidth=r.w;
+      ctx.beginPath();
+      ctx.arc(cx,cy,r.r, r.spin+s/arms*6.283, r.spin+(s+0.85)/arms*6.283);
+      ctx.stroke();
+    }
+  }
+  ctx.globalCompositeOperation="source-over";
+  rings=rings.filter(r=>r.life>0 && r.r<Math.max(W,H));
+}
+
+/* ---- PARTICLES : drifting constellation ---- */
+function drawParticles(S){
+  ctx.fillStyle="rgba(11,19,17,0.14)"; ctx.fillRect(0,0,W,H);
+  const jitter=0.2+S.E*2.2, cx=W/2, cy=H/2;
+  for(let d of dots){
+    d.vx+=(Math.random()-.5)*jitter*0.1; d.vy+=(Math.random()-.5)*jitter*0.1;
+    // gentle pull to center keeps them on screen, energy pushes out
+    d.vx+=(cx-d.x)*0.0006 - (cx-d.x)*S.E*0.0010;
+    d.vy+=(cy-d.y)*0.0006 - (cy-d.y)*S.E*0.0010;
+    d.vx*=0.96; d.vy*=0.96; d.x+=d.vx; d.y+=d.vy;
+    if(d.x<0)d.x+=W; if(d.x>W)d.x-=W; if(d.y<0)d.y+=H; if(d.y>H)d.y-=H;
+  }
+  const maxD=130+S.E*70;
+  ctx.lineWidth=1.4;
+  for(let i=0;i<dots.length;i++){
+    for(let j=i+1;j<dots.length;j++){
+      const dx=dots[i].x-dots[j].x, dy=dots[i].y-dots[j].y, dist=Math.hypot(dx,dy);
+      if(dist<maxD){ ctx.strokeStyle=hsla(S.hue,45,65,0.28*(1-dist/maxD)); ctx.beginPath();
+        ctx.moveTo(dots[i].x,dots[i].y); ctx.lineTo(dots[j].x,dots[j].y); ctx.stroke(); }
+    }
+  }
+  for(let d of dots){
+    const tw=0.6+0.4*Math.sin(T*3+d.x*0.05);
+    const g=ctx.createRadialGradient(d.x,d.y,0,d.x,d.y,6);
+    g.addColorStop(0,hsla(S.hue,70,82,0.95*tw)); g.addColorStop(1,hsla(S.hue,70,82,0));
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(d.x,d.y,6,0,7); ctx.fill();
+    ctx.fillStyle=hsla(S.hue,40,96,0.9*tw); ctx.beginPath(); ctx.arc(d.x,d.y,1.6,0,7); ctx.fill();
+  }
+}
+
+/* ---- AURORA : glowing waving bands ---- */
+function drawAurora(S){
+  ctx.fillStyle="rgba(11,19,17,0.16)"; ctx.fillRect(0,0,W,H);
+  auroraPhase+=0.01+S.E*0.04;
+  ctx.globalCompositeOperation="lighter";
+  const bands=4;
+  for(let b=0;b<bands;b++){
+    const baseY=H*(0.3+b*0.14);
+    const amp=18+S.drive*70+b*6;
+    const hue=S.hue+b*30;
+    ctx.beginPath();
+    ctx.moveTo(0,H);
+    for(let x=0;x<=W+8;x+=8){
+      const y=baseY + Math.sin(x*0.006+auroraPhase+b)*amp + Math.sin(x*0.013-auroraPhase*0.7+b)*amp*0.4;
+      ctx.lineTo(x,y);
+    }
+    ctx.lineTo(W,H); ctx.closePath();
+    const g=ctx.createLinearGradient(0,baseY-amp,0,H);
+    g.addColorStop(0,hsla(hue,70,62,0.14+S.E*0.16));
+    g.addColorStop(1,hsla(hue,60,40,0));
+    ctx.fillStyle=g; ctx.fill();
+  }
+  ctx.globalCompositeOperation="source-over";
+}
+
+/* =========================================================
+   LOOP
+   ========================================================= */
+function frame(){
+  T+=1/60;
+  if(connected){ analyse(); react(); }
+  const S=sig();
+  if(style==="ink") drawInk(S);
+  else if(style==="ripples") drawRipples(S);
+  else if(style==="particles") drawParticles(S);
+  else drawAurora(S);
+
+  if(connected){
+    const cap=document.getElementById("liveCap"); cap.classList.add("on");
+    const cen=centroid(), bal=cen<0.33?"deep":cen<0.66?"mid":"bright";
+    cap.innerHTML=`<b>Live</b>, level ${Math.round(lastLevel)}, ${bal} field, reacting ${Math.round(smEnergy*100)}%`;
+    updateAudio();
+  }
+  requestAnimationFrame(frame);
+}
+
+/* =========================================================
+   SERIAL
+   ========================================================= */
+let port=null,reader=null,keep=false,lineBuf="",times=[];
+async function connect(){
+  if(!("serial" in navigator)){ setStatus(false,"Use Chrome or Edge"); return; }
+  try{
+    port=await navigator.serial.requestPort(); await port.open({baudRate:115200});
+    keep=true; connected=true; setStatus(true,"Live");
+    document.getElementById("connectBtn").textContent="Disconnect";
+    document.getElementById("captureBtn").disabled=false;
+    document.getElementById("overlay").style.display="none";
+    read();
+  }catch(e){ setStatus(false,"Connection cancelled"); }
+}
+async function read(){
+  const dec=new TextDecoderStream(); const closed=port.readable.pipeTo(dec.writable).catch(()=>{});
+  reader=dec.readable.getReader();
+  try{ while(keep){ const {value,done}=await reader.read(); if(done)break;
+    if(value){ lineBuf+=value; let nl;
+      while((nl=lineBuf.indexOf("\n"))>=0){ const ln=lineBuf.slice(0,nl).trim(); lineBuf=lineBuf.slice(nl+1);
+        if(ln){ const v=parseInt(ln,10); if(!Number.isNaN(v)){ push(v); times.push(performance.now()); if(times.length>400)times.shift(); } } } } }
+  }catch(e){}
+  if(keep) disc("Sensor unplugged");
+  try{reader.releaseLock();}catch(e){} try{await closed;}catch(e){}
+}
+async function manualDisc(){ keep=false; try{if(reader)await reader.cancel();}catch(e){} try{if(port)await port.close();}catch(e){} disc("Not connected"); }
+function disc(msg){
+  keep=false; connected=false; port=null; reader=null; setStatus(false,msg);
+  document.getElementById("connectBtn").textContent="Connect sensor";
+  document.getElementById("captureBtn").disabled=true;
+  document.getElementById("liveCap").classList.remove("on");
+  const ov=document.getElementById("overlay"); ov.style.display="flex";
+  ov.querySelector("p").textContent = msg==="Sensor unplugged"
+    ? "Sensor unplugged. Reconnect to continue." : "Connect the sensor to begin. The artwork responds to the live signal, touch, movement, and the field around the electrodes.";
+}
+function setStatus(live,text){
+  const p=document.getElementById("statusPill"); p.classList.toggle("live",live);
+  document.getElementById("statusText").textContent=text;
+}
+
+/* =========================================================
+   STYLE SWITCH
+   ========================================================= */
+const desc={ink:"Diffusion: the signal spreads like ink in water; stronger fields bloom faster and wider.",ripples:"Resonance: each change radiates outward in colored rings, layering into interference.",particles:"Constellation: points brighten into stars and link as the signal moves, forming shifting figures.",aurora:"Spectra: bands of light bend with the signal, their colour set by its frequency balance."};
+document.getElementById("styles").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b)return;
+  style=b.dataset.s;
+  document.querySelectorAll("#styles button").forEach(x=>x.classList.toggle("on",x===b));
+  document.getElementById("styledesc").textContent=desc[style];
+});
+
+/* =========================================================
+   CAPTURE -> GIF
+   ========================================================= */
+let workerURL=null;
+async function getWorker(){ if(workerURL)return workerURL;
+  const r=await fetch("https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js");
+  workerURL=URL.createObjectURL(new Blob([await r.text()],{type:"application/javascript"})); return workerURL; }
+const captures=[]; let capturing=false;
+function fingerprint(){ const k=16; let s=""; for(let b=0;b<k;b++){ let a=0,c=0;
+  for(let i=Math.floor(b/k*SHOWN);i<Math.floor((b+1)/k*SHOWN);i++){a+=Math.min(1,mags[i]/adaptMax);c++;}
+  s+=Math.min(35,Math.floor((c?a/c:0)*36)).toString(36);} return s.toUpperCase(); }
+async function capture(){
+  if(capturing||!connected)return;
+  let secs=parseInt(document.getElementById("dur").value,10); if(Number.isNaN(secs))secs=5; secs=Math.max(1,Math.min(12,secs));
+  if(!audioCtx){ initAudio(); }
+  if(audioCtx.state==="suspended") await audioCtx.resume();
+  capturing=true; document.getElementById("captureBtn").disabled=true;
+  const rec=document.getElementById("rec"); rec.style.display="flex";
+  const ts=new Date(); const sigStr=fingerprint(); const hz=((peakBin()/N)*measHz()).toFixed(0);
+  // video stream from canvas + audio stream from the sound engine
+  const vStream=cv.captureStream(30);
+  const dest=audioCtx.createMediaStreamDestination();
+  if(master) master.connect(dest);
+  const tracks=[...vStream.getVideoTracks(), ...dest.stream.getAudioTracks()];
+  const mixed=new MediaStream(tracks);
+  let mime="video/webm;codecs=vp9,opus";
+  if(!MediaRecorder.isTypeSupported(mime)) mime="video/webm";
+  const mr=new MediaRecorder(mixed,{mimeType:mime});
+  const chunks=[];
+  mr.ondataavailable=e=>{ if(e.data.size)chunks.push(e.data); };
+  mr.onstop=()=>{
+    if(master) try{master.disconnect(dest);}catch(e){}
+    const blob=new Blob(chunks,{type:"video/webm"});
+    const url=URL.createObjectURL(blob);
+    add({url,ts,sig:sigStr,hz,style,video:true});
+    const a=document.createElement("a"); a.href=url; a.download="mirrorcore_"+ts.toISOString().replace(/[:.]/g,"-")+".webm"; a.click();
+    fin();
+  };
+  mr.start();
+  let left=secs;
+  document.getElementById("recText").textContent="Recording "+left+"s";
+  const iv=setInterval(()=>{ left--; document.getElementById("recText").textContent=left>0?("Recording "+left+"s"):"Saving"; if(left<=0)clearInterval(iv); },1000);
+  setTimeout(()=>{ try{mr.stop();}catch(e){} }, secs*1000);
+}
+function fin(){ capturing=false; document.getElementById("rec").style.display="none";
+  document.getElementById("recText").textContent="Recording"; if(connected)document.getElementById("captureBtn").disabled=false; }
+function add(c){ captures.unshift(c); renderGrid(); }
+function renderGrid(){
+  const g=document.getElementById("grid");
+  if(!captures.length){ g.innerHTML='<div class="empty">No captures yet. Connect, pick a style, and press Capture.</div>'; return; }
+  g.innerHTML="";
+  captures.forEach(c=>{ const el=document.createElement("div"); el.className="card";
+    el.innerHTML=`<video src="${c.url}" autoplay loop muted playsinline style="display:block;width:100%"></video><div class="meta"><div class="sig">${c.sig}</div><div class="sub">${c.style}, ${c.hz} Hz, ${c.ts.toLocaleString()}</div></div>`;
+    g.appendChild(el); });
+}
+
+/* ===== ambient sound: pitch from frequency balance, volume from reactivity ===== */
+let audioCtx=null, master=null, osc1=null, osc2=null, lfo=null, soundOn=false;
+function initAudio(){
+  if(audioCtx) return;
+  audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  master=audioCtx.createGain(); master.gain.value=0; master.connect(audioCtx.destination);
+  const filt=audioCtx.createBiquadFilter(); filt.type="lowpass"; filt.frequency.value=900; filt.connect(master);
+  osc1=audioCtx.createOscillator(); osc1.type="sine";
+  osc2=audioCtx.createOscillator(); osc2.type="sine"; osc2.detune.value=6;
+  const g1=audioCtx.createGain(); g1.gain.value=0.6; const g2=audioCtx.createGain(); g2.gain.value=0.4;
+  osc1.connect(g1).connect(filt); osc2.connect(g2).connect(filt);
+  lfo=audioCtx.createOscillator(); lfo.type="sine"; lfo.frequency.value=0.15;
+  const lfoG=audioCtx.createGain(); lfoG.gain.value=4; lfo.connect(lfoG).connect(osc2.detune);
+  osc1.start(); osc2.start(); lfo.start();
+}
+function updateAudio(){
+  if(!soundOn||!audioCtx||!connected) return;
+  const cen=centroid(), t=audioCtx.currentTime, base=130+cen*260;
+  osc1.frequency.setTargetAtTime(base,t,0.15);
+  osc2.frequency.setTargetAtTime(base*1.5,t,0.15);
+  master.gain.setTargetAtTime(Math.min(0.22,smEnergy*0.30),t,0.1);
+}
+document.getElementById("soundBtn").addEventListener("click",()=>{
+  initAudio(); if(audioCtx.state==="suspended") audioCtx.resume();
+  soundOn=!soundOn;
+  document.getElementById("soundBtn").textContent=soundOn?"Sound: on":"Sound: off";
+  if(!soundOn&&master) master.gain.setTargetAtTime(0,audioCtx.currentTime,0.1);
+});
+
+/* ---- init ---- */
+document.getElementById("connectBtn").addEventListener("click",()=>connected?manualDisc():connect());
+document.getElementById("captureBtn").addEventListener("click",capture);
+size();
+document.getElementById("styledesc").textContent=desc.ink;
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

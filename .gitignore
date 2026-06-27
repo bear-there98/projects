@@ -1,0 +1,10 @@
+# Claude Code helper folders
+**/.claude/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Dependencies (none currently, but safe to ignore)
+node_modules/
