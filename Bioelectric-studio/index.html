@@ -99,7 +99,19 @@
     border:1px dashed var(--border-2);border-radius:5px}
 
   footer{margin-top:40px;font-size:12px;color:var(--faint);line-height:1.7}
-  @media(max-width:680px){ canvas#art{height:340px} .controls{flex-direction:column;align-items:stretch} .styles{justify-content:center} }
+  @media(max-width:680px){
+    body{padding:18px 14px 48px}
+    header{gap:12px}
+    .brand h1{font-size:23px}
+    .right{width:100%;justify-content:space-between;flex-wrap:wrap}
+    .right .btn, .right .pill{flex:1;justify-content:center;min-width:0}
+    canvas#art{height:320px}
+    .controls{flex-direction:column;align-items:stretch;gap:14px}
+    .styles{justify-content:center;flex-wrap:wrap}
+    .tools{justify-content:space-between}
+    .field input[type=range]{width:84px}
+    .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+  }
 </style>
 </head>
 <body>
@@ -144,15 +156,12 @@
   <p class="about">
     Bioelectric studio reads the voltage between two electrodes and turns it into a moving image in real time. <b>Sensitivity</b> sets how strongly small, real changes are magnified into motion. Each <b>capture</b> saves a short video to your collection below.
   </p>
+  <p class="about" style="margin-top:14px">This studio only works with the sensor connected. It runs on a simple homemade probe - two electrodes feeding a small amplifier into a microcontroller, which streams the signal to your browser. No hardware, no signal: the canvas stays at rest until something real is connected.</p>
 
   <div class="collection">
     <h2>Captures</h2>
-    <div class="grid" id="grid"><div class="empty">No captures yet. Connect, pick a style, and press Capture.</div></div>
+    <div class="grid" id="grid"><div class="empty">Nothing captured yet.</div></div>
   </div>
-
-  <footer>
-    Live signal only, no simulated data. Works in Chrome and Edge. Sensor streams one channel from Arduino pin A0.
-  </footer>
 
 </div>
 
@@ -433,7 +442,7 @@ function fin(){ capturing=false; document.getElementById("rec").style.display="n
 function add(c){ captures.unshift(c); renderGrid(); }
 function renderGrid(){
   const g=document.getElementById("grid");
-  if(!captures.length){ g.innerHTML='<div class="empty">No captures yet. Connect, pick a style, and press Capture.</div>'; return; }
+  if(!captures.length){ g.innerHTML='<div class="empty">Nothing captured yet.</div>'; return; }
   g.innerHTML="";
   captures.forEach(c=>{ const el=document.createElement("div"); el.className="card";
     el.innerHTML=`<video src="${c.url}" autoplay loop muted playsinline style="display:block;width:100%"></video><div class="meta"><div class="sig">${c.sig}</div><div class="sub">${c.style}, ${c.hz} Hz, ${c.ts.toLocaleString()}</div></div>`;
