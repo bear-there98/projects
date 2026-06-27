@@ -136,13 +136,25 @@
     margin-bottom: 0.4rem;
   }
 
-  .tag {
-    font-size: 0.68rem;
-    letter-spacing: 0.12em;
+  .research {
+    margin-bottom: 1rem;
+  }
+  .research .label {
+    display: inline-block;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
     color: var(--accent);
-    font-weight: 600;
-    margin-bottom: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+  }
+  .research .subject {
+    display: block;
+    font-size: 0.98rem;
+    line-height: 1.5;
+    color: var(--ink);
+    font-weight: 500;
+    max-width: 30ch;
   }
 
   .card p {
@@ -206,36 +218,53 @@
     <section class="grid">
 
       <a class="card" style="--accent:#7c8cff" href="Bioelectric-studio/index.html">
-        <div class="tag">Arduino · Visualization</div>
+        <div class="research">
+          <span class="label">Researching</span>
+          <span class="subject">the invisible signals of living beings</span>
+        </div>
         <h2>Bioelectric studio</h2>
         <p>A device that reads the electrical field between two points. Designed for plants.</p>
         <span class="open">Open project <span class="arrow">→</span></span>
       </a>
 
       <a class="card" style="--accent:#14b8a6" href="Local-Species/index.html">
-        <div class="tag">Catalogue · Nature</div>
+        <div class="research">
+          <span class="label">Researching</span>
+          <span class="subject">animal classification and the local animals, plants, and fungi</span>
+        </div>
         <h2>Local Species</h2>
         <p>A field compendium of wild species pulled from observation data.</p>
         <span class="open">Open project <span class="arrow">→</span></span>
       </a>
 
       <a class="card" style="--accent:#f59e0b" href="Quest-Omen/index.html">
-        <div class="tag">Adventure · GPS</div>
+        <div class="research">
+          <span class="label">Researching</span>
+          <span class="subject">GIS (geographic information systems)</span>
+        </div>
         <h2>Quest Omen</h2>
         <p>A location-based RPG. Where you are is where the game is.</p>
         <span class="open">Open project <span class="arrow">→</span></span>
       </a>
 
       <div class="card is-soon" style="--accent:#8b93a7" aria-disabled="true">
-        <div class="tag">Learning</div>
         <h2>Edu app</h2>
         <p>An education project in the works. Check back soon - it'll open here once there's something to show.</p>
         <span class="pill">Coming soon</span>
       </div>
 
+      <div class="card is-soon" style="--accent:#b06fb0" aria-disabled="true">
+        <div class="research">
+          <span class="label">Researching</span>
+          <span class="subject">Awareness in conscious and unconscious states of mind</span>
+        </div>
+        <h2>Untitled project</h2>
+        <span class="pill">Coming soon</span>
+      </div>
+
     </section>
 
-    <footer>3 live · 1 coming soon · Built for the browser</footer>
+    <footer>3 live · 2 coming soon · Built for the browser</footer>
   </main>
 </body>
 </html>
