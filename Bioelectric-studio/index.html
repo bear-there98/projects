@@ -481,6 +481,17 @@ document.getElementById("soundBtn").addEventListener("click",()=>{
 });
 
 /* ===== POSTING TO SUPABASE ===== */
+// Per-browser identity so a poster can delete their own captures (no login).
+function ownerToken(){
+  let t = localStorage.getItem("bioelectric_owner");
+  if(!t){ t = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random().toString(36).slice(2)); localStorage.setItem("bioelectric_owner", t); }
+  return t;
+}
+// Recover the storage object path from a public URL so we can remove the file too.
+function storagePathFromUrl(url){
+  const m = (url||"").match(/\/object\/public\/captures\/(.+)$/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
 async function postCapture(c){
   if(!supa){ alert("Posting isn't set up yet."); return; }
   const title = prompt("Title for this piece:", c.sig) || c.sig;
@@ -493,12 +504,28 @@ async function postCapture(c){
     const { data:pub } = supa.storage.from("captures").getPublicUrl(path);
     const ins = await supa.from("posts").insert({
       file_url: pub.publicUrl, title, caption,
-      style: c.style, hz: c.hz, fingerprint: c.sig
+      style: c.style, hz: c.hz, fingerprint: c.sig,
+      owner_token: ownerToken()
     });
     if(ins.error) throw ins.error;
     loadPosts();
   } catch(e){
     console.error(e); alert("Post failed: " + (e.message||e));
+  }
+}
+async function deletePost(p, btn){
+  if(!supa) return;
+  if(!confirm("Delete this capture? This can't be undone.")) return;
+  if(btn){ btn.disabled = true; btn.textContent = "Deleting…"; }
+  try {
+    const del = await supa.from("posts").delete().eq("id", p.id).eq("owner_token", ownerToken());
+    if(del.error) throw del.error;
+    const path = storagePathFromUrl(p.file_url);
+    if(path){ try { await supa.storage.from("captures").remove([path]); } catch(e){ console.warn("File remove failed", e); } }
+    loadPosts();
+  } catch(e){
+    console.error(e); alert("Delete failed: " + (e.message||e));
+    if(btn){ btn.disabled = false; btn.textContent = "Delete"; }
   }
 }
 async function loadPosts(){
@@ -509,10 +536,13 @@ async function loadPosts(){
     if(error) throw error;
     if(!data || !data.length){ g.innerHTML = '<div class="empty">Nothing captured yet.</div>'; return; }
     g.innerHTML = "";
+    const mine = ownerToken();
     data.forEach(p=>{
       const el = document.createElement("div"); el.className="card";
       const when = p.created_at ? new Date(p.created_at).toLocaleString() : "";
-      el.innerHTML = `<video src="${p.file_url}" autoplay loop muted playsinline style="display:block;width:100%"></video><div class="meta"><div class="sig">${p.title||p.fingerprint||""}</div><div class="sub">${p.style||""}, ${p.hz||"?"} Hz, ${when}</div>${p.caption?`<div style="margin-top:8px;font-size:13px;color:var(--muted);line-height:1.5">${p.caption}</div>`:""}<div class="sub" style="margin-top:8px">Signature ${p.fingerprint||""}</div></div>`;
+      const owned = p.owner_token && p.owner_token === mine;
+      el.innerHTML = `<video src="${p.file_url}" autoplay loop muted playsinline style="display:block;width:100%"></video><div class="meta"><div class="sig">${p.title||p.fingerprint||""}</div><div class="sub">${p.style||""}, ${p.hz||"?"} Hz, ${when}</div>${p.caption?`<div style="margin-top:8px;font-size:13px;color:var(--muted);line-height:1.5">${p.caption}</div>`:""}<div class="sub" style="margin-top:8px">Signature ${p.fingerprint||""}</div>${owned?`<button class="btn delBtn" style="margin-top:10px;width:100%">Delete</button>`:""}</div>`;
+      if(owned){ el.querySelector(".delBtn").addEventListener("click", ev=>deletePost(p, ev.currentTarget)); }
       g.appendChild(el);
     });
   } catch(e){ console.error(e); g.innerHTML = '<div class="empty">Could not load posts.</div>'; }
