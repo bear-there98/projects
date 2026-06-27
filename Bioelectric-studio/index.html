@@ -369,6 +369,7 @@ async function connect(){
     document.getElementById("captureBtn").disabled=false;
     document.getElementById("overlay").style.display="none";
     read();
+    if(!isAdmin()) adminLogin();
   }catch(e){ setStatus(false,"Connection cancelled"); }
 }
 async function read(){
@@ -480,13 +481,19 @@ document.getElementById("soundBtn").addEventListener("click",()=>{
   if(!soundOn&&master) master.gain.setTargetAtTime(0,audioCtx.currentTime,0.1);
 });
 
-/* ===== POSTING TO SUPABASE ===== */
-// Per-browser identity so a poster can delete their own captures (no login).
-function ownerToken(){
-  let t = localStorage.getItem("bioelectric_owner");
-  if(!t){ t = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())+Math.random().toString(36).slice(2)); localStorage.setItem("bioelectric_owner", t); }
-  return t;
+/* ===== POSTING + ADMIN ===== */
+// You are the device owner/admin. Connecting the sensor lets you log in with
+// the admin password; while logged in you can delete ANY capture. The password
+// is verified server-side by the admin_delete_post() database function, so the
+// public anon key cannot be used to delete without it.
+let adminPass = sessionStorage.getItem("bioelectric_admin") || null;
+function isAdmin(){ return !!adminPass; }
+function adminLogin(){
+  const p = prompt("Admin password (leave blank to skip):", "");
+  if(p){ adminPass = p; sessionStorage.setItem("bioelectric_admin", p); loadPosts(); }
 }
+function adminLogout(){ adminPass = null; sessionStorage.removeItem("bioelectric_admin"); loadPosts(); }
+
 // Recover the storage object path from a public URL so we can remove the file too.
 function storagePathFromUrl(url){
   const m = (url||"").match(/\/object\/public\/captures\/(.+)$/);
@@ -504,8 +511,7 @@ async function postCapture(c){
     const { data:pub } = supa.storage.from("captures").getPublicUrl(path);
     const ins = await supa.from("posts").insert({
       file_url: pub.publicUrl, title, caption,
-      style: c.style, hz: c.hz, fingerprint: c.sig,
-      owner_token: ownerToken()
+      style: c.style, hz: c.hz, fingerprint: c.sig
     });
     if(ins.error) throw ins.error;
     loadPosts();
@@ -515,11 +521,13 @@ async function postCapture(c){
 }
 async function deletePost(p, btn){
   if(!supa) return;
+  if(!isAdmin()){ alert("Connect the sensor and log in as admin to delete."); return; }
   if(!confirm("Delete this capture? This can't be undone.")) return;
   if(btn){ btn.disabled = true; btn.textContent = "Deleting…"; }
   try {
-    const del = await supa.from("posts").delete().eq("id", p.id).eq("owner_token", ownerToken());
-    if(del.error) throw del.error;
+    const { data, error } = await supa.rpc("admin_delete_post", { p_id: String(p.id), p_pass: adminPass });
+    if(error) throw error;
+    if(data === false){ alert("Wrong admin password."); adminLogout(); return; }
     const path = storagePathFromUrl(p.file_url);
     if(path){ try { await supa.storage.from("captures").remove([path]); } catch(e){ console.warn("File remove failed", e); } }
     loadPosts();
@@ -536,13 +544,12 @@ async function loadPosts(){
     if(error) throw error;
     if(!data || !data.length){ g.innerHTML = '<div class="empty">Nothing captured yet.</div>'; return; }
     g.innerHTML = "";
-    const mine = ownerToken();
+    const admin = isAdmin();
     data.forEach(p=>{
       const el = document.createElement("div"); el.className="card";
       const when = p.created_at ? new Date(p.created_at).toLocaleString() : "";
-      const owned = p.owner_token && p.owner_token === mine;
-      el.innerHTML = `<video src="${p.file_url}" autoplay loop muted playsinline style="display:block;width:100%"></video><div class="meta"><div class="sig">${p.title||p.fingerprint||""}</div><div class="sub">${p.style||""}, ${p.hz||"?"} Hz, ${when}</div>${p.caption?`<div style="margin-top:8px;font-size:13px;color:var(--muted);line-height:1.5">${p.caption}</div>`:""}<div class="sub" style="margin-top:8px">Signature ${p.fingerprint||""}</div>${owned?`<button class="btn delBtn" style="margin-top:10px;width:100%">Delete</button>`:""}</div>`;
-      if(owned){ el.querySelector(".delBtn").addEventListener("click", ev=>deletePost(p, ev.currentTarget)); }
+      el.innerHTML = `<video src="${p.file_url}" autoplay loop muted playsinline style="display:block;width:100%"></video><div class="meta"><div class="sig">${p.title||p.fingerprint||""}</div><div class="sub">${p.style||""}, ${p.hz||"?"} Hz, ${when}</div>${p.caption?`<div style="margin-top:8px;font-size:13px;color:var(--muted);line-height:1.5">${p.caption}</div>`:""}<div class="sub" style="margin-top:8px">Signature ${p.fingerprint||""}</div>${admin?`<button class="btn delBtn" style="margin-top:10px;width:100%">Delete</button>`:""}</div>`;
+      if(admin){ el.querySelector(".delBtn").addEventListener("click", ev=>deletePost(p, ev.currentTarget)); }
       g.appendChild(el);
     });
   } catch(e){ console.error(e); g.innerHTML = '<div class="empty">Could not load posts.</div>'; }
