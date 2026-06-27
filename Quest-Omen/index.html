@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#3d5a2a">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌲</text></svg>">
-<title>Questly</title>
+<title>Quest Omen</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400&family=Press+Start+2P&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -495,7 +495,7 @@ html,body{height:100%;min-height:100dvh;background:var(--bg);color:var(--ink);fo
 
 <div id="desktop-gate" style="display:none;position:fixed;inset:0;z-index:99999;background:#fff;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:2rem">
   <div style="font-size:3rem;margin-bottom:1.25rem">📱</div>
-  <h1 style="font-family:'Fraunces',serif;font-weight:400;font-size:1.75rem;color:var(--ink);max-width:22ch;line-height:1.3;margin-bottom:0.75rem">Questly is built for walking. Open it on your phone to play</h1>
+  <h1 style="font-family:'Fraunces',serif;font-weight:400;font-size:1.75rem;color:var(--ink);max-width:22ch;line-height:1.3;margin-bottom:0.75rem">Quest Omen is built for walking. Open it on your phone to play</h1>
   <p style="font-size:0.9rem;color:var(--ink3);max-width:30ch;line-height:1.5">This experience uses GPS and is optimised for mobile</p>
 </div>
 <script>
@@ -545,9 +545,9 @@ document.addEventListener('DOMContentLoaded',function(){
         <path d="M18.6 9.6C19.8 7.8 21 6.8 22.6 6.3M19.4 8.3L20.1 8.9M20.1 7.6L20.8 8.2M20.9 7L21.6 7.5M21.7 6.6L22.4 7" stroke="#7a6a55" stroke-width="0.7" fill="none" stroke-linecap="round"/>
       </svg>
       <div class="label" style="margin-bottom:8px">Welcome to</div>
-      <div style="line-height:1.2;margin-bottom:16px"><span style="font-family:var(--pixel-font);font-size:32px;color:var(--ink);text-shadow:3px 3px 0px rgba(26,24,18,0.35)">Questly</span></div>
+      <div style="line-height:1.2;margin-bottom:16px"><span style="font-family:var(--pixel-font);font-size:32px;color:var(--ink);text-shadow:3px 3px 0px rgba(26,24,18,0.35)">Quest Omen</span></div>
       <div style="font-size:15px;color:var(--ink3);line-height:1.65;max-width:260px;margin:0 auto">Choose your archetype, head outside, and collect what the landscape offers.</div>
-      <p style="font-size:13px;color:var(--ink3);line-height:1.65;max-width:280px;margin:12px auto 0">When you step outside, Questly will ask to use your location, only to show what's near you on the map. Nothing is stored or shared.</p>
+      <p style="font-size:13px;color:var(--ink3);line-height:1.65;max-width:280px;margin:12px auto 0">When you step outside, Quest Omen will ask to use your location, only to show what's near you on the map. Nothing is stored or shared.</p>
     </div>
     <div style="padding:0 20px 12px">
       <div class="label" style="margin-bottom:10px;text-align:center">Choose your archetype</div>
@@ -652,7 +652,7 @@ document.addEventListener('DOMContentLoaded',function(){
     <div class="handle"></div>
     <div style="text-align:center;padding:8px 0 20px">
       <div style="font-size:36px;margin-bottom:16px;font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif">📍</div>
-      <div class="ls-name" style="margin-bottom:16px">Questly needs your location</div>
+      <div class="ls-name" style="margin-bottom:16px">Quest Omen needs your location</div>
       <p style="font-size:13px;color:var(--ink3);line-height:1.6;margin-bottom:24px">Your GPS position is used to show materials and locations near you on the map. Nothing is stored or shared.</p>
       <button class="ls-btn" style="background:var(--green)" onclick="enableLocationFromSheet()">Enable location</button>
     </div>
@@ -729,7 +729,7 @@ document.addEventListener('DOMContentLoaded',function(){
       <button class="acc-head" onclick="toggleAccordion('h-works')" data-acc="h-works"><span>How it works</span><span>▸</span></button>
       <div class="acc-body" id="h-works" style="display:none">
         <p style="font-size:13px;color:var(--ink2);line-height:1.7;margin:0">
-          Questly turns your walks into rewarding outdoor adventures. Head outside, open the map, and explore the area around you.
+          Quest Omen turns your walks into rewarding outdoor adventures. Head outside, open the map, and explore the area around you.
           Points of interest such as shrines, markets and notice boards appear relative to your GPS position.
           Materials spawn on the map as you move. Tap them when you're within 200m to collect.
           Complete quests to earn coins. Use coins at the market to buy rare items.
@@ -3442,7 +3442,7 @@ function toast(t,s){
     if(_hasClass) loadLeaflet(()=>{initMap();requestGPSPermission();});
     if(_d)_d.style.display='none';
   }catch(e){
-    console.error('Questly init error:',e);
+    console.error('Quest Omen init error:',e);
     if(_d){_d.style.background='#c00';_d.style.color='#fff';_d.textContent='INIT ERROR: '+e.message+'\n'+(e.stack||'');}
     document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));
     const _intro=document.getElementById('s-intro');
