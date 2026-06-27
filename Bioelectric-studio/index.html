@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg:#faf9f7; --surface:#ffffff; --surface-2:#f3f1ed;
@@ -163,9 +164,24 @@
     <div class="grid" id="grid"><div class="empty">Nothing captured yet.</div></div>
   </div>
 
+  <div class="collection" id="postsSection">
+    <h2>Posts</h2>
+    <div class="grid" id="postsGrid"><div class="empty">Loading posts…</div></div>
+  </div>
+
 </div>
 
 <script>
+/* ===== SUPABASE CONFIG ===== */
+const SUPABASE_URL = "https://gnfvgfxlfxbpdevxlrue.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_ZJZVcX2XXAVvn7WmIwDTEw_N0038U6v";
+let supa = null;
+try {
+  if (window.supabase) {
+    supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+} catch(e){ console.warn("Supabase init failed", e); }
+
 /* =========================================================
    SIGNAL  (real FFT -> a few honest numbers that drive art)
    ========================================================= */
@@ -445,7 +461,8 @@ function renderGrid(){
   if(!captures.length){ g.innerHTML='<div class="empty">Nothing captured yet.</div>'; return; }
   g.innerHTML="";
   captures.forEach(c=>{ const el=document.createElement("div"); el.className="card";
-    el.innerHTML=`<video src="${c.url}" autoplay loop muted playsinline style="display:block;width:100%"></video><div class="meta"><div class="sig">${c.sig}</div><div class="sub">${c.style}, ${c.hz} Hz, ${c.ts.toLocaleString()}</div></div>`;
+    el.innerHTML=`<video src="${c.url}" autoplay loop muted playsinline style="display:block;width:100%"></video><div class="meta"><div class="sig">${c.sig}</div><div class="sub">${c.style}, ${c.hz} Hz, ${c.ts.toLocaleString()}</div><button class="btn postBtn" style="margin-top:10px;width:100%">Post to gallery</button></div>`;
+    el.querySelector(".postBtn").addEventListener("click",()=>postCapture(c, el.querySelector(".postBtn")));
     g.appendChild(el); });
 }
 
@@ -478,11 +495,53 @@ document.getElementById("soundBtn").addEventListener("click",()=>{
   if(!soundOn&&master) master.gain.setTargetAtTime(0,audioCtx.currentTime,0.1);
 });
 
+/* ===== POSTING TO SUPABASE ===== */
+async function postCapture(c, btn){
+  if(!supa){ alert("Posting isn't set up yet."); return; }
+  if(!connected){ alert("Connect the sensor to post."); return; }
+  const title = prompt("Title for this piece:", c.sig) || c.sig;
+  const caption = prompt("A short note about it (optional):", "") || "";
+  btn.disabled = true; btn.textContent = "Posting…";
+  try {
+    const resp = await fetch(c.url); const blob = await resp.blob();
+    const path = `${Date.now()}_${c.sig}.webm`;
+    const up = await supa.storage.from("captures").upload(path, blob, {contentType:"video/webm"});
+    if(up.error) throw up.error;
+    const { data:pub } = supa.storage.from("captures").getPublicUrl(path);
+    const ins = await supa.from("posts").insert({
+      file_url: pub.publicUrl, title, caption,
+      style: c.style, hz: c.hz, fingerprint: c.sig
+    });
+    if(ins.error) throw ins.error;
+    btn.textContent = "Posted ✓";
+    loadPosts();
+  } catch(e){
+    console.error(e); alert("Post failed: " + (e.message||e)); btn.disabled=false; btn.textContent="Post to gallery";
+  }
+}
+async function loadPosts(){
+  const g = document.getElementById("postsGrid");
+  if(!supa){ g.innerHTML = '<div class="empty">Gallery not configured yet.</div>'; return; }
+  try {
+    const { data, error } = await supa.from("posts").select("*").order("created_at",{ascending:false});
+    if(error) throw error;
+    if(!data || !data.length){ g.innerHTML = '<div class="empty">No posts yet.</div>'; return; }
+    g.innerHTML = "";
+    data.forEach(p=>{
+      const el = document.createElement("div"); el.className="card";
+      const when = p.created_at ? new Date(p.created_at).toLocaleString() : "";
+      el.innerHTML = `<video src="${p.file_url}" autoplay loop muted playsinline style="display:block;width:100%"></video><div class="meta"><div class="sig">${p.title||p.fingerprint||""}</div><div class="sub">${p.style||""}, ${p.hz||"?"} Hz, ${when}</div>${p.caption?`<div style="margin-top:8px;font-size:13px;color:var(--muted);line-height:1.5">${p.caption}</div>`:""}<div class="sub" style="margin-top:8px">Signature ${p.fingerprint||""}</div></div>`;
+      g.appendChild(el);
+    });
+  } catch(e){ console.error(e); g.innerHTML = '<div class="empty">Could not load posts.</div>'; }
+}
+
 /* ---- init ---- */
 document.getElementById("connectBtn").addEventListener("click",()=>connected?manualDisc():connect());
 document.getElementById("captureBtn").addEventListener("click",capture);
 size();
 document.getElementById("styledesc").textContent=desc.ink;
+loadPosts();
 requestAnimationFrame(frame);
 </script>
 </body>
