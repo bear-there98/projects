@@ -168,6 +168,35 @@
     font-size: 0.8rem;
   }
 
+  /* Non-clickable "coming soon" tile */
+  .card.is-soon {
+    cursor: default;
+    border-style: dashed;
+    opacity: 0.78;
+  }
+  .card.is-soon:hover {
+    transform: none;
+    background: var(--card);
+    border-color: var(--border);
+    box-shadow: none;
+  }
+  .card.is-soon:hover::before { opacity: 0.16; }
+
+  .pill {
+    margin-top: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .card, .card *, .open .arrow { transition: none !important; }
   }
@@ -207,9 +236,17 @@
         <span class="open">Open project <span class="arrow">→</span></span>
       </a>
 
+      <div class="card is-soon" style="--accent:#8b93a7" aria-disabled="true">
+        <div class="badge">📚</div>
+        <div class="tag">Learning</div>
+        <h2>Edu app</h2>
+        <p>An education project in the works. Check back soon — it'll open here once there's something to show.</p>
+        <span class="pill">Coming soon</span>
+      </div>
+
     </section>
 
-    <footer>3 projects · Built for the browser</footer>
+    <footer>3 live · 1 coming soon · Built for the browser</footer>
   </main>
 </body>
 </html>
