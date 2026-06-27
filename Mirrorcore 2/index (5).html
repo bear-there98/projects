@@ -1201,7 +1201,7 @@
     .filter-pill.active { background: #003087 !important; border-color: #003087 !important; }
   }
 
-  /* ── Hover — pointer devices only ─────────── */
+  /* ── Hover - pointer devices only ─────────── */
   @media (hover: hover) {
     a:hover                     { color: #FF0000; }
     nav button:hover::after     { width: 100%; }
@@ -1959,7 +1959,7 @@
             </div>
           </div>
         </div>
-        <!-- Save bar — always visible -->
+        <!-- Save bar - always visible -->
         <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
           <button class="btn-primary" onclick="saveEntry()">Save entry</button>
           <button class="btn-secondary" onclick="saveDraftAndClose()">[save draft]</button>
@@ -1990,7 +1990,7 @@
         <div class="form-row">
           <label class="form-label">Category</label>
           <select id="projectCategory" onchange="toggleCategoryOther()">
-            <option value="">— none —</option>
+            <option value="">- none -</option>
             <option value="Nature">Nature</option>
             <option value="Plants">Plants</option>
             <option value="Animals">Animals</option>
@@ -2213,7 +2213,7 @@
     <div class="form-row">
       <label class="form-label">Category</label>
       <select id="editProjCat" onchange="toggleEditCategoryOther()">
-        <option value="">— none —</option>
+        <option value="">- none -</option>
         <option value="Nature">Nature</option>
         <option value="Plants">Plants</option>
         <option value="Animals">Animals</option>
@@ -2336,10 +2336,10 @@ const BOTS = [
   { id: 'convergent',    name: 'Convergent Evolution',   symbol: '⟳', scope: 'Unrelated species arriving at identical solutions',                  character: 'Patient. Geological time. Sees patterns across millions of years.',                        color: '#4a7c59' },
   { id: 'vanishing',     name: 'Vanishing Species',       symbol: '◌', scope: 'Behavioral and ecological patterns before disappearance',            character: 'Urgent. Documents what exists before it does not.',                                       color: '#c8a96e' },
   { id: 'mimicry',       name: 'Mimicry',                 symbol: '◈', scope: 'Who copies who, why, how well it works',                            character: 'Deceptive by nature. Finds the copy inside the original.',                               color: '#7ab88a' },
-  { id: 'architecture',  name: 'Animal Architecture',     symbol: '⬡', scope: 'Nests, dams, tunnels, webs — patterns across species',              character: 'Structural. Sees geometry in instinct.',                                                 color: '#a89060' },
+  { id: 'architecture',  name: 'Animal Architecture',     symbol: '⬡', scope: 'Nests, dams, tunnels, webs - patterns across species',              character: 'Structural. Sees geometry in instinct.',                                                 color: '#a89060' },
   { id: 'invasive',      name: 'Invasive Patterns',       symbol: '→', scope: 'How species spread, what they displace, what remains',              character: 'Relentless. Tracks the frontier of displacement.',                                        color: '#8a6a3a' },
   { id: 'communication', name: 'Animal Communication',    symbol: '~', scope: 'Signals, frequencies, methods never compared before',               character: 'Listens across frequencies humans cannot hear.',                                          color: '#4a8a7a' },
-  { id: 'regeneration',  name: 'Biological Self-Repair',  symbol: '↺', scope: 'Organisms that rebuild themselves — limits and extremes',           character: 'Methodical. Studies the boundary between repair and impossibility.',                      color: '#6a9a5a' },
+  { id: 'regeneration',  name: 'Biological Self-Repair',  symbol: '↺', scope: 'Organisms that rebuild themselves - limits and extremes',           character: 'Methodical. Studies the boundary between repair and impossibility.',                      color: '#6a9a5a' },
   { id: 'nocturnal',     name: 'Nocturnal Biology',       symbol: '●', scope: 'What happens in ecosystems after dark',                             character: 'Only active at night. Surfaces what daylight hides.',                                    color: '#3a5a6a' }
 ];
 const LIVING_TAGS    = new Set(['plant','animal','stone','fungi','mineral','moss','lichen','algae','bacteria','tree','flower','herb','shrub','insect','bird','fish','reptile','mammal']);
@@ -2369,7 +2369,7 @@ const SVG_PENCIL = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" 
 </svg>`;
 
 
-// Data lives in data.json — fetched on load, saved via POST.
+// Data lives in data.json - fetched on load, saved via POST.
 
 // ─────────────────────────────────────────────
 // STATE
@@ -2400,7 +2400,7 @@ let state = {
 };
 
 // ─────────────────────────────────────────────
-// PERSISTENCE — data.json via local server
+// PERSISTENCE - data.json via local server
 // ─────────────────────────────────────────────
 async function loadData() {
   document.getElementById('loadingState')?.style.setProperty('display', 'block');
@@ -3002,7 +3002,7 @@ function renderStudio() {
   listEl.innerHTML = '';
 
   if (projects.length === 0) {
-    listEl.innerHTML = `<p style="color:#666666; font-size:11px; font-style:italic; padding:8px 0;">No projects yet — create one from the admin panel.</p>`;
+    listEl.innerHTML = `<p style="color:#666666; font-size:11px; font-style:italic; padding:8px 0;">No projects yet - create one from the admin panel.</p>`;
     return;
   }
 
@@ -3020,7 +3020,7 @@ function renderStudio() {
     const lastUpdatedStyle = daysAgoLast !== null && daysAgoLast > 30 ? 'color:#c8860a;font-weight:bold;' : 'color:#9a9a9a;';
     const status = p.status || 'idea';
     const stale = status === 'active' && (daysAgoLast === null || daysAgoLast > 45);
-    const staleBadge = stale ? ` <span title="no activity in 45 days — maybe change status?" style="font-size:12px;cursor:default;">💤</span>` : '';
+    const staleBadge = stale ? ` <span title="no activity in 45 days - maybe change status?" style="font-size:12px;cursor:default;">💤</span>` : '';
 
     const typeCounts = { research: 0, discovery: 0, idea: 0, update: 0 };
     pEntries.forEach(e => { if (typeCounts[e.type] !== undefined) typeCounts[e.type]++; });
@@ -3229,7 +3229,7 @@ function renderProjectView() {
   // ── Stats ──────────────────────────────────
   const activeDays = new Set(entries.map(e => e.date)).size;
   const lastE = entries.length ? [...entries].sort((a,b) => b.date.localeCompare(a.date))[0] : null;
-  const lastUpdStr = lastE ? timeAgo(lastE.date) : '—';
+  const lastUpdStr = lastE ? timeAgo(lastE.date) : '-';
   const tagCounts = {};
   entries.forEach(e => (e.tags||[]).forEach(t => { tagCounts[t] = (tagCounts[t]||0)+1; }));
   const mostTag = Object.entries(tagCounts).sort((a,b)=>b[1]-a[1])[0]?.[0] || null;
@@ -3307,7 +3307,7 @@ function renderProjectView() {
     const pvCta = state.adminUnlocked
       ? `<button class="btn-secondary" style="margin-top:10px;font-size:10px;" onclick="openNewEntry('${pid}')">+ new entry</button>`
       : '';
-    feed.innerHTML = `<div class="empty-state"><div class="empty-icon">${SVG_PENCIL}</div><p>No records yet — this domain is just opening.</p>${pvCta}</div>`;
+    feed.innerHTML = `<div class="empty-state"><div class="empty-icon">${SVG_PENCIL}</div><p>No records yet - this domain is just opening.</p>${pvCta}</div>`;
     return;
   }
 
@@ -3554,13 +3554,13 @@ function renderTaxonomy() {
   const el = document.getElementById('taxonomyContent');
   if (!el) return;
   const RANKS = [
-    { rank: 'Domain', latin: 'Dominium', symbol: '◎', color: '#4a7c59', description: 'The broadest division of life. Three domains exist: Bacteria, Archaea, and Eukaryota. Everything visible to the naked eye — plants, animals, fungi — belongs to Eukaryota.', example: 'Eukaryota', count: '3 known domains', detail: 'Established in 1990 by Carl Woese based on ribosomal RNA analysis. Before this, life was divided into just two categories. The discovery that Archaea were fundamentally different from Bacteria changed our understanding of early evolution.' },
+    { rank: 'Domain', latin: 'Dominium', symbol: '◎', color: '#4a7c59', description: 'The broadest division of life. Three domains exist: Bacteria, Archaea, and Eukaryota. Everything visible to the naked eye - plants, animals, fungi - belongs to Eukaryota.', example: 'Eukaryota', count: '3 known domains', detail: 'Established in 1990 by Carl Woese based on ribosomal RNA analysis. Before this, life was divided into just two categories. The discovery that Archaea were fundamentally different from Bacteria changed our understanding of early evolution.' },
     { rank: 'Kingdom', latin: 'Regnum', symbol: '⬡', color: '#4a8a7a', description: 'The second rank. Within Eukaryota: Animalia, Plantae, Fungi, Protista, and Chromista. Each represents a fundamentally different way of being alive.', example: 'Animalia', count: '~8 recognized kingdoms', detail: 'The number of kingdoms has changed repeatedly as our tools improve. In 1735 Linnaeus recognized just two. Today some classifications recognize up to eight. The boundaries remain contested.' },
-    { rank: 'Phylum', latin: 'Phylum', symbol: '⟳', color: '#6a9a5a', description: 'Body plan. All animals with a backbone — from sharks to sparrows to humans — belong to Phylum Chordata. Arthropods form another, containing more species than all others combined.', example: 'Chordata', count: '~35 animal phyla', detail: 'The Cambrian explosion, 541 million years ago, produced most of the animal phyla that exist today within a geologically brief 20 million year window. Nearly all body plans in use today originated then.' },
-    { rank: 'Class', latin: 'Classis', symbol: '◌', color: '#a89060', description: 'A refinement of body plan. Mammalia, Aves, Reptilia, Amphibia, Actinopterygii. The class tells you how an animal regulates temperature, reproduces, breathes.', example: 'Mammalia', count: '~108 vertebrate classes', detail: 'Mammals are defined by three middle ear bones, hair, and the production of milk. These traits evolved independently across different lineages — a case of convergent evolution within a single class.' },
-    { rank: 'Order', latin: 'Ordo', symbol: '→', color: '#8a6a3a', description: 'Shared evolutionary history and anatomical features. Primates, Carnivora, Cetacea. The order Cetacea contains whales, dolphins, and porpoises — all descended from a land mammal.', example: 'Primates', count: '~60 mammalian orders', detail: 'Cetaceans returned to the sea approximately 50 million years ago. Their closest living relative on land is the hippopotamus. Molecular analysis in the 1990s revealed this connection — previously considered impossible.' },
+    { rank: 'Phylum', latin: 'Phylum', symbol: '⟳', color: '#6a9a5a', description: 'Body plan. All animals with a backbone - from sharks to sparrows to humans - belong to Phylum Chordata. Arthropods form another, containing more species than all others combined.', example: 'Chordata', count: '~35 animal phyla', detail: 'The Cambrian explosion, 541 million years ago, produced most of the animal phyla that exist today within a geologically brief 20 million year window. Nearly all body plans in use today originated then.' },
+    { rank: 'Class', latin: 'Classis', symbol: '◌', color: '#a89060', description: 'A refinement of body plan. Mammalia, Aves, Reptilia, Amphibia, Actinopterygii. The class tells you how an animal regulates temperature, reproduces, breathes.', example: 'Mammalia', count: '~108 vertebrate classes', detail: 'Mammals are defined by three middle ear bones, hair, and the production of milk. These traits evolved independently across different lineages - a case of convergent evolution within a single class.' },
+    { rank: 'Order', latin: 'Ordo', symbol: '→', color: '#8a6a3a', description: 'Shared evolutionary history and anatomical features. Primates, Carnivora, Cetacea. The order Cetacea contains whales, dolphins, and porpoises - all descended from a land mammal.', example: 'Primates', count: '~60 mammalian orders', detail: 'Cetaceans returned to the sea approximately 50 million years ago. Their closest living relative on land is the hippopotamus. Molecular analysis in the 1990s revealed this connection - previously considered impossible.' },
     { rank: 'Family', latin: 'Familia', symbol: '~', color: '#4a8a7a', description: 'Closely related genera sharing recognizable features. Felidae contains all cats. Canidae all dogs, wolves, foxes. Families are often recognizable at a glance.', example: 'Felidae', count: '~167 mammalian families', detail: 'The domestic cat (Felis catus) shares 95.6% of its DNA with tigers. All Felidae share a common ancestor that lived approximately 10-15 million years ago in Asia. The family colonized every continent except Antarctica and Australia.' },
-    { rank: 'Genus', latin: 'Genus', symbol: '◈', color: '#3a5a6a', description: 'The first part of the scientific name. Panthera contains lions, tigers, leopards, jaguars, and snow leopards. Homo contains only one surviving species.', example: 'Panthera', count: '~6,500 animal genera', detail: 'Homo sapiens is the only surviving member of genus Homo, but at least eight other species existed. Homo neanderthalensis, Homo erectus, Homo heidelbergensis — each a distinct branch, each extinct. We are what remains.' },
+    { rank: 'Genus', latin: 'Genus', symbol: '◈', color: '#3a5a6a', description: 'The first part of the scientific name. Panthera contains lions, tigers, leopards, jaguars, and snow leopards. Homo contains only one surviving species.', example: 'Panthera', count: '~6,500 animal genera', detail: 'Homo sapiens is the only surviving member of genus Homo, but at least eight other species existed. Homo neanderthalensis, Homo erectus, Homo heidelbergensis - each a distinct branch, each extinct. We are what remains.' },
     { rank: 'Species', latin: 'Species', symbol: '●', color: '#4a7c59', description: 'The fundamental unit. A group of organisms that can interbreed and produce fertile offspring. Approximately 8.7 million species are estimated to exist on Earth. Fewer than 2 million have been named.', example: 'Panthera tigris', count: '~8.7 million estimated', detail: 'The species concept is deceptively simple and practically contested. Wolves and dogs are the same species (Canis lupus) yet profoundly different. Ring species, hybridization, and asexual reproduction all challenge the definition. The question of what makes a species is still debated.' }
   ];
 
@@ -3665,7 +3665,7 @@ async function renderGoatStats() {
   const palette  = ['#1c1c1a','#7DB87D','#F0A500','#E07070','#9B7FD4'];
 
   const corsHint = msg => (msg && /fetch|cors|network|blocked/i.test(msg))
-    ? ' — Browser blocked by CORS — stats need a backend proxy'
+    ? ' - Browser blocked by CORS - stats need a backend proxy'
     : '';
 
   let hitsData = null, locData = null, brData = null;
@@ -3775,11 +3775,11 @@ async function renderGoatStats() {
   }
 
   // ── Summary tile ──────────────────────────
-  const totalVisitors = hitsData?.hits?.reduce((s, d) => s + (d.visitors ?? d.count ?? 0), 0) ?? '—';
-  const topCountry    = locData?.locations?.[0]?.name || '—';
-  const topBrowser    = brData?.browsers?.[0]?.name   || '—';
+  const totalVisitors = hitsData?.hits?.reduce((s, d) => s + (d.visitors ?? d.count ?? 0), 0) ?? '-';
+  const topCountry    = locData?.locations?.[0]?.name || '-';
+  const topBrowser    = brData?.browsers?.[0]?.name   || '-';
   const partialWarn   = (hitsErr || locErr || brErr)
-    ? `<div style="font-size:9px;color:#bbb;margin-top:6px;font-style:italic;">Some data unavailable — ${escHtml(corsHint((hitsErr||locErr||brErr).message||'') || (hitsErr||locErr||brErr).message || 'partial failure')}</div>`
+    ? `<div style="font-size:9px;color:#bbb;margin-top:6px;font-style:italic;">Some data unavailable - ${escHtml(corsHint((hitsErr||locErr||brErr).message||'') || (hitsErr||locErr||brErr).message || 'partial failure')}</div>`
     : '';
   totalsEl.innerHTML = `
     <div style="font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#999;margin-bottom:8px;">30-day summary</div>
@@ -3931,7 +3931,7 @@ function openEntryDetail(id) {
     ${breadcrumb}
     <button onclick="document.body.classList.toggle('handwriting');this.textContent=document.body.classList.contains('handwriting')?'Aa':'✍';" title="Toggle handwriting" style="position:absolute;top:10px;right:42px;width:auto;padding:2px 8px;font-size:11px;color:#666;background:none;border:1px solid #c8c8c0;cursor:pointer;">${document.body.classList.contains('handwriting')?'Aa':'✍'}</button>
     ${state.adminUnlocked ? `<button class="win98-btn" title="Edit entry" style="position:absolute;top:10px;left:12px;width:auto;height:auto;padding:2px 10px;font-size:10px;color:#444444;" onclick="closeModal('entryModal');editEntry('${id}')">&#9999; edit</button>` : ''}
-    ${entry.draft ? '<div style="background:#FFEEEE;border:1px solid #CC0000;color:#CC0000;font-size:10px;font-weight:bold;padding:3px 10px;margin-bottom:10px;display:inline-block;">DRAFT — unlock admin to edit</div>' : ''}
+    ${entry.draft ? '<div style="background:#FFEEEE;border:1px solid #CC0000;color:#CC0000;font-size:10px;font-weight:bold;padding:3px 10px;margin-bottom:10px;display:inline-block;">DRAFT - unlock admin to edit</div>' : ''}
     ${detailLatinBlock}
     <div class="detail-type-date">
       <span class="type-tag ${entry.type}">${typeLabel(entry.type)}</span>${entry.mood ? `<span style="font-size:11px;line-height:1;color:#555555;">${entry.mood} ${MOOD_LABELS[entry.mood]||entry.mood}</span>` : ''}
@@ -3962,7 +3962,7 @@ function openEntryDetail(id) {
   if (state.adminUnlocked) {
     function _makeEditable(el, field, isHtml) {
       if (!el) return;
-      el.title = (el.title ? el.title + ' — ' : '') + 'double-click to edit';
+      el.title = (el.title ? el.title + ' - ' : '') + 'double-click to edit';
       el.addEventListener('dblclick', () => {
         el.contentEditable = 'true';
         el.style.outline = '2px solid #1c1c1a';
@@ -4213,14 +4213,14 @@ function _populateLightboxInfo(item) {
   if (!panel) return;
   const { projects, entries } = state.data;
   const proj = item.projectId ? projects.find(p => p.id === item.projectId) : null;
-  const dateStr = item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-GB', {day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+  const dateStr = item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-GB', {day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '-';
   const fname = item.src && !item.src.startsWith('data:') ? decodeURIComponent(item.src.split('/').pop().split('?')[0]) : '(embedded)';
   const related = proj ? entries.filter(e => !e.deleted && !e.draft && e.projectId === proj.id).slice(0,4) : [];
   panel.innerHTML = `
     <div class="lbi-label">Project</div>
-    <div class="lbi-val">${proj ? `${proj.emoji||'◦'} ${escHtml(proj.name)}` : '—'}</div>
+    <div class="lbi-val">${proj ? `${proj.emoji||'◦'} ${escHtml(proj.name)}` : '-'}</div>
     <div class="lbi-label">Caption</div>
-    <div class="lbi-val">${item.caption ? escHtml(item.caption) : '—'}</div>
+    <div class="lbi-val">${item.caption ? escHtml(item.caption) : '-'}</div>
     <div class="lbi-label">Date added</div>
     <div class="lbi-val">${dateStr}</div>
     <div class="lbi-label">File</div>
@@ -4846,7 +4846,7 @@ async function uploadImage(file) {
   } catch(e) {
     console.error('Upload error:', e, 'File:', file.name, file.type, file.size);
     const hint = /heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name)
-      ? 'HEIC not supported — switch iPhone camera to JPG in Settings > Camera > Formats > Most Compatible'
+      ? 'HEIC not supported - switch iPhone camera to JPG in Settings > Camera > Formats > Most Compatible'
       : e.message || 'Upload failed';
     showToast(hint);
     return null;
@@ -5685,7 +5685,7 @@ async function compendiumSearch() {
       '&format=json&limit=1&addressdetails=1'
     );
     const geoData = await geoRes.json();
-    if (!geoData.length) throw new Error('Location not found — try a city name or postal code');
+    if (!geoData.length) throw new Error('Location not found - try a city name or postal code');
 
     // ── Tear down all existing state before loading new location ──
     _fgObservations = [];
@@ -5797,7 +5797,7 @@ function setCompView(view) {
   document.getElementById('compMapView').style.display        = view === 'map'        ? 'block' : 'none';
   document.getElementById('compListView').style.display       = view === 'list'       ? 'block' : 'none';
   document.getElementById('compCollectionView').style.display = view === 'collection' ? 'block' : 'none';
-  // hide search in collection — collection is a fixed personal list
+  // hide search in collection - collection is a fixed personal list
   document.getElementById('compSearch').style.display = view === 'collection' ? 'none' : '';
   if (view === 'map') {
     if (_compMap) { _compMap.remove(); _compMap = null; }
@@ -5973,7 +5973,7 @@ function updateSpotButtons(taxonId) {
     btn.classList.toggle('spotted', now);
     btn.style.boxShadow = now ? '0 0 0 3px rgba(61,107,53,0.2)' : '';
   });
-  // also refresh badge on list cards — simpler to just re-render list
+  // also refresh badge on list cards - simpler to just re-render list
   if (_compView === 'list') renderCompendiumList();
 }
 
@@ -6029,7 +6029,7 @@ async function openFgSpeciesModal(idx) {
   const sciName    = obs.taxon?.name || '';
   const taxonId    = obs.taxon?.id;
 
-  // Skeleton — open immediately with loading placeholders
+  // Skeleton - open immediately with loading placeholders
   document.getElementById('speciesModalContent').innerHTML = `
     ${photo
       ? `<img src="${photo}" alt="${escHtml(commonName)}" style="width:100%;height:300px;object-fit:cover;display:block;flex-shrink:0;">`
@@ -6082,7 +6082,7 @@ async function openFgSpeciesModal(idx) {
       );
       smTax.innerHTML = pills.join('');
     } else {
-      smTax.innerHTML = `<span class="taxon-chain-pill"><span class="tc-name">${escHtml(obs.taxon?.iconic_taxon_name || '—')}</span></span>`;
+      smTax.innerHTML = `<span class="taxon-chain-pill"><span class="tc-name">${escHtml(obs.taxon?.iconic_taxon_name || '-')}</span></span>`;
     }
   }
 
@@ -6240,7 +6240,7 @@ async function renderBots() {
       await new Promise(r => setTimeout(r, 80));
     }
   } catch(e) {
-    if (listEl) listEl.innerHTML = `<div style="font-family:'Inter',sans-serif;font-size:12px;color:#9ca3af;text-align:center;padding:24px 0;">Signal fetch failed — check connection.</div>`;
+    if (listEl) listEl.innerHTML = `<div style="font-family:'Inter',sans-serif;font-size:12px;color:#9ca3af;text-align:center;padding:24px 0;">Signal fetch failed - check connection.</div>`;
   }
 }
 

@@ -2537,7 +2537,7 @@ function renderGuide(){
     <div style="background:var(--bg3);border-radius:var(--r-sm);padding:10px 12px;font-size:13px"><strong>🏙️ Urban</strong><br><span style="color:var(--ink3);font-size:11px">Blacksmith · Cartographer</span></div>
   </div>`;
 
-  // Materials grouped by terrain — names only
+  // Materials grouped by terrain - names only
   let mats='';
   ['forest','river','elevation','urban'].forEach(t=>{
     const tm=TERRAIN_META[t];
@@ -2935,7 +2935,7 @@ function renderQuests(){
     <div style="height:16px"></div>`;
   }
 
-  // Daily Quests — tracked passively via GPS/collection hooks
+  // Daily Quests - tracked passively via GPS/collection hooks
   html+=`<div class="label" style="margin-bottom:10px">Daily Quests</div>`;
   const dq=loadDailyQuests();
   Object.entries(QUESTS).filter(([,q])=>q.type==='daily').forEach(([qid,q])=>{
@@ -2961,7 +2961,7 @@ function renderQuests(){
     </div>`;
   });
 
-  // Daily Bonus — rotates by day of week
+  // Daily Bonus - rotates by day of week
   {
     const bonus=getDailyBonus();
     const bq=QUESTS['daily-bonus'];
@@ -2981,7 +2981,7 @@ function renderQuests(){
     </div>`;
   }
 
-  // Field Quests (locked — require visiting a map pin)
+  // Field Quests (locked - require visiting a map pin)
   html+=`<div style="height:16px"></div><div class="label" style="margin-bottom:10px">Field Quests</div>`;
   WALK_QUESTS.forEach(q=>{
     if(aq&&aq.id===q.id)return;
