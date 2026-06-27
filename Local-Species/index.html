@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mirrorcore Compendium</title>
-<meta property="og:title" content="Mirrorcore Compendium">
+<title>Local Species</title>
+<meta property="og:title" content="Local Species">
 <meta property="og:description" content="a field guide to the living world">
 <meta name="theme-color" content="#f5f0e8">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
@@ -1655,7 +1655,7 @@
 
 <!-- ── HEADER ──────────────────────────────── -->
 <header>
-  <button class="site-name-btn" onclick="compendiumReset()" title="Return to start">Mirrorcore Compendium</button>
+  <button class="site-name-btn" onclick="compendiumReset()" title="Return to start">Local Species</button>
   <div id="locationChip">
     <div class="loc-chip">📍 <span id="locChipName"></span><button class="loc-chip-x" onclick="compendiumReset()" title="Clear location">✕</button></div>
     <div style="display:flex;align-items:center;gap:5px;">
@@ -1679,7 +1679,7 @@
   <!-- Landing screen -->
   <div id="compLanding" class="compendium-landing">
 
-    <h1 class="compendium-title">Mirrorcore Compendium</h1>
+    <h1 class="compendium-title">Local Species</h1>
     <div class="compendium-sub">a living field guide · anywhere on earth</div>
     <div class="compendium-input-row">
       <input class="compendium-loc-input" id="compLocInput" type="text" placeholder="city name or postal code…"
@@ -1774,7 +1774,7 @@
 
       <div class="form-row">
         <label class="form-label">Site name</label>
-        <input type="text" id="as-sitename" placeholder="Mirrorcore Compendium" style="max-width:260px;">
+        <input type="text" id="as-sitename" placeholder="Local Species" style="max-width:260px;">
       </div>
 
       <div class="form-row">
@@ -4414,7 +4414,7 @@ async function checkPassword() {
 
 function populateAdminForm() {
   const accent    = localStorage.getItem('mc_accent')     || '#3d6b35';
-  const sitename  = localStorage.getItem('mc_sitename')   || 'Mirrorcore Compendium';
+  const sitename  = localStorage.getItem('mc_sitename')   || 'Local Species';
   const radius    = localStorage.getItem('mc_radius')     || '10';
   const showCount = localStorage.getItem('mc_show_count') === '1';
   const darkHdr   = localStorage.getItem('mc_dark_header') === '1';
@@ -4427,7 +4427,7 @@ function populateAdminForm() {
 
 function saveAdminSettings() {
   const accent    = (document.getElementById('as-accent')?.value     || '#3d6b35');
-  const sitename  = (document.getElementById('as-sitename')?.value?.trim() || 'Mirrorcore Compendium');
+  const sitename  = (document.getElementById('as-sitename')?.value?.trim() || 'Local Species');
   const radius    = (document.getElementById('as-radius')?.value     || '10');
   const showCount = document.getElementById('as-show-count')?.checked || false;
   const darkHdr   = document.getElementById('as-dark-header')?.checked || false;
