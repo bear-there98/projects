@@ -161,6 +161,9 @@
 
   <div class="collection" id="postsSection">
     <h2>Captures</h2>
+    <div id="adminBar" style="display:none;font-size:12px;color:var(--muted);margin:-8px 0 16px">
+      Admin mode · <a href="#" id="adminLogoutLink" style="color:var(--accent);text-decoration:none">log out</a>
+    </div>
     <div class="grid" id="postsGrid"><div class="empty">Loading…</div></div>
   </div>
 
@@ -488,6 +491,7 @@ document.getElementById("soundBtn").addEventListener("click",()=>{
 // public anon key cannot be used to delete without it.
 let adminPass = sessionStorage.getItem("bioelectric_admin") || null;
 function isAdmin(){ return !!adminPass; }
+function updateAdminBar(){ const b=document.getElementById("adminBar"); if(b) b.style.display = isAdmin() ? "block" : "none"; }
 function adminLogin(){
   const p = prompt("Admin password (leave blank to skip):", "");
   if(p){ adminPass = p; sessionStorage.setItem("bioelectric_admin", p); loadPosts(); }
@@ -537,6 +541,7 @@ async function deletePost(p, btn){
   }
 }
 async function loadPosts(){
+  updateAdminBar();
   const g = document.getElementById("postsGrid");
   if(!supa){ g.innerHTML = '<div class="empty">Gallery not configured yet.</div>'; return; }
   try {
@@ -558,6 +563,7 @@ async function loadPosts(){
 /* ---- init ---- */
 document.getElementById("connectBtn").addEventListener("click",()=>connected?manualDisc():connect());
 document.getElementById("captureBtn").addEventListener("click",capture);
+document.getElementById("adminLogoutLink").addEventListener("click",e=>{ e.preventDefault(); adminLogout(); });
 size();
 document.getElementById("styledesc").textContent=desc.ink;
 requestAnimationFrame(frame);
