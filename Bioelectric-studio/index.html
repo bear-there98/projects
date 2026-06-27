@@ -159,14 +159,9 @@
   </p>
   <p class="about" style="margin-top:14px">This studio only works with the sensor connected. It runs on a simple homemade probe - two electrodes feeding a small amplifier into a microcontroller, which streams the signal to your browser. No hardware, no signal: the canvas stays at rest until something real is connected.</p>
 
-  <div class="collection">
-    <h2>Captures</h2>
-    <div class="grid" id="grid"><div class="empty">Nothing captured yet.</div></div>
-  </div>
-
   <div class="collection" id="postsSection">
-    <h2>Posts</h2>
-    <div class="grid" id="postsGrid"><div class="empty">Loading posts…</div></div>
+    <h2>Captures</h2>
+    <div class="grid" id="postsGrid"><div class="empty">Loading…</div></div>
   </div>
 
 </div>
@@ -416,7 +411,7 @@ document.getElementById("styles").addEventListener("click",e=>{
 /* =========================================================
    CAPTURE -> VIDEO
    ========================================================= */
-const captures=[]; let capturing=false;
+let capturing=false;
 function fingerprint(){ const k=16; let s=""; for(let b=0;b<k;b++){ let a=0,c=0;
   for(let i=Math.floor(b/k*SHOWN);i<Math.floor((b+1)/k*SHOWN);i++){a+=Math.min(1,mags[i]/adaptMax);c++;}
   s+=Math.min(35,Math.floor((c?a/c:0)*36)).toString(36);} return s.toUpperCase(); }
@@ -443,9 +438,9 @@ async function capture(){
     if(master) try{master.disconnect(dest);}catch(e){}
     const blob=new Blob(chunks,{type:"video/webm"});
     const url=URL.createObjectURL(blob);
-    add({url,ts,sig:sigStr,hz,style,video:true});
     const a=document.createElement("a"); a.href=url; a.download="bioelectric_"+ts.toISOString().replace(/[:.]/g,"-")+".webm"; a.click();
     fin();
+    postCapture({url,ts,sig:sigStr,hz,style});
   };
   mr.start();
   let left=secs;
@@ -455,16 +450,6 @@ async function capture(){
 }
 function fin(){ capturing=false; document.getElementById("rec").style.display="none";
   document.getElementById("recText").textContent="Recording"; if(connected)document.getElementById("captureBtn").disabled=false; }
-function add(c){ captures.unshift(c); renderGrid(); }
-function renderGrid(){
-  const g=document.getElementById("grid");
-  if(!captures.length){ g.innerHTML='<div class="empty">Nothing captured yet.</div>'; return; }
-  g.innerHTML="";
-  captures.forEach(c=>{ const el=document.createElement("div"); el.className="card";
-    el.innerHTML=`<video src="${c.url}" autoplay loop muted playsinline style="display:block;width:100%"></video><div class="meta"><div class="sig">${c.sig}</div><div class="sub">${c.style}, ${c.hz} Hz, ${c.ts.toLocaleString()}</div><button class="btn postBtn" style="margin-top:10px;width:100%">Post to gallery</button></div>`;
-    el.querySelector(".postBtn").addEventListener("click",()=>postCapture(c, el.querySelector(".postBtn")));
-    g.appendChild(el); });
-}
 
 /* ===== ambient sound: pitch from frequency balance, volume from reactivity ===== */
 let audioCtx=null, master=null, osc1=null, osc2=null, lfo=null, soundOn=false;
@@ -496,12 +481,10 @@ document.getElementById("soundBtn").addEventListener("click",()=>{
 });
 
 /* ===== POSTING TO SUPABASE ===== */
-async function postCapture(c, btn){
+async function postCapture(c){
   if(!supa){ alert("Posting isn't set up yet."); return; }
-  if(!connected){ alert("Connect the sensor to post."); return; }
   const title = prompt("Title for this piece:", c.sig) || c.sig;
   const caption = prompt("A short note about it (optional):", "") || "";
-  btn.disabled = true; btn.textContent = "Posting…";
   try {
     const resp = await fetch(c.url); const blob = await resp.blob();
     const path = `${Date.now()}_${c.sig}.webm`;
@@ -513,10 +496,9 @@ async function postCapture(c, btn){
       style: c.style, hz: c.hz, fingerprint: c.sig
     });
     if(ins.error) throw ins.error;
-    btn.textContent = "Posted ✓";
     loadPosts();
   } catch(e){
-    console.error(e); alert("Post failed: " + (e.message||e)); btn.disabled=false; btn.textContent="Post to gallery";
+    console.error(e); alert("Post failed: " + (e.message||e));
   }
 }
 async function loadPosts(){
@@ -525,7 +507,7 @@ async function loadPosts(){
   try {
     const { data, error } = await supa.from("posts").select("*").order("created_at",{ascending:false});
     if(error) throw error;
-    if(!data || !data.length){ g.innerHTML = '<div class="empty">No posts yet.</div>'; return; }
+    if(!data || !data.length){ g.innerHTML = '<div class="empty">Nothing captured yet.</div>'; return; }
     g.innerHTML = "";
     data.forEach(p=>{
       const el = document.createElement("div"); el.className="card";
