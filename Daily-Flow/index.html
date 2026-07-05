@@ -155,6 +155,26 @@ const addDays = (d, n) => { const c = new Date(d); c.setDate(c.getDate() + n); r
 const niceDate = (d) => d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
 /* ————— Scheduling ————— */
+// The seven Mon–Sun date keys of the week containing dateStr.
+function weekDates(dateStr) {
+  const d = new Date(dateStr + "T12:00:00");
+  const offsetToMon = (d.getDay() + 6) % 7; // 0=Sun..6=Sat -> days since Monday
+  const monday = addDays(d, -offsetToMon);
+  const out = [];
+  for (let i = 0; i < 7; i++) out.push(fmtKey(addDays(monday, i)));
+  return out;
+}
+// How many times a task has been completed in the Mon–Sun week of dateStr.
+function weeklyDoneCount(data, task, dateStr) {
+  let n = 0;
+  for (const k of weekDates(dateStr)) {
+    for (const e of entriesFor(data, k)) {
+      if (e.taskId === task.id && e.status === "done") n++;
+    }
+  }
+  return n;
+}
+
 function scheduledTasks(data, dateStr) {
   if (!data) return [];
   const d = new Date(dateStr + "T12:00:00");
@@ -171,6 +191,10 @@ function scheduledTasks(data, dateStr) {
   const out = data.tasks.filter((t) => {
     if (t.freq.type === "daily") return true;
     if (t.freq.type === "days") return (t.freq.days || []).includes(wd);
+    if (t.freq.type === "weekly") {
+      const need = Math.max(1, t.freq.count || 1);
+      return weeklyDoneCount(data, t, dateStr) < need;
+    }
     if (t.freq.type === "rotate") {
       const g = rotGroups[t.categoryId];
       if (!g || !g.length) return false;
@@ -284,22 +308,43 @@ function GhostBtn({ onClick, children, style }) {
 function freqLabel(freq) {
   if (freq.type === "daily") return "Every day";
   if (freq.type === "rotate") return "Rotates";
+  if (freq.type === "weekly") return `${Math.max(1, freq.count || 1)}× per week`;
   const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   return (freq.days || []).map((d) => names[d]).join(" · ") || "No days set";
 }
 
 function FreqEditor({ freq, onChange }) {
-  const opts = [["daily", "Every day"], ["days", "Some days"], ["rotate", "Rotation"]];
+  const opts = [["daily", "Every day"], ["days", "Some days"], ["weekly", "Weekly"], ["rotate", "Rotation"]];
+  const selectType = (v) =>
+    v === "weekly" ? onChange({ type: "weekly", count: freq.count || 3 }) : onChange({ type: v, days: freq.days || [] });
   return (
     <div>
       <div style={{ display: "flex", gap: 6 }}>
         {opts.map(([v, label]) => (
-          <button key={v} onClick={() => onChange({ type: v, days: freq.days || [] })} className="df-btn"
-            style={{ flex: 1, padding: "9px 6px", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${freq.type === v ? INK : LINE}`, background: freq.type === v ? INK : "transparent", color: freq.type === v ? "#FAFBF6" : INK }}>
+          <button key={v} onClick={() => selectType(v)} className="df-btn"
+            style={{ flex: 1, padding: "9px 4px", borderRadius: 10, fontSize: 13.5, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${freq.type === v ? INK : LINE}`, background: freq.type === v ? INK : "transparent", color: freq.type === v ? "#FAFBF6" : INK }}>
             {label}
           </button>
         ))}
       </div>
+      {freq.type === "weekly" && (
+        <div style={{ marginTop: 8 }}>
+          <div style={{ display: "flex", gap: 6 }}>
+            {[1, 2, 3, 4, 5, 6, 7].map((n) => {
+              const on = (freq.count || 3) === n;
+              return (
+                <button key={n} onClick={() => onChange({ type: "weekly", count: n })} className="df-btn"
+                  style={{ flex: 1, padding: "8px 0", borderRadius: 9, fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${on ? INK : LINE}`, background: on ? INK : "transparent", color: on ? "#FAFBF6" : INK_SOFT }}>
+                  {n}
+                </button>
+              );
+            })}
+          </div>
+          <p style={{ fontSize: 13, color: INK_SOFT, margin: "8px 2px 0" }}>
+            Appears every day until you've done it {freq.count || 3}× this week (Mon–Sun), then rests.
+          </p>
+        </div>
+      )}
       {freq.type === "days" && (
         <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
           {WEEKDAYS.map((w, i) => {
@@ -582,6 +627,11 @@ function TodayView({ data, persist, nav }) {
               {current.name}
             </h1>
             {current.note && <p style={{ fontSize: 17, color: INK_SOFT, marginTop: 14, lineHeight: 1.5 }}>{current.note}</p>}
+            {current.freq.type === "weekly" && (
+              <p style={{ fontSize: 14.5, color: INK_SOFT, marginTop: 12, fontWeight: 700, letterSpacing: "0.02em" }}>
+                {weeklyDoneCount(data, current, tk)} of {Math.max(1, current.freq.count || 1)} this week
+              </p>
+            )}
 
             {!skipping ? (
               <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 40 }}>
