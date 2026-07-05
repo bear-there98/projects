@@ -88,12 +88,14 @@ const GLOBAL_CSS = `
 .df-pop { animation: dfPop 480ms cubic-bezier(.22,.9,.3,1) both; }
 @keyframes dfVeil { from { opacity: 0; } to { opacity: 1; } }
 .df-veil { animation: dfVeil 200ms ease both; }
+@keyframes dfPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.72; } }
+.df-pulse { animation: dfPulse 2s ease-in-out infinite; }
 .df-btn { transition: transform 120ms ease, opacity 120ms ease, background 120ms ease; }
 .df-btn:active { transform: scale(.97); }
 button:focus-visible, input:focus-visible { outline: 2px solid ${INK}; outline-offset: 2px; }
 input::placeholder { color: #9AA79C; }
 @media (prefers-reduced-motion: reduce) {
-  .df-card-in, .df-pop, .df-veil { animation: none !important; }
+  .df-card-in, .df-pop, .df-veil, .df-pulse { animation: none !important; }
   .df-fade-bg, .df-btn { transition: none !important; }
 }
 `;
@@ -155,6 +157,8 @@ const todayKey = () => fmtKey(new Date());
 // Whole days from today until a YYYY-MM-DD date (negative once it's past).
 const daysUntil = (dateStr) =>
   Math.round((new Date(dateStr + "T12:00:00") - new Date(todayKey() + "T12:00:00")) / 86400000);
+// Seconds -> "m:ss".
+const fmtClock = (s) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.max(0, s) % 60).padStart(2, "0")}`;
 const addDays = (d, n) => { const c = new Date(d); c.setDate(c.getDate() + n); return c; };
 const niceDate = (d) => d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
@@ -412,6 +416,7 @@ function TaskForm({ categories, initial, onSave, onCancel }) {
   const [categoryId, setCategoryId] = useState(initial?.categoryId || categories[0]?.id);
   const [freq, setFreq] = useState(initial?.freq || { type: "daily", days: [] });
   const [rotationLabel, setRotationLabel] = useState(initial?.rotationLabel || "");
+  const [eta, setEta] = useState(initial?.eta != null ? String(initial.eta) : "");
   const [subtasks, setSubtasks] = useState(initial?.subtasks || []);
   const [newSub, setNewSub] = useState("");
   const addSub = () => {
@@ -437,6 +442,10 @@ function TaskForm({ categories, initial, onSave, onCancel }) {
       {freq.type === "rotate" && (
         <TextInput placeholder="Rotation label — optional (e.g. Push, Pull, Legs)" value={rotationLabel} onChange={(e) => setRotationLabel(e.target.value)} />
       )}
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <TextInput type="number" min="1" inputMode="numeric" placeholder="Estimated minutes — optional" value={eta} onChange={(e) => setEta(e.target.value)} />
+        <span style={{ fontSize: 14, color: INK_SOFT, fontWeight: 600, flexShrink: 0 }}>min</span>
+      </div>
       <div>
         <div style={{ fontSize: 13, fontWeight: 700, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 8 }}>Subtasks — optional</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -459,7 +468,7 @@ function TaskForm({ categories, initial, onSave, onCancel }) {
       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
         {onCancel && <GhostBtn onClick={onCancel} style={{ padding: "10px 16px", fontSize: 15 }}>Cancel</GhostBtn>}
         <PrimaryBtn disabled={!name.trim()} style={{ padding: "10px 18px", fontSize: 15 }}
-          onClick={() => onSave({ id: initial?.id || uid(), name: name.trim(), note: note.trim(), categoryId, freq, rotationLabel: freq.type === "rotate" ? (rotationLabel.trim() || null) : null, subtasks: subtasks.filter((s) => s.name.trim()).map((s) => ({ id: s.id, name: s.name.trim() })) })}>
+          onClick={() => onSave({ id: initial?.id || uid(), name: name.trim(), note: note.trim(), categoryId, freq, rotationLabel: freq.type === "rotate" ? (rotationLabel.trim() || null) : null, eta: Number(eta) > 0 ? Math.round(Number(eta)) : null, subtasks: subtasks.filter((s) => s.name.trim()).map((s) => ({ id: s.id, name: s.name.trim() })) })}>
           {initial ? "Save changes" : "Add task"}
         </PrimaryBtn>
       </div>
@@ -628,23 +637,32 @@ function TodayView({ data, persist, nav }) {
   const [showOverview, setShowOverview] = useState(false);
   const [undo, setUndo] = useState(null); // { label } for the most recent entry
   const [subChecks, setSubChecks] = useState({}); // subtaskId -> true, for the current task
+  const [timerStart, setTimerStart] = useState(null); // ms when the countdown began, or null
+  const [nowMs, setNowMs] = useState(Date.now());
   const timer = useRef(null);
   const undoTimer = useRef(null);
   useEffect(() => () => { clearTimeout(timer.current); clearTimeout(undoTimer.current); }, []);
+  useEffect(() => {
+    if (timerStart == null) return;
+    const iv = setInterval(() => setNowMs(Date.now()), 500);
+    return () => clearInterval(iv);
+  }, [timerStart]);
 
   const current = remaining.find((t) => t.id === jumpId) || remaining[0] || null;
-  useEffect(() => { setSubChecks({}); }, [current?.id]);
+  useEffect(() => { setSubChecks({}); setTimerStart(null); }, [current?.id]);
   const subs = (current && current.subtasks) || [];
   const allSubsChecked = subs.length > 0 && subs.every((s) => subChecks[s.id]);
+  const elapsedSec = timerStart == null ? 0 : Math.floor((nowMs - timerStart) / 1000);
+  const remainingSec = current && current.eta > 0 ? current.eta * 60 - elapsedSec : 0;
   const cat = current ? data.categories.find((c) => c.id === current.categoryId) : null;
   const doneCount = entries.filter((e) => e.status === "done").length;
   const skipCount = entries.filter((e) => e.status === "skipped").length;
 
-  const record = (task, status, reason) => {
+  const record = (task, status, reason, spent) => {
     const history = { ...(data.history || {}) };
-    history[tk] = [...entriesFor(data, tk), { taskId: task.id, status, ...(reason ? { reason } : {}), at: Date.now() }];
+    history[tk] = [...entriesFor(data, tk), { taskId: task.id, status, ...(reason ? { reason } : {}), ...(spent != null ? { spent } : {}), at: Date.now() }];
     persist({ ...data, history });
-    setJumpId(null); setSkipping(false); setSkipText("");
+    setJumpId(null); setSkipping(false); setSkipText(""); setTimerStart(null);
     setUndo({ label: status === "done" ? `Marked "${task.name}" done` : `Skipped "${task.name}"` });
     clearTimeout(undoTimer.current);
     undoTimer.current = setTimeout(() => setUndo(null), 5000);
@@ -664,7 +682,8 @@ function TodayView({ data, persist, nav }) {
     if (!current) return;
     setCelebrate(true);
     const task = current;
-    timer.current = setTimeout(() => { setCelebrate(false); record(task, "done"); }, 620);
+    const spent = timerStart != null ? Math.max(0, Math.floor((Date.now() - timerStart) / 1000)) : null;
+    timer.current = setTimeout(() => { setCelebrate(false); record(task, "done", null, spent); }, 620);
   };
 
   const bgTint = cat ? cat.color : INK;
@@ -734,13 +753,38 @@ function TodayView({ data, persist, nav }) {
               </div>
             )}
 
-            {!skipping ? (
-              <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 40 }}>
-                <PrimaryBtn onClick={markDone} color={subs.length > 0 && allSubsChecked ? cat.color : INK} style={{ minWidth: 150, fontSize: 18, padding: "16px 26px", borderRadius: 18 }}>
-                  <Check size={19} style={{ verticalAlign: "-4px", marginRight: 8 }} />Done
-                </PrimaryBtn>
-                <GhostBtn onClick={() => setSkipping(true)} style={{ minWidth: 110, padding: "15px 22px", borderRadius: 18 }}>Skip</GhostBtn>
+            {current.eta > 0 && timerStart != null && (
+              <div style={{ marginTop: 30 }}>
+                <div className={remainingSec <= 0 ? "df-display df-pulse" : "df-display"}
+                  style={{ fontSize: "clamp(52px, 17vw, 92px)", fontWeight: 500, lineHeight: 1, letterSpacing: "0.01em", color: remainingSec <= 0 ? cat.color : INK }}>
+                  {fmtClock(remainingSec)}
+                </div>
+                <div style={{ fontSize: 13.5, color: INK_SOFT, marginTop: 8, fontWeight: 600 }}>
+                  {remainingSec <= 0 ? "time's up — finish when you're ready" : `of ${current.eta} min`}
+                </div>
+                <button onClick={() => setTimerStart(null)}
+                  style={{ marginTop: 10, background: "none", border: "none", color: INK_SOFT, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>
+                  Stop timer
+                </button>
               </div>
+            )}
+
+            {!skipping ? (
+              <>
+                <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 40 }}>
+                  <PrimaryBtn onClick={markDone} color={subs.length > 0 && allSubsChecked ? cat.color : INK} style={{ minWidth: 150, fontSize: 18, padding: "16px 26px", borderRadius: 18 }}>
+                    <Check size={19} style={{ verticalAlign: "-4px", marginRight: 8 }} />Done
+                  </PrimaryBtn>
+                  <GhostBtn onClick={() => setSkipping(true)} style={{ minWidth: 110, padding: "15px 22px", borderRadius: 18 }}>Skip</GhostBtn>
+                </div>
+                {current.eta > 0 && timerStart == null && (
+                  <div style={{ marginTop: 16 }}>
+                    <GhostBtn onClick={() => { setTimerStart(Date.now()); setNowMs(Date.now()); }} style={{ padding: "11px 20px", fontSize: 15 }}>
+                      Start {current.eta}-min timer
+                    </GhostBtn>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="df-card-in" style={{ marginTop: 30, background: CARD, border: `1px solid ${LINE}`, borderRadius: 18, padding: 18, textAlign: "left" }}>
                 <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 10 }}>Skipping — any reason? <span style={{ fontWeight: 500, color: INK_SOFT }}>(optional)</span></div>
@@ -789,6 +833,14 @@ function TodayView({ data, persist, nav }) {
           <div style={{ textAlign: "center", fontSize: 13, color: INK_SOFT, marginTop: 8, fontWeight: 600 }}>
             {doneCount + skipCount} of {scheduled.length} · {remaining.length} to go
           </div>
+          {(() => {
+            const etaLeft = remaining.reduce((sum, t) => sum + (t.eta > 0 ? t.eta : 0), 0);
+            return etaLeft > 0 ? (
+              <div style={{ textAlign: "center", fontSize: 12.5, color: INK_SOFT, marginTop: 3, fontWeight: 600, opacity: 0.8 }}>
+                ~{etaLeft} min estimated left
+              </div>
+            ) : null;
+          })()}
         </div>
       )}
 
