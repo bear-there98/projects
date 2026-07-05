@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Daily Flow</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #E8EDE3; }
+  #root { min-height: 100vh; }
+</style>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script>
+  /* localStorage-backed shim for the app's async storage API */
+  window.storage = {
+    async get(key) { const v = localStorage.getItem(key); return v == null ? null : { value: v }; },
+    async set(key, val) { localStorage.setItem(key, String(val)); },
+    async delete(key) { localStorage.removeItem(key); },
+  };
+</script>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useRef } = React;
+
+/* ————— lucide icon shims (inline SVG) ————— */
+function svgIcon(inner) {
+  return function Icon({ size = 24, color = "currentColor", strokeWidth = 2, style, ...rest }) {
+    return React.createElement("svg", {
+      xmlns: "http://www.w3.org/2000/svg", width: size, height: size, viewBox: "0 0 24 24",
+      fill: "none", stroke: color, strokeWidth, strokeLinecap: "round", strokeLinejoin: "round",
+      style, ...rest, dangerouslySetInnerHTML: { __html: inner },
+    });
+  };
+}
+const Check = svgIcon('<path d="M20 6 9 17l-5-5"/>');
+const X = svgIcon('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>');
+const Plus = svgIcon('<path d="M5 12h14"/><path d="M12 5v14"/>');
+const Trash2 = svgIcon('<path d="M3 6h18"/><path d="M19 6v14c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V6"/><path d="M8 6V4c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>');
+const BarChart3 = svgIcon('<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>');
+const Settings = svgIcon('<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>');
+const List = svgIcon('<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>');
+const ChevronLeft = svgIcon('<path d="m15 18-6-6 6-6"/>');
+const Users = svgIcon('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>');
+const ArrowRight = svgIcon('<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>');
+const Pencil = svgIcon('<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>');
+
+/* ————— Daily Flow app ————— */
+
+/* ————— Design tokens ————— */
+const BASE_BG = "#E8EDE3";     // pale eucalyptus
+const INK = "#243329";         // deep pine ink
+const INK_SOFT = "#5A6A5E";
+const CARD = "#FBFCF7";
+const LINE = "#CBD5C6";
+
+const CAT_COLORS = [
+  { color: "#A14E3A", tint: "#A14E3A" }, // madder
+  { color: "#3D648C", tint: "#3D648C" }, // slate blue
+  { color: "#6E5F9E", tint: "#6E5F9E" }, // violet
+  { color: "#8F6E22", tint: "#8F6E22" }, // ochre
+  { color: "#3F7D6A", tint: "#3F7D6A" }, // jade
+  { color: "#8C4A6B", tint: "#8C4A6B" }, // mulberry
+];
+
+const DEFAULT_CATEGORIES = [
+  { id: "body", name: "Body", color: "#A14E3A", hint: "workout · food · sleep · water" },
+  { id: "mind", name: "Mind", color: "#3D648C", hint: "reading · learning · focus" },
+  { id: "soul", name: "Soul", color: "#6E5F9E", hint: "meditation · gratitude · people" },
+  { id: "hobbies", name: "Hobbies", color: "#8F6E22", hint: "guitar · drawing · anything for joy" },
+];
+
+const SKIP_CHIPS = ["No time", "Not feeling it", "Forgot"];
+const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
+
+const GLOBAL_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Karla:wght@400;500;600;700&display=swap');
+.df-root { font-family: 'Karla', system-ui, sans-serif; color: ${INK}; }
+.df-display { font-family: 'Fraunces', Georgia, serif; }
+.df-fade-bg { transition: background 900ms ease; }
+.df-card-in { animation: dfCardIn 380ms cubic-bezier(.22,.9,.3,1) both; }
+@keyframes dfCardIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes dfPop { 0% { transform: scale(.4); opacity: 0; } 55% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+.df-pop { animation: dfPop 480ms cubic-bezier(.22,.9,.3,1) both; }
+@keyframes dfVeil { from { opacity: 0; } to { opacity: 1; } }
+.df-veil { animation: dfVeil 200ms ease both; }
+.df-btn { transition: transform 120ms ease, opacity 120ms ease, background 120ms ease; }
+.df-btn:active { transform: scale(.97); }
+button:focus-visible, input:focus-visible { outline: 2px solid ${INK}; outline-offset: 2px; }
+input::placeholder { color: #9AA79C; }
+@media (prefers-reduced-motion: reduce) {
+  .df-card-in, .df-pop, .df-veil { animation: none !important; }
+  .df-fade-bg, .df-btn { transition: none !important; }
+}
+`;
+
+/* ————— Storage ————— */
+async function loadKey(key, fallback) {
+  try {
+    const r = await window.storage.get(key);
+    return r && r.value != null ? JSON.parse(r.value) : fallback;
+  } catch { return fallback; }
+}
+async function saveKey(key, val) {
+  try { await window.storage.set(key, JSON.stringify(val)); }
+  catch (e) { console.error("save failed", e); }
+}
+
+/* ————— Dates ————— */
+const fmtKey = (d) => {
+  const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+const todayKey = () => fmtKey(new Date());
+const addDays = (d, n) => { const c = new Date(d); c.setDate(c.getDate() + n); return c; };
+const niceDate = (d) => d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+
+/* ————— Scheduling ————— */
+function scheduledTasks(data, dateStr) {
+  if (!data) return [];
+  const d = new Date(dateStr + "T12:00:00");
+  const wd = d.getDay();
+  const dayNum = Math.floor(d.getTime() / 86400000);
+  const rotGroups = {};
+  data.tasks.forEach((t) => {
+    if (t.freq.type === "rotate") {
+      (rotGroups[t.categoryId] = rotGroups[t.categoryId] || []).push(t);
+    }
+  });
+  Object.values(rotGroups).forEach((g) => g.sort((a, b) => (a.id < b.id ? -1 : 1)));
+  const catOrder = data.categories.map((c) => c.id);
+  const out = data.tasks.filter((t) => {
+    if (t.freq.type === "daily") return true;
+    if (t.freq.type === "days") return (t.freq.days || []).includes(wd);
+    if (t.freq.type === "rotate") {
+      const g = rotGroups[t.categoryId];
+      if (!g || !g.length) return false;
+      return g[dayNum % g.length].id === t.id;
+    }
+    return false;
+  });
+  out.sort((a, b) => {
+    const ca = catOrder.indexOf(a.categoryId), cb = catOrder.indexOf(b.categoryId);
+    if (ca !== cb) return ca - cb;
+    return data.tasks.indexOf(a) - data.tasks.indexOf(b);
+  });
+  return out;
+}
+
+function entriesFor(data, dateStr) { return (data.history && data.history[dateStr]) || []; }
+
+function dayStatus(data, dateStr, categoryId) {
+  let sched = scheduledTasks(data, dateStr);
+  if (categoryId) sched = sched.filter((t) => t.categoryId === categoryId);
+  if (!sched.length) return null; // nothing scheduled that day
+  const entries = entriesFor(data, dateStr);
+  return sched.every((t) => entries.some((e) => e.taskId === t.id && e.status === "done"));
+}
+
+function currentStreak(data, categoryId) {
+  if (!data) return 0;
+  const start = data.createdAt || todayKey();
+  let streak = 0;
+  const today = todayKey();
+  if (dayStatus(data, today, categoryId) === true) streak++;
+  let cursor = addDays(new Date(), -1);
+  for (let i = 0; i < 730; i++) {
+    const k = fmtKey(cursor);
+    if (k < start) break;
+    const s = dayStatus(data, k, categoryId);
+    if (s === false) break;
+    if (s === true) streak++;
+    cursor = addDays(cursor, -1);
+  }
+  return streak;
+}
+
+function bestStreak(data, categoryId) {
+  if (!data) return 0;
+  const start = new Date((data.createdAt || todayKey()) + "T12:00:00");
+  let best = 0, run = 0;
+  let cursor = start;
+  const end = todayKey();
+  for (let i = 0; i < 730; i++) {
+    const k = fmtKey(cursor);
+    if (k > end) break;
+    const s = dayStatus(data, k, categoryId);
+    if (s === true) { run++; best = Math.max(best, run); }
+    else if (s === false) run = 0;
+    cursor = addDays(cursor, 1);
+  }
+  return Math.max(best, run);
+}
+
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
+
+/* ————— Small pieces ————— */
+function CatDot({ color, size = 8 }) {
+  return <span style={{ width: size, height: size, borderRadius: 99, background: color, display: "inline-block", flexShrink: 0 }} />;
+}
+
+function Eyebrow({ children, color }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
+      <CatDot color={color} />
+      <span style={{ fontSize: 13, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 700, color: color }}>{children}</span>
+    </div>
+  );
+}
+
+function IconBtn({ onClick, label, children }) {
+  return (
+    <button aria-label={label} title={label} onClick={onClick} className="df-btn"
+      style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${LINE}`, background: CARD, color: INK, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+      {children}
+    </button>
+  );
+}
+
+function TextInput(props) {
+  return (
+    <input {...props}
+      style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff", fontSize: 16, fontFamily: "inherit", color: INK, boxSizing: "border-box", ...(props.style || {}) }} />
+  );
+}
+
+function PrimaryBtn({ onClick, children, color = INK, disabled, style }) {
+  return (
+    <button onClick={onClick} disabled={disabled} className="df-btn"
+      style={{ padding: "14px 22px", borderRadius: 14, border: "none", background: disabled ? "#B9C2B6" : color, color: "#FAFBF6", fontSize: 17, fontWeight: 700, cursor: disabled ? "default" : "pointer", fontFamily: "inherit", ...style }}>
+      {children}
+    </button>
+  );
+}
+
+function GhostBtn({ onClick, children, style }) {
+  return (
+    <button onClick={onClick} className="df-btn"
+      style={{ padding: "13px 20px", borderRadius: 14, border: `1px solid ${LINE}`, background: "transparent", color: INK, fontSize: 16, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", ...style }}>
+      {children}
+    </button>
+  );
+}
+
+function freqLabel(freq) {
+  if (freq.type === "daily") return "Every day";
+  if (freq.type === "rotate") return "Rotates";
+  const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  return (freq.days || []).map((d) => names[d]).join(" · ") || "No days set";
+}
+
+function FreqEditor({ freq, onChange }) {
+  const opts = [["daily", "Every day"], ["days", "Some days"], ["rotate", "Rotation"]];
+  return (
+    <div>
+      <div style={{ display: "flex", gap: 6 }}>
+        {opts.map(([v, label]) => (
+          <button key={v} onClick={() => onChange({ type: v, days: freq.days || [] })} className="df-btn"
+            style={{ flex: 1, padding: "9px 6px", borderRadius: 10, fontSize: 14, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${freq.type === v ? INK : LINE}`, background: freq.type === v ? INK : "transparent", color: freq.type === v ? "#FAFBF6" : INK }}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {freq.type === "days" && (
+        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+          {WEEKDAYS.map((w, i) => {
+            const on = (freq.days || []).includes(i);
+            return (
+              <button key={i} onClick={() => {
+                const days = on ? freq.days.filter((d) => d !== i) : [...(freq.days || []), i].sort();
+                onChange({ ...freq, days });
+              }} className="df-btn"
+                style={{ flex: 1, padding: "8px 0", borderRadius: 9, fontSize: 13, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${on ? INK : LINE}`, background: on ? INK : "transparent", color: on ? "#FAFBF6" : INK_SOFT }}>
+                {w}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {freq.type === "rotate" && (
+        <p style={{ fontSize: 13, color: INK_SOFT, margin: "8px 2px 0" }}>
+          Takes turns with other rotating tasks in the same category — only one appears per day.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ————— Task editor form ————— */
+function TaskForm({ categories, initial, onSave, onCancel }) {
+  const [name, setName] = useState(initial?.name || "");
+  const [note, setNote] = useState(initial?.note || "");
+  const [categoryId, setCategoryId] = useState(initial?.categoryId || categories[0]?.id);
+  const [freq, setFreq] = useState(initial?.freq || { type: "daily", days: [] });
+  return (
+    <div style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: 16, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+      <TextInput placeholder="Task name (e.g. 10-minute stretch)" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+      <TextInput placeholder="Note or instruction — optional" value={note} onChange={(e) => setNote(e.target.value)} />
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {categories.map((c) => (
+          <button key={c.id} onClick={() => setCategoryId(c.id)} className="df-btn"
+            style={{ display: "flex", alignItems: "center", gap: 7, padding: "8px 12px", borderRadius: 99, fontSize: 14, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${categoryId === c.id ? c.color : LINE}`, background: categoryId === c.id ? c.color + "1A" : "transparent", color: categoryId === c.id ? c.color : INK_SOFT }}>
+            <CatDot color={c.color} size={7} /> {c.name}
+          </button>
+        ))}
+      </div>
+      <FreqEditor freq={freq} onChange={setFreq} />
+      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+        {onCancel && <GhostBtn onClick={onCancel} style={{ padding: "10px 16px", fontSize: 15 }}>Cancel</GhostBtn>}
+        <PrimaryBtn disabled={!name.trim()} style={{ padding: "10px 18px", fontSize: 15 }}
+          onClick={() => onSave({ id: initial?.id || uid(), name: name.trim(), note: note.trim(), categoryId, freq })}>
+          {initial ? "Save changes" : "Add task"}
+        </PrimaryBtn>
+      </div>
+    </div>
+  );
+}
+
+/* ————— Profiles screen ————— */
+function ProfilesView({ profiles, onOpen, onCreate }) {
+  const [name, setName] = useState("");
+  return (
+    <div style={{ maxWidth: 440, margin: "0 auto", padding: "56px 20px", display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ textAlign: "center" }}>
+        <div className="df-display" style={{ fontSize: 44, fontWeight: 500, letterSpacing: "-0.01em" }}>Daily Flow</div>
+        <p style={{ color: INK_SOFT, fontSize: 16, marginTop: 8 }}>One thing at a time, every day.</p>
+      </div>
+      {profiles.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {profiles.map((p) => (
+            <button key={p.id} onClick={() => onOpen(p.id)} className="df-btn"
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 16, border: `1px solid ${LINE}`, background: CARD, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+              <span style={{ width: 40, height: 40, borderRadius: 99, background: INK, color: "#FAFBF6", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 17 }}>
+                {p.name.slice(0, 1).toUpperCase()}
+              </span>
+              <span style={{ fontSize: 18, fontWeight: 600, color: INK, flex: 1 }}>{p.name}</span>
+              <ArrowRight size={18} color={INK_SOFT} />
+            </button>
+          ))}
+        </div>
+      )}
+      <div style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: 16, padding: 16, display: "flex", gap: 10 }}>
+        <TextInput placeholder={profiles.length ? "New profile name" : "Your name"} value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && name.trim()) { onCreate(name.trim()); setName(""); } }} />
+        <PrimaryBtn disabled={!name.trim()} onClick={() => { onCreate(name.trim()); setName(""); }} style={{ padding: "10px 18px", fontSize: 15, whiteSpace: "nowrap" }}>
+          Start
+        </PrimaryBtn>
+      </div>
+      <p style={{ fontSize: 13, color: INK_SOFT, textAlign: "center" }}>
+        Each profile keeps its own tasks and history, separate from the others on this device.
+      </p>
+    </div>
+  );
+}
+
+/* ————— Setup flow ————— */
+function SetupView({ profileName, onFinish }) {
+  const [step, setStep] = useState(0);
+  const [cats, setCats] = useState(DEFAULT_CATEGORIES.map((c) => ({ ...c, on: true })));
+  const [customName, setCustomName] = useState("");
+  const [tasks, setTasks] = useState([]);
+  const [adding, setAdding] = useState(true);
+
+  const chosenCats = cats.filter((c) => c.on).map(({ on, hint, ...c }) => c);
+
+  const addCustom = () => {
+    if (!customName.trim()) return;
+    const color = CAT_COLORS[cats.length % CAT_COLORS.length].color;
+    setCats([...cats, { id: uid(), name: customName.trim(), color, hint: "your own category", on: true }]);
+    setCustomName("");
+  };
+
+  return (
+    <div style={{ maxWidth: 480, margin: "0 auto", padding: "40px 20px 80px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
+        {step > 0 && <IconBtn label="Back" onClick={() => setStep(step - 1)}><ChevronLeft size={18} /></IconBtn>}
+        <div>
+          <div style={{ fontSize: 13, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700, color: INK_SOFT }}>Setting up · {profileName}</div>
+          <div className="df-display" style={{ fontSize: 28, fontWeight: 500, marginTop: 2 }}>
+            {step === 0 ? "Pick your categories" : "Add your tasks"}
+          </div>
+        </div>
+      </div>
+
+      {step === 0 && (
+        <div className="df-card-in" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {cats.map((c, i) => (
+            <button key={c.id} onClick={() => setCats(cats.map((x, j) => (j === i ? { ...x, on: !x.on } : x)))} className="df-btn"
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 16, cursor: "pointer", fontFamily: "inherit", textAlign: "left", border: `1.5px solid ${c.on ? c.color : LINE}`, background: c.on ? c.color + "14" : CARD }}>
+              <CatDot color={c.color} size={12} />
+              <span style={{ flex: 1 }}>
+                <span style={{ fontSize: 17, fontWeight: 700, color: c.on ? c.color : INK }}>{c.name}</span>
+                <span style={{ display: "block", fontSize: 13.5, color: INK_SOFT }}>{c.hint}</span>
+              </span>
+              {c.on && <Check size={18} color={c.color} />}
+            </button>
+          ))}
+          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+            <TextInput placeholder="Add your own category" value={customName} onChange={(e) => setCustomName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addCustom()} />
+            <GhostBtn onClick={addCustom} style={{ padding: "10px 14px" }}><Plus size={18} /></GhostBtn>
+          </div>
+          <PrimaryBtn disabled={!chosenCats.length} onClick={() => setStep(1)} style={{ marginTop: 12 }}>
+            Continue
+          </PrimaryBtn>
+        </div>
+      )}
+
+      {step === 1 && (
+        <div className="df-card-in" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {tasks.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {tasks.map((t) => {
+                const cat = chosenCats.find((c) => c.id === t.categoryId);
+                return (
+                  <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: CARD, border: `1px solid ${LINE}` }}>
+                    <CatDot color={cat?.color || INK} />
+                    <span style={{ flex: 1 }}>
+                      <span style={{ fontWeight: 700, fontSize: 15.5 }}>{t.name}</span>
+                      <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>{cat?.name} · {freqLabel(t.freq)}</span>
+                    </span>
+                    <button aria-label="Remove task" onClick={() => setTasks(tasks.filter((x) => x.id !== t.id))}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 6 }}>
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {adding ? (
+            <TaskForm key={tasks.length} categories={chosenCats}
+              onSave={(t) => { setTasks([...tasks, t]); }}
+              onCancel={tasks.length ? () => setAdding(false) : null} />
+          ) : (
+            <GhostBtn onClick={() => setAdding(true)}><Plus size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />Add another task</GhostBtn>
+          )}
+          <PrimaryBtn disabled={!tasks.length} onClick={() => onFinish(chosenCats, tasks)} style={{ marginTop: 6 }}>
+            Start my flow{tasks.length ? ` · ${tasks.length} task${tasks.length > 1 ? "s" : ""}` : ""}
+          </PrimaryBtn>
+          <p style={{ fontSize: 13, color: INK_SOFT, textAlign: "center", margin: 0 }}>You can add, edit, or remove tasks any time.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ————— Progress dots ————— */
+function ProgressDots({ scheduled, entries, currentId }) {
+  return (
+    <div style={{ display: "flex", gap: 7, justifyContent: "center", flexWrap: "wrap", padding: "0 20px" }}>
+      {scheduled.map((t) => {
+        const e = entries.find((x) => x.taskId === t.id);
+        const isCurrent = t.id === currentId;
+        let style = { width: 9, height: 9, borderRadius: 99, transition: "all 300ms ease" };
+        if (e?.status === "done") style = { ...style, background: INK };
+        else if (e?.status === "skipped") style = { ...style, border: `1.5px solid ${INK_SOFT}`, background: "transparent", boxSizing: "border-box" };
+        else if (isCurrent) style = { ...style, width: 22, background: INK_SOFT, opacity: 0.55 };
+        else style = { ...style, background: INK, opacity: 0.16 };
+        return <span key={t.id} style={style} />;
+      })}
+    </div>
+  );
+}
+
+/* ————— Today (the heart) ————— */
+function TodayView({ data, persist, nav }) {
+  const tk = todayKey();
+  const scheduled = useMemo(() => scheduledTasks(data, tk), [data, tk]);
+  const entries = entriesFor(data, tk);
+  const remaining = scheduled.filter((t) => !entries.some((e) => e.taskId === t.id));
+  const [jumpId, setJumpId] = useState(null);
+  const [skipping, setSkipping] = useState(false);
+  const [skipText, setSkipText] = useState("");
+  const [celebrate, setCelebrate] = useState(false);
+  const [showOverview, setShowOverview] = useState(false);
+  const timer = useRef(null);
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  const current = remaining.find((t) => t.id === jumpId) || remaining[0] || null;
+  const cat = current ? data.categories.find((c) => c.id === current.categoryId) : null;
+  const doneCount = entries.filter((e) => e.status === "done").length;
+  const skipCount = entries.filter((e) => e.status === "skipped").length;
+
+  const record = (task, status, reason) => {
+    const history = { ...(data.history || {}) };
+    history[tk] = [...entriesFor(data, tk), { taskId: task.id, status, ...(reason ? { reason } : {}), at: Date.now() }];
+    persist({ ...data, history });
+    setJumpId(null); setSkipping(false); setSkipText("");
+  };
+
+  const markDone = () => {
+    if (!current) return;
+    setCelebrate(true);
+    const task = current;
+    timer.current = setTimeout(() => { setCelebrate(false); record(task, "done"); }, 620);
+  };
+
+  const bgTint = cat ? cat.color : INK;
+  const streak = currentStreak(data);
+
+  return (
+    <div className="df-fade-bg" style={{ minHeight: "100vh", background: `linear-gradient(175deg, ${bgTint}26 0%, ${BASE_BG} 46%)`, display: "flex", flexDirection: "column" }}>
+      {/* header */}
+      <div style={{ maxWidth: 520, width: "100%", margin: "0 auto", padding: "18px 20px 0", display: "flex", alignItems: "center", gap: 8, boxSizing: "border-box" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, color: INK_SOFT }}>{data.name}</div>
+          <div className="df-display" style={{ fontSize: 19, fontWeight: 500 }}>{niceDate(new Date())}</div>
+        </div>
+        <IconBtn label="Today's tasks" onClick={() => setShowOverview(true)}><List size={18} /></IconBtn>
+        <IconBtn label="Summary" onClick={() => nav("summary")}><BarChart3 size={18} /></IconBtn>
+        <IconBtn label="Manage" onClick={() => nav("manage")}><Settings size={18} /></IconBtn>
+      </div>
+
+      {/* main card area */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: 520, width: "100%", margin: "0 auto", padding: "24px 20px", boxSizing: "border-box" }}>
+        {scheduled.length === 0 ? (
+          <div className="df-card-in" style={{ textAlign: "center" }}>
+            <div className="df-display" style={{ fontSize: 30, fontWeight: 500 }}>Nothing scheduled today</div>
+            <p style={{ color: INK_SOFT, fontSize: 16, marginTop: 10 }}>Add tasks or adjust their days to fill your flow.</p>
+            <div style={{ marginTop: 18 }}><GhostBtn onClick={() => nav("manage")}>Manage tasks</GhostBtn></div>
+          </div>
+        ) : current ? (
+          <div key={current.id} className="df-card-in" style={{ textAlign: "center", position: "relative" }}>
+            <Eyebrow color={cat.color}>{cat.name}</Eyebrow>
+            <h1 className="df-display" style={{ fontSize: "clamp(34px, 9vw, 52px)", fontWeight: 500, lineHeight: 1.12, margin: "18px 0 0", letterSpacing: "-0.01em" }}>
+              {current.name}
+            </h1>
+            {current.note && <p style={{ fontSize: 17, color: INK_SOFT, marginTop: 14, lineHeight: 1.5 }}>{current.note}</p>}
+
+            {!skipping ? (
+              <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 40 }}>
+                <PrimaryBtn onClick={markDone} color={INK} style={{ minWidth: 150, fontSize: 18, padding: "16px 26px", borderRadius: 18 }}>
+                  <Check size={19} style={{ verticalAlign: "-4px", marginRight: 8 }} />Done
+                </PrimaryBtn>
+                <GhostBtn onClick={() => setSkipping(true)} style={{ minWidth: 110, padding: "15px 22px", borderRadius: 18 }}>Skip</GhostBtn>
+              </div>
+            ) : (
+              <div className="df-card-in" style={{ marginTop: 30, background: CARD, border: `1px solid ${LINE}`, borderRadius: 18, padding: 18, textAlign: "left" }}>
+                <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 10 }}>Skipping — any reason? <span style={{ fontWeight: 500, color: INK_SOFT }}>(optional)</span></div>
+                <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 10 }}>
+                  {SKIP_CHIPS.map((c) => (
+                    <button key={c} onClick={() => record(current, "skipped", c)} className="df-btn"
+                      style={{ padding: "8px 14px", borderRadius: 99, border: `1px solid ${LINE}`, background: "#fff", fontSize: 14, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", color: INK }}>
+                      {c}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <TextInput placeholder="Other reason…" value={skipText} onChange={(e) => setSkipText(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && skipText.trim()) record(current, "skipped", skipText.trim()); }} />
+                  {skipText.trim() && (
+                    <PrimaryBtn onClick={() => record(current, "skipped", skipText.trim())} style={{ padding: "10px 16px", fontSize: 15 }}>Save</PrimaryBtn>
+                  )}
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
+                  <button onClick={() => setSkipping(false)} style={{ background: "none", border: "none", color: INK_SOFT, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>Cancel</button>
+                  <button onClick={() => record(current, "skipped")} style={{ background: "none", border: "none", color: INK_SOFT, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>Skip without reason</button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="df-card-in" style={{ textAlign: "center" }}>
+            <div className="df-pop" style={{ width: 76, height: 76, borderRadius: 99, background: INK, color: "#FAFBF6", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+              <Check size={36} strokeWidth={2.5} />
+            </div>
+            <div className="df-display" style={{ fontSize: 36, fontWeight: 500 }}>Day complete</div>
+            <p style={{ color: INK_SOFT, fontSize: 16.5, marginTop: 10 }}>
+              {doneCount} done{skipCount ? `, ${skipCount} skipped` : ""}{streak > 1 ? ` · ${streak}-day streak` : ""}. See you tomorrow.
+            </p>
+            <div style={{ marginTop: 20 }}>
+              <GhostBtn onClick={() => nav("summary")}>View summary</GhostBtn>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* progress */}
+      {scheduled.length > 0 && (
+        <div style={{ paddingBottom: 26 }}>
+          <ProgressDots scheduled={scheduled} entries={entries} currentId={current?.id} />
+          <div style={{ textAlign: "center", fontSize: 13, color: INK_SOFT, marginTop: 8, fontWeight: 600 }}>
+            {doneCount + skipCount} of {scheduled.length} · {remaining.length} to go
+          </div>
+        </div>
+      )}
+
+      {/* done celebration overlay */}
+      {celebrate && (
+        <div className="df-veil" style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: BASE_BG + "AA", pointerEvents: "none", zIndex: 40 }}>
+          <div className="df-pop" style={{ width: 92, height: 92, borderRadius: 99, background: cat ? cat.color : INK, color: "#FAFBF6", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 12px 40px rgba(0,0,0,0.18)" }}>
+            <Check size={44} strokeWidth={2.5} />
+          </div>
+        </div>
+      )}
+
+      {/* overview sheet */}
+      {showOverview && (
+        <div className="df-veil" onClick={() => setShowOverview(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(30,42,34,0.35)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          <div onClick={(e) => e.stopPropagation()} className="df-card-in"
+            style={{ background: CARD, borderRadius: "22px 22px 0 0", width: "100%", maxWidth: 520, maxHeight: "72vh", overflowY: "auto", padding: "20px 20px 30px", boxSizing: "border-box" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <span className="df-display" style={{ fontSize: 21, fontWeight: 500 }}>Today</span>
+              <IconBtn label="Close" onClick={() => setShowOverview(false)}><X size={18} /></IconBtn>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {scheduled.map((t) => {
+                const e = entries.find((x) => x.taskId === t.id);
+                const c = data.categories.find((x) => x.id === t.categoryId);
+                const pending = !e;
+                return (
+                  <button key={t.id} disabled={!pending}
+                    onClick={() => { setJumpId(t.id); setSkipping(false); setShowOverview(false); }}
+                    className="df-btn"
+                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 14, border: `1px solid ${LINE}`, background: pending ? "#fff" : "transparent", cursor: pending ? "pointer" : "default", fontFamily: "inherit", textAlign: "left", opacity: pending ? 1 : 0.55 }}>
+                    <CatDot color={c?.color || INK} />
+                    <span style={{ flex: 1 }}>
+                      <span style={{ fontWeight: 700, fontSize: 15.5, textDecoration: e?.status === "done" ? "line-through" : "none" }}>{t.name}</span>
+                      <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>
+                        {e ? (e.status === "done" ? "Done" : `Skipped${e.reason ? ` · ${e.reason}` : ""}`) : c?.name}
+                      </span>
+                    </span>
+                    {e?.status === "done" && <Check size={16} color={INK_SOFT} />}
+                    {pending && <span style={{ fontSize: 13, fontWeight: 700, color: INK_SOFT }}>Do now</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ————— Summary ————— */
+function SummaryView({ data, nav }) {
+  const [range, setRange] = useState(7);
+  const days = useMemo(() => {
+    const out = [];
+    for (let i = range - 1; i >= 0; i--) {
+      const d = addDays(new Date(), -i);
+      const k = fmtKey(d);
+      if (data.createdAt && k < data.createdAt) continue;
+      const sched = scheduledTasks(data, k);
+      const entries = entriesFor(data, k);
+      const done = sched.filter((t) => entries.some((e) => e.taskId === t.id && e.status === "done")).length;
+      out.push({ key: k, date: d, scheduled: sched, entries, done });
+    }
+    return out;
+  }, [data, range]);
+
+  const totSched = days.reduce((s, d) => s + d.scheduled.length, 0);
+  const totDone = days.reduce((s, d) => s + d.done, 0);
+  const pct = totSched ? Math.round((totDone / totSched) * 100) : 0;
+
+  const skipCounts = useMemo(() => {
+    const m = {};
+    days.forEach((d) => d.entries.forEach((e) => {
+      if (e.status === "skipped") { const r = e.reason || "No reason given"; m[r] = (m[r] || 0) + 1; }
+    }));
+    return Object.entries(m).sort((a, b) => b[1] - a[1]);
+  }, [days]);
+
+  const taskStats = useMemo(() => data.tasks.map((t) => {
+    let sched = 0, done = 0;
+    days.forEach((d) => {
+      if (d.scheduled.some((s) => s.id === t.id)) {
+        sched++;
+        if (d.entries.some((e) => e.taskId === t.id && e.status === "done")) done++;
+      }
+    });
+    return { task: t, sched, done };
+  }).filter((s) => s.sched > 0), [data, days]);
+
+  const cur = currentStreak(data), best = bestStreak(data);
+
+  const Section = ({ title, children }) => (
+    <div style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: 18, padding: 18 }}>
+      <div style={{ fontSize: 13, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700, color: INK_SOFT, marginBottom: 12 }}>{title}</div>
+      {children}
+    </div>
+  );
+
+  return (
+    <div style={{ minHeight: "100vh", background: BASE_BG }}>
+      <div style={{ maxWidth: 520, margin: "0 auto", padding: "18px 20px 60px", boxSizing: "border-box" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+          <IconBtn label="Back to today" onClick={() => nav("today")}><ChevronLeft size={18} /></IconBtn>
+          <div className="df-display" style={{ fontSize: 26, fontWeight: 500, flex: 1 }}>Summary</div>
+          <div style={{ display: "flex", gap: 5, background: CARD, border: `1px solid ${LINE}`, borderRadius: 12, padding: 4 }}>
+            {[[7, "Week"], [30, "Month"]].map(([v, l]) => (
+              <button key={v} onClick={() => setRange(v)} className="df-btn"
+                style={{ padding: "6px 12px", borderRadius: 9, border: "none", fontSize: 13.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", background: range === v ? INK : "transparent", color: range === v ? "#FAFBF6" : INK_SOFT }}>
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <Section title="Completion">
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+              <span className="df-display" style={{ fontSize: 42, fontWeight: 500 }}>{pct}%</span>
+              <span style={{ fontSize: 14.5, color: INK_SOFT }}>{totDone} of {totSched} scheduled tasks, last {range} days</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: range === 7 ? 8 : 3, height: 72, marginTop: 14 }}>
+              {days.map((d) => {
+                const p = d.scheduled.length ? d.done / d.scheduled.length : null;
+                return (
+                  <div key={d.key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+                    <div style={{ width: "100%", height: 56, background: INK + "14", borderRadius: 6, display: "flex", alignItems: "flex-end", overflow: "hidden" }}>
+                      {p != null && <div style={{ width: "100%", height: `${Math.max(p * 100, 4)}%`, background: p === 1 ? INK : INK_SOFT, borderRadius: 6, transition: "height 400ms ease" }} />}
+                    </div>
+                    {range === 7 && <span style={{ fontSize: 11.5, fontWeight: 700, color: INK_SOFT }}>{"SMTWTFS"[d.date.getDay()]}</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </Section>
+
+          <Section title="Streaks">
+            <div style={{ display: "flex", gap: 24, marginBottom: 12 }}>
+              <div><span className="df-display" style={{ fontSize: 34, fontWeight: 500 }}>{cur}</span><span style={{ fontSize: 14, color: INK_SOFT, marginLeft: 7 }}>current</span></div>
+              <div><span className="df-display" style={{ fontSize: 34, fontWeight: 500 }}>{best}</span><span style={{ fontSize: 14, color: INK_SOFT, marginLeft: 7 }}>best</span></div>
+            </div>
+            <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+              {data.categories.map((c) => (
+                <span key={c.id} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 12px", borderRadius: 99, background: c.color + "16", color: c.color, fontSize: 13.5, fontWeight: 700 }}>
+                  <CatDot color={c.color} size={7} /> {c.name} · {currentStreak(data, c.id)}
+                </span>
+              ))}
+            </div>
+            <p style={{ fontSize: 12.5, color: INK_SOFT, margin: "10px 0 0" }}>A day counts toward a streak when everything scheduled that day is done.</p>
+          </Section>
+
+          <Section title="Why tasks were skipped">
+            {skipCounts.length === 0 ? (
+              <p style={{ fontSize: 15, color: INK_SOFT, margin: 0 }}>No skips in this period.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                {skipCounts.map(([reason, n]) => (
+                  <div key={reason} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ flex: 1, fontSize: 15.5, fontWeight: 600 }}>{reason}</span>
+                    <div style={{ width: 110, height: 8, background: INK + "14", borderRadius: 99 }}>
+                      <div style={{ width: `${Math.min((n / skipCounts[0][1]) * 100, 100)}%`, height: "100%", background: INK_SOFT, borderRadius: 99 }} />
+                    </div>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: INK_SOFT, width: 26, textAlign: "right" }}>{n}×</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
+
+          <Section title="By task">
+            {taskStats.length === 0 ? (
+              <p style={{ fontSize: 15, color: INK_SOFT, margin: 0 }}>Nothing scheduled in this period yet.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+                {taskStats.map(({ task, sched, done }) => {
+                  const c = data.categories.find((x) => x.id === task.categoryId);
+                  return (
+                    <div key={task.id}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 4 }}>
+                        <CatDot color={c?.color || INK} size={7} />
+                        <span style={{ flex: 1, fontSize: 15.5, fontWeight: 600 }}>{task.name}</span>
+                        <span style={{ fontSize: 13.5, fontWeight: 700, color: INK_SOFT }}>done {done}/{sched} days</span>
+                      </div>
+                      <div style={{ height: 7, background: INK + "12", borderRadius: 99 }}>
+                        <div style={{ width: `${sched ? (done / sched) * 100 : 0}%`, height: "100%", background: c?.color || INK, borderRadius: 99, transition: "width 400ms ease" }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Section>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ————— Manage ————— */
+function ManageView({ data, persist, nav, onSwitchProfile }) {
+  const [editingId, setEditingId] = useState(null);
+  const [addingCat, setAddingCat] = useState(false);
+  const [newCat, setNewCat] = useState("");
+  const [addingTask, setAddingTask] = useState(false);
+
+  const saveTask = (t) => {
+    const exists = data.tasks.some((x) => x.id === t.id);
+    const tasks = exists ? data.tasks.map((x) => (x.id === t.id ? t : x)) : [...data.tasks, t];
+    persist({ ...data, tasks });
+    setEditingId(null); setAddingTask(false);
+  };
+  const deleteTask = (id) => persist({ ...data, tasks: data.tasks.filter((t) => t.id !== id) });
+  const addCategory = () => {
+    if (!newCat.trim()) return;
+    const color = CAT_COLORS[data.categories.length % CAT_COLORS.length].color;
+    persist({ ...data, categories: [...data.categories, { id: uid(), name: newCat.trim(), color }] });
+    setNewCat(""); setAddingCat(false);
+  };
+  const deleteCategory = (id) => {
+    const cat = data.categories.find((c) => c.id === id);
+    const n = data.tasks.filter((t) => t.categoryId === id).length;
+    if (!window.confirm(`Remove "${cat?.name}"${n ? ` and its ${n} task${n > 1 ? "s" : ""}` : ""}? History stays in your summary.`)) return;
+    persist({ ...data, categories: data.categories.filter((c) => c.id !== id), tasks: data.tasks.filter((t) => t.categoryId !== id) });
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: BASE_BG }}>
+      <div style={{ maxWidth: 520, margin: "0 auto", padding: "18px 20px 60px", boxSizing: "border-box" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+          <IconBtn label="Back to today" onClick={() => nav("today")}><ChevronLeft size={18} /></IconBtn>
+          <div className="df-display" style={{ fontSize: 26, fontWeight: 500, flex: 1 }}>Manage</div>
+          <GhostBtn onClick={onSwitchProfile} style={{ padding: "9px 14px", fontSize: 14 }}>
+            <Users size={15} style={{ verticalAlign: "-2px", marginRight: 7 }} />Switch profile
+          </GhostBtn>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {data.categories.map((c) => {
+            const tasks = data.tasks.filter((t) => t.categoryId === c.id);
+            return (
+              <div key={c.id}>
+                <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 9 }}>
+                  <CatDot color={c.color} size={10} />
+                  <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: c.color, flex: 1 }}>{c.name}</span>
+                  <button aria-label={`Remove ${c.name}`} onClick={() => deleteCategory(c.id)}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 4 }}>
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {tasks.length === 0 && <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 2px 2px" }}>No tasks yet.</p>}
+                  {tasks.map((t) => editingId === t.id ? (
+                    <TaskForm key={t.id} categories={data.categories} initial={t} onSave={saveTask} onCancel={() => setEditingId(null)} />
+                  ) : (
+                    <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 14, background: CARD, border: `1px solid ${LINE}` }}>
+                      <span style={{ flex: 1 }}>
+                        <span style={{ fontWeight: 700, fontSize: 15.5 }}>{t.name}</span>
+                        <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>{freqLabel(t.freq)}{t.note ? ` · ${t.note}` : ""}</span>
+                      </span>
+                      <button aria-label="Edit task" onClick={() => setEditingId(t.id)} style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 5 }}><Pencil size={15} /></button>
+                      <button aria-label="Delete task" onClick={() => deleteTask(t.id)} style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 5 }}><Trash2 size={15} /></button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+          {addingTask ? (
+            <TaskForm categories={data.categories} onSave={saveTask} onCancel={() => setAddingTask(false)} />
+          ) : (
+            <GhostBtn onClick={() => setAddingTask(true)}><Plus size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />Add task</GhostBtn>
+          )}
+
+          {addingCat ? (
+            <div style={{ display: "flex", gap: 8 }}>
+              <TextInput placeholder="Category name" value={newCat} autoFocus onChange={(e) => setNewCat(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addCategory()} />
+              <PrimaryBtn disabled={!newCat.trim()} onClick={addCategory} style={{ padding: "10px 16px", fontSize: 15 }}>Add</PrimaryBtn>
+            </div>
+          ) : (
+            <button onClick={() => setAddingCat(true)} style={{ background: "none", border: "none", color: INK_SOFT, fontSize: 14.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: 4, textAlign: "center" }}>
+              + Add a category
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ————— App shell ————— */
+function DailyFlow() {
+  const [view, setView] = useState("loading");
+  const [profiles, setProfiles] = useState([]);
+  const [activeId, setActiveId] = useState(null);
+  const [data, setData] = useState(null);
+  const [pendingProfile, setPendingProfile] = useState(null); // {id, name} during setup
+
+  useEffect(() => {
+    (async () => {
+      const ps = await loadKey("flow:profiles", []);
+      setProfiles(ps);
+      const act = await loadKey("flow:active", null);
+      if (act && ps.some((p) => p.id === act)) {
+        const d = await loadKey("flow:p:" + act, null);
+        if (d) { setActiveId(act); setData(d); setView("today"); return; }
+      }
+      setView("profiles");
+    })();
+  }, []);
+
+  const persist = (next) => { setData(next); saveKey("flow:p:" + activeId, next); };
+
+  const openProfile = async (id) => {
+    const d = await loadKey("flow:p:" + id, null);
+    if (!d) return;
+    setActiveId(id); setData(d); saveKey("flow:active", id); setView("today");
+  };
+
+  const createProfile = (name) => {
+    const p = { id: uid(), name };
+    setPendingProfile(p);
+    setView("setup");
+  };
+
+  const finishSetup = async (categories, tasks) => {
+    const p = pendingProfile;
+    const nextProfiles = [...profiles, p];
+    const d = { name: p.name, categories, tasks, history: {}, createdAt: todayKey() };
+    setProfiles(nextProfiles);
+    await saveKey("flow:profiles", nextProfiles);
+    await saveKey("flow:p:" + p.id, d);
+    await saveKey("flow:active", p.id);
+    setActiveId(p.id); setData(d); setPendingProfile(null); setView("today");
+  };
+
+  const switchProfile = () => { setActiveId(null); setData(null); saveKey("flow:active", null); setView("profiles"); };
+
+  return (
+    <div className="df-root" style={{ minHeight: "100vh", background: BASE_BG }}>
+      <style>{GLOBAL_CSS}</style>
+      {view === "loading" && (
+        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: INK_SOFT, fontSize: 15, fontWeight: 600 }}>
+          Opening your flow…
+        </div>
+      )}
+      {view === "profiles" && <ProfilesView profiles={profiles} onOpen={openProfile} onCreate={createProfile} />}
+      {view === "setup" && pendingProfile && <SetupView profileName={pendingProfile.name} onFinish={finishSetup} />}
+      {view === "today" && data && <TodayView data={data} persist={persist} nav={setView} />}
+      {view === "summary" && data && <SummaryView data={data} nav={setView} />}
+      {view === "manage" && data && <ManageView data={data} persist={persist} nav={setView} onSwitchProfile={switchProfile} />}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(DailyFlow));
+</script>
+</body>
+</html>
