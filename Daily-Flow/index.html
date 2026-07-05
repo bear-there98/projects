@@ -15,11 +15,14 @@
 <body>
 <div id="root"></div>
 <script>
-  /* localStorage-backed shim for the app's async storage API */
+  /* localStorage-backed shim for the app's async storage API.
+     `{ shared: true }` namespaces to a "shared::" prefix. In this static
+     build there is no backend, so "shared" keys are only shared within the
+     same browser; a hosted deployment would back these with a real store. */
   window.storage = {
-    async get(key) { const v = localStorage.getItem(key); return v == null ? null : { value: v }; },
-    async set(key, val) { localStorage.setItem(key, String(val)); },
-    async delete(key) { localStorage.removeItem(key); },
+    async get(key, opts) { const k = opts && opts.shared ? "shared::" + key : key; const v = localStorage.getItem(k); return v == null ? null : { value: v }; },
+    async set(key, val, opts) { const k = opts && opts.shared ? "shared::" + key : key; localStorage.setItem(k, String(val)); },
+    async delete(key, opts) { const k = opts && opts.shared ? "shared::" + key : key; localStorage.removeItem(k); },
   };
 </script>
 <script type="text/babel" data-presets="react">
@@ -77,6 +80,9 @@ const DEFAULT_CATEGORIES = [
 
 const SKIP_CHIPS = ["No time", "Not feeling it", "Forgot"];
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
+
+// Monopoly-style tokens — a fixed set; each can be claimed by only one profile.
+const TOKENS = ["🐢", "🦊", "🦉", "🐙", "🦄", "🐝", "🐳", "🦁", "🐧", "🦋", "🚀", "🎩"];
 
 const GLOBAL_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Karla:wght@400;500;600;700&display=swap');
@@ -150,6 +156,20 @@ async function saveKey(key, val) {
   catch (e) { console.error("save failed", e); }
 }
 
+// Shared store — visible to every user of this artifact (opt-in feed only).
+async function loadShared(key, fallback) {
+  try {
+    const r = await window.storage.get(key, { shared: true });
+    return r && r.value != null ? JSON.parse(r.value) : fallback;
+  } catch { return fallback; }
+}
+async function saveShared(key, val) {
+  try { await window.storage.set(key, JSON.stringify(val), { shared: true }); }
+  catch (e) { console.error("shared save failed", e); }
+}
+const FEED_KEY = "feed";
+const FEED_CAP = 50;
+
 /* ————— Dates ————— */
 const fmtKey = (d) => {
   const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");
@@ -161,6 +181,14 @@ const daysUntil = (dateStr) =>
   Math.round((new Date(dateStr + "T12:00:00") - new Date(todayKey() + "T12:00:00")) / 86400000);
 // Seconds -> "m:ss".
 const fmtClock = (s) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.max(0, s) % 60).padStart(2, "0")}`;
+// Timestamp -> "just now" / "5m ago" / "3h ago" / "2d ago".
+const timeAgo = (ts) => {
+  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+};
 const addDays = (d, n) => { const c = new Date(d); c.setDate(c.getDate() + n); return c; };
 const niceDate = (d) => d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
@@ -532,36 +560,67 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [] }) {
 /* ————— Profiles screen ————— */
 function ProfilesView({ profiles, onOpen, onCreate }) {
   const [name, setName] = useState("");
+  const [selectedToken, setSelectedToken] = useState(null);
+  const owners = {}; // token -> profile
+  profiles.forEach((p) => { if (p.token) owners[p.token] = p; });
+  const legacy = profiles.filter((p) => !p.token); // profiles created before tokens
+  const pick = (tok) => { setSelectedToken(tok); setName(""); };
+  const claim = () => { if (selectedToken && name.trim()) { onCreate(name.trim(), selectedToken); setName(""); setSelectedToken(null); } };
+
   return (
-    <div style={{ maxWidth: 440, margin: "0 auto", padding: "56px 20px", display: "flex", flexDirection: "column", gap: 24 }}>
+    <div style={{ maxWidth: 460, margin: "0 auto", padding: "56px 20px", display: "flex", flexDirection: "column", gap: 22 }}>
       <div style={{ textAlign: "center" }}>
         <div className="df-display" style={{ fontSize: 44, fontWeight: 500, letterSpacing: "-0.01em" }}>Daily Flow</div>
-        <p style={{ color: INK_SOFT, fontSize: 16, marginTop: 8 }}>One thing at a time, every day.</p>
+        <p style={{ color: INK_SOFT, fontSize: 16, marginTop: 8 }}>Pick your token to begin — or tap yours to continue.</p>
       </div>
-      {profiles.length > 0 && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {profiles.map((p) => (
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+        {TOKENS.map((tok) => {
+          const owner = owners[tok];
+          const selected = selectedToken === tok;
+          return (
+            <button key={tok} className="df-btn"
+              onClick={() => (owner ? onOpen(owner.id) : pick(tok))}
+              aria-label={owner ? `Open ${owner.name}` : `Claim ${tok}`}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, aspectRatio: "1 / 1",
+                borderRadius: 16, cursor: "pointer", fontFamily: "inherit",
+                border: `1.5px solid ${selected ? INK : owner ? LINE : LINE}`,
+                background: selected ? INK + "0D" : owner ? CARD : "#fff",
+                opacity: owner || selected || !selectedToken ? 1 : 0.55 }}>
+              <span style={{ fontSize: 30, lineHeight: 1 }}>{tok}</span>
+              {owner
+                ? <span style={{ fontSize: 11, fontWeight: 700, color: INK_SOFT, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 4px" }}>{owner.name}</span>
+                : <span style={{ fontSize: 10.5, fontWeight: 600, color: selected ? INK : "#9AA79C" }}>{selected ? "picked" : "free"}</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      {selectedToken && (
+        <div className="df-card-in" style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: 16, padding: 16, display: "flex", gap: 10, alignItems: "center" }}>
+          <span style={{ fontSize: 30, lineHeight: 1 }}>{selectedToken}</span>
+          <TextInput placeholder="Your name" value={name} autoFocus
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") claim(); }} />
+          <PrimaryBtn disabled={!name.trim()} onClick={claim} style={{ padding: "10px 18px", fontSize: 15, whiteSpace: "nowrap" }}>Claim</PrimaryBtn>
+        </div>
+      )}
+
+      {legacy.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {legacy.map((p) => (
             <button key={p.id} onClick={() => onOpen(p.id)} className="df-btn"
-              style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 16, border: `1px solid ${LINE}`, background: CARD, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
-              <span style={{ width: 40, height: 40, borderRadius: 99, background: INK, color: "#FAFBF6", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 17 }}>
-                {p.name.slice(0, 1).toUpperCase()}
-              </span>
-              <span style={{ fontSize: 18, fontWeight: 600, color: INK, flex: 1 }}>{p.name}</span>
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 14, border: `1px solid ${LINE}`, background: CARD, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+              <span style={{ width: 34, height: 34, borderRadius: 99, background: INK, color: "#FAFBF6", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15 }}>{p.name.slice(0, 1).toUpperCase()}</span>
+              <span style={{ fontSize: 16, fontWeight: 600, color: INK, flex: 1 }}>{p.name}</span>
               <ArrowRight size={18} color={INK_SOFT} />
             </button>
           ))}
         </div>
       )}
-      <div style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: 16, padding: 16, display: "flex", gap: 10 }}>
-        <TextInput placeholder={profiles.length ? "New profile name" : "Your name"} value={name}
-          onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && name.trim()) { onCreate(name.trim()); setName(""); } }} />
-        <PrimaryBtn disabled={!name.trim()} onClick={() => { onCreate(name.trim()); setName(""); }} style={{ padding: "10px 18px", fontSize: 15, whiteSpace: "nowrap" }}>
-          Start
-        </PrimaryBtn>
-      </div>
+
       <p style={{ fontSize: 13, color: INK_SOFT, textAlign: "center" }}>
-        Each profile keeps its own tasks and history, separate from the others on this device.
+        Each token belongs to one profile, with its own tasks and history.
       </p>
     </div>
   );
@@ -678,7 +737,7 @@ function ProgressDots({ scheduled, entries, currentId }) {
 }
 
 /* ————— Today (the heart) ————— */
-function TodayView({ data, persist, nav }) {
+function TodayView({ data, persist, nav, profileId, token }) {
   const tk = todayKey();
   const scheduled = useMemo(() => scheduledTasks(data, tk), [data, tk]);
   const entries = entriesFor(data, tk);
@@ -715,6 +774,23 @@ function TodayView({ data, persist, nav }) {
   const doneCount = entries.filter((e) => e.status === "done").length;
   const skipCount = entries.filter((e) => e.status === "skipped").length;
 
+  // Opt-in only: post completed tasks to the shared feed. Never includes
+  // skip reasons or notes — just token, task name, category, and time.
+  const shareCompletions = async (list) => {
+    if (!data.settings || !data.settings.shareActivity) return;
+    try {
+      const feed = await loadShared(FEED_KEY, []);
+      const events = list.map((t) => ({
+        profileId, token,
+        taskName: t.name,
+        category: (data.categories.find((c) => c.id === t.categoryId) || {}).name || null,
+        timestamp: Date.now(),
+      }));
+      const next = [...(Array.isArray(feed) ? feed : []), ...events].slice(-FEED_CAP);
+      await saveShared(FEED_KEY, next);
+    } catch (e) { console.error("feed share failed", e); }
+  };
+
   // Logs one entry per task (paired cards log both at once), persists once.
   const record = (tasks, status, reason, spentMap) => {
     const list = Array.isArray(tasks) ? tasks : [tasks];
@@ -723,6 +799,7 @@ function TodayView({ data, persist, nav }) {
     const history = { ...(data.history || {}) };
     history[tk] = [...entriesFor(data, tk), ...added];
     persist({ ...data, history });
+    if (status === "done") shareCompletions(list);
     setJumpId(null); setSkipping(false); setSkipText(""); setTimerStart(null);
     const label = list.length > 1
       ? (status === "done" ? "Logged both tasks" : "Skipped both tasks")
@@ -778,6 +855,7 @@ function TodayView({ data, persist, nav }) {
         </button>
         <IconBtn label="Today's tasks" onClick={() => setShowOverview(true)}><List size={18} /></IconBtn>
         <IconBtn label="Calendar" onClick={() => nav("calendar")}><Calendar size={18} /></IconBtn>
+        <IconBtn label="Activity feed" onClick={() => nav("feed")}><Users size={18} /></IconBtn>
         <IconBtn label="Summary" onClick={() => nav("summary")}><BarChart3 size={18} /></IconBtn>
         <IconBtn label="Manage" onClick={() => nav("manage")}><Settings size={18} /></IconBtn>
       </div>
@@ -1365,6 +1443,28 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
           </div>
 
           <div style={{ marginTop: 6, paddingTop: 20, borderTop: `1px solid ${LINE}` }}>
+            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>Sharing</div>
+            <button onClick={() => persist({ ...data, settings: { ...(data.settings || {}), shareActivity: !(data.settings && data.settings.shareActivity) } })} className="df-btn"
+              style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 14, border: `1px solid ${LINE}`, background: "#fff", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+              <span style={{ flex: 1 }}>
+                <span style={{ fontWeight: 700, fontSize: 15.5 }}>Share my activity</span>
+                <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>Post my completed tasks to the shared feed</span>
+              </span>
+              {(() => {
+                const on = !!(data.settings && data.settings.shareActivity);
+                return (
+                  <span style={{ width: 46, height: 27, borderRadius: 99, flexShrink: 0, background: on ? "#3F7D6A" : "#C3CCBE", position: "relative", transition: "background 200ms ease" }}>
+                    <span style={{ position: "absolute", top: 3, left: on ? 22 : 3, width: 21, height: 21, borderRadius: 99, background: "#fff", transition: "left 200ms ease" }} />
+                  </span>
+                );
+              })()}
+            </button>
+            <p style={{ fontSize: 12.5, color: INK_SOFT, margin: "10px 2px 0", lineHeight: 1.5 }}>
+              When on, each task you finish is posted to a feed <strong>visible to all users of this artifact</strong> — your token, the task name, its category, and the time. Skip reasons and notes are never shared. Default is off.
+            </p>
+          </div>
+
+          <div style={{ marginTop: 6, paddingTop: 20, borderTop: `1px solid ${LINE}` }}>
             <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>Backup</div>
             <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 12px" }}>Save this profile to a file, or restore it from a backup.</p>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -1528,6 +1628,50 @@ function DayDetailSheet({ data, dateStr, onClose }) {
   );
 }
 
+/* ————— Shared activity feed ————— */
+function FeedView({ nav }) {
+  const [events, setEvents] = useState(null); // null = loading
+  const load = async () => {
+    const f = await loadShared(FEED_KEY, []);
+    setEvents(Array.isArray(f) ? f.slice().reverse() : []);
+  };
+  useEffect(() => { load(); }, []);
+
+  return (
+    <div style={{ minHeight: "100vh", background: BASE_BG }}>
+      <div style={{ maxWidth: 520, margin: "0 auto", padding: "18px 20px 60px", boxSizing: "border-box" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+          <IconBtn label="Back to today" onClick={() => nav("today")}><ChevronLeft size={18} /></IconBtn>
+          <div className="df-display" style={{ fontSize: 26, fontWeight: 500, flex: 1 }}>Activity</div>
+          <IconBtn label="Refresh" onClick={load}><ArrowRight size={18} /></IconBtn>
+        </div>
+        <p style={{ fontSize: 12.5, color: INK_SOFT, margin: "0 0 16px", lineHeight: 1.5 }}>
+          Recent completions from everyone sharing activity. Visible to all users of this artifact. Turn sharing on in Manage → Sharing.
+        </p>
+
+        {events === null ? (
+          <p style={{ fontSize: 15, color: INK_SOFT }}>Loading…</p>
+        ) : events.length === 0 ? (
+          <p style={{ fontSize: 15, color: INK_SOFT }}>No shared activity yet. When people opt in, their completed tasks show up here.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {events.map((e, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 14, border: `1px solid ${LINE}`, background: CARD }}>
+                <span style={{ fontSize: 26, lineHeight: 1, flexShrink: 0 }}>{e.token || "🙂"}</span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ fontWeight: 700, fontSize: 15.5, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.taskName}</span>
+                  <span style={{ fontSize: 13, color: INK_SOFT }}>{e.category ? `${e.category} · ` : ""}{timeAgo(e.timestamp)}</span>
+                </span>
+                <Check size={16} color={CAL_COLORS.all} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ————— App shell ————— */
 function DailyFlow() {
   const [view, setView] = useState("loading");
@@ -1557,8 +1701,8 @@ function DailyFlow() {
     setActiveId(id); setData(d); saveKey("flow:active", id); setView("today");
   };
 
-  const createProfile = (name) => {
-    const p = { id: uid(), name };
+  const createProfile = (name, token) => {
+    const p = { id: uid(), name, token: token || null };
     setPendingProfile(p);
     setView("setup");
   };
@@ -1576,6 +1720,9 @@ function DailyFlow() {
 
   const switchProfile = () => { setActiveId(null); setData(null); saveKey("flow:active", null); setView("profiles"); };
 
+  const activeProfile = profiles.find((p) => p.id === activeId);
+  const activeToken = (activeProfile && activeProfile.token) || null;
+
   return (
     <div className="df-root" style={{ minHeight: "100vh", background: BASE_BG }}>
       <style>{GLOBAL_CSS}</style>
@@ -1586,8 +1733,9 @@ function DailyFlow() {
       )}
       {view === "profiles" && <ProfilesView profiles={profiles} onOpen={openProfile} onCreate={createProfile} />}
       {view === "setup" && pendingProfile && <SetupView profileName={pendingProfile.name} onFinish={finishSetup} />}
-      {view === "today" && data && <TodayView data={data} persist={persist} nav={setView} />}
+      {view === "today" && data && <TodayView data={data} persist={persist} nav={setView} profileId={activeId} token={activeToken} />}
       {view === "calendar" && data && <CalendarView data={data} nav={setView} />}
+      {view === "feed" && data && <FeedView nav={setView} />}
       {view === "summary" && data && <SummaryView data={data} nav={setView} />}
       {view === "manage" && data && <ManageView data={data} persist={persist} nav={setView} onSwitchProfile={switchProfile} />}
     </div>
