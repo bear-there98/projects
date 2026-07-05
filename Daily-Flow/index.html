@@ -47,6 +47,7 @@ const Users = svgIcon('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><cir
 const ArrowRight = svgIcon('<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>');
 const Pencil = svgIcon('<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>');
 const Calendar = svgIcon('<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>');
+const Star = svgIcon('<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>');
 
 /* ————— Daily Flow app ————— */
 
@@ -202,6 +203,25 @@ function onceDone(data, taskId) {
   }
   return false;
 }
+
+/* ————— Reward points ————— */
+// A done task earns 1 point, or 2 if flagged urgent-important.
+function taskPoints(task) { return task && task.priority === "urgent-important" ? 2 : 1; }
+function pointsEarned(data) {
+  let pts = 0;
+  const h = (data && data.history) || {};
+  for (const k in h) for (const e of h[k]) {
+    if (e && e.status === "done") pts += taskPoints(data.tasks.find((t) => t.id === e.taskId));
+  }
+  return pts;
+}
+function pointsRedeemed(data) {
+  let c = 0;
+  const h = (data && data.history) || {};
+  for (const k in h) for (const e of h[k]) if (e && e.kind === "redeem") c += e.cost || 0;
+  return c;
+}
+function pointsBalance(data) { return pointsEarned(data) - pointsRedeemed(data); }
 
 function scheduledTasks(data, dateStr) {
   if (!data) return [];
@@ -668,6 +688,7 @@ function TodayView({ data, persist, nav }) {
   const [skipText, setSkipText] = useState("");
   const [celebrate, setCelebrate] = useState(false);
   const [showOverview, setShowOverview] = useState(false);
+  const [showRewards, setShowRewards] = useState(false);
   const [undo, setUndo] = useState(null); // { label } for the most recent entry
   const [subChecks, setSubChecks] = useState({}); // subtaskId -> true, for the current task
   const [timerStart, setTimerStart] = useState(null); // ms when the countdown began, or null
@@ -733,6 +754,15 @@ function TodayView({ data, persist, nav }) {
 
   const bgTint = cat ? cat.color : INK;
   const streak = currentStreak(data);
+  const points = pointsBalance(data);
+
+  const redeem = (reward) => {
+    if (!reward || points < reward.cost) return;
+    const k = todayKey();
+    const history = { ...(data.history || {}) };
+    history[k] = [...entriesFor(data, k), { kind: "redeem", rewardId: reward.id, name: reward.name, cost: reward.cost, at: Date.now() }];
+    persist({ ...data, history });
+  };
 
   return (
     <div className="df-fade-bg" style={{ minHeight: "100vh", background: `linear-gradient(175deg, ${bgTint}26 0%, ${BASE_BG} 46%)`, display: "flex", flexDirection: "column" }}>
@@ -742,6 +772,10 @@ function TodayView({ data, persist, nav }) {
           <div style={{ fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, color: INK_SOFT }}>{data.name}</div>
           <div className="df-display" style={{ fontSize: 19, fontWeight: 500 }}>{niceDate(new Date())}</div>
         </div>
+        <button onClick={() => setShowRewards(true)} aria-label="Rewards" className="df-btn"
+          style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 11px", borderRadius: 999, border: `1px solid ${LINE}`, background: "transparent", color: INK_SOFT, fontSize: 13.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
+          <Star size={13} color="#8F6E22" /> {points}
+        </button>
         <IconBtn label="Today's tasks" onClick={() => setShowOverview(true)}><List size={18} /></IconBtn>
         <IconBtn label="Calendar" onClick={() => nav("calendar")}><Calendar size={18} /></IconBtn>
         <IconBtn label="Summary" onClick={() => nav("summary")}><BarChart3 size={18} /></IconBtn>
@@ -936,6 +970,42 @@ function TodayView({ data, persist, nav }) {
         </div>
       )}
 
+      {/* rewards sheet */}
+      {showRewards && (
+        <div className="df-veil" onClick={() => setShowRewards(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(30,42,34,0.35)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          <div onClick={(e) => e.stopPropagation()} className="df-card-in"
+            style={{ background: CARD, borderRadius: "22px 22px 0 0", width: "100%", maxWidth: 520, maxHeight: "72vh", overflowY: "auto", padding: "20px 20px 30px", boxSizing: "border-box" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+              <span className="df-display" style={{ fontSize: 21, fontWeight: 500 }}>Rewards</span>
+              <IconBtn label="Close" onClick={() => setShowRewards(false)}><X size={18} /></IconBtn>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+              <Star size={16} color="#8F6E22" />
+              <span style={{ fontSize: 15, fontWeight: 700 }}>{points} point{points === 1 ? "" : "s"} to spend</span>
+            </div>
+            {(!data.rewards || data.rewards.length === 0) ? (
+              <p style={{ fontSize: 15, color: INK_SOFT, margin: "4px 2px" }}>No rewards yet. Add some in Manage to start redeeming.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {data.rewards.map((r) => {
+                  const affordable = points >= r.cost;
+                  return (
+                    <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 14, border: `1px solid ${LINE}`, background: "#fff" }}>
+                      <span style={{ flex: 1 }}>
+                        <span style={{ fontWeight: 700, fontSize: 15.5 }}>{r.name}</span>
+                        <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>{r.cost} point{r.cost === 1 ? "" : "s"}</span>
+                      </span>
+                      <PrimaryBtn disabled={!affordable} onClick={() => redeem(r)} style={{ padding: "9px 16px", fontSize: 14.5 }}>Redeem</PrimaryBtn>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* undo toast */}
       {undo && (
         <div className="df-card-in" role="status"
@@ -992,6 +1062,12 @@ function SummaryView({ data, nav }) {
   }).filter((s) => s.sched > 0), [data, days]);
 
   const cur = currentStreak(data), best = bestStreak(data);
+
+  const redemptions = useMemo(() => {
+    const out = [];
+    days.forEach((d) => d.entries.forEach((e) => { if (e.kind === "redeem") out.push({ ...e, date: d.date }); }));
+    return out.sort((a, b) => (b.at || 0) - (a.at || 0));
+  }, [days]);
 
   const Section = ({ title, children }) => (
     <div style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: 18, padding: 18 }}>
@@ -1093,6 +1169,27 @@ function SummaryView({ data, nav }) {
               </div>
             )}
           </Section>
+
+          <Section title="Rewards">
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: redemptions.length ? 14 : 0 }}>
+              <span className="df-display" style={{ fontSize: 42, fontWeight: 500 }}>{pointsBalance(data)}</span>
+              <span style={{ fontSize: 14.5, color: INK_SOFT }}>points to spend</span>
+            </div>
+            {redemptions.length === 0 ? (
+              <p style={{ fontSize: 15, color: INK_SOFT, margin: 0 }}>No rewards redeemed in this period.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {redemptions.map((r, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <Star size={14} color="#8F6E22" />
+                    <span style={{ flex: 1, fontSize: 15.5, fontWeight: 600 }}>{r.name}</span>
+                    <span style={{ fontSize: 13.5, color: INK_SOFT }}>{r.date.toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: INK_SOFT, width: 40, textAlign: "right" }}>−{r.cost}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Section>
         </div>
       </div>
     </div>
@@ -1106,7 +1203,19 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
   const [newCat, setNewCat] = useState("");
   const [addingTask, setAddingTask] = useState(false);
   const [ioMsg, setIoMsg] = useState(null);
+  const [newRewardName, setNewRewardName] = useState("");
+  const [newRewardCost, setNewRewardCost] = useState("");
   const fileRef = useRef(null);
+
+  const addReward = () => {
+    const name = newRewardName.trim();
+    const cost = Math.max(1, Math.round(Number(newRewardCost) || 0));
+    if (!name || !(cost > 0)) return;
+    persist({ ...data, rewards: [...(data.rewards || []), { id: uid(), name, cost }] });
+    setNewRewardName(""); setNewRewardCost("");
+  };
+  const updateReward = (id, patch) => persist({ ...data, rewards: (data.rewards || []).map((r) => (r.id === id ? { ...r, ...patch } : r)) });
+  const removeReward = (id) => persist({ ...data, rewards: (data.rewards || []).filter((r) => r.id !== id) });
 
   const exportProfile = () => {
     try {
@@ -1229,6 +1338,33 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
           )}
 
           <div style={{ marginTop: 6, paddingTop: 20, borderTop: `1px solid ${LINE}` }}>
+            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>Rewards</div>
+            <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 12px" }}>Earn a point for each task you finish, then redeem points for these.</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {(data.rewards || []).map((r) => (
+                <div key={r.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <TextInput value={r.name} placeholder="Reward" onChange={(e) => updateReward(r.id, { name: e.target.value })} />
+                  <input type="number" min="1" inputMode="numeric" value={r.cost}
+                    onChange={(e) => updateReward(r.id, { cost: Math.max(1, Math.round(Number(e.target.value) || 1)) })}
+                    style={{ width: 66, padding: "12px 10px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff", fontSize: 16, fontFamily: "inherit", color: INK, boxSizing: "border-box", textAlign: "center" }} />
+                  <span style={{ fontSize: 13, color: INK_SOFT, fontWeight: 600, flexShrink: 0 }}>pts</span>
+                  <button aria-label="Remove reward" onClick={() => removeReward(r.id)}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 6, flexShrink: 0 }}>
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+              <div style={{ display: "flex", gap: 8 }}>
+                <TextInput placeholder="New reward (e.g. Movie night)" value={newRewardName} onChange={(e) => setNewRewardName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addReward(); } }} />
+                <input type="number" min="1" inputMode="numeric" placeholder="pts" value={newRewardCost} onChange={(e) => setNewRewardCost(e.target.value)}
+                  style={{ width: 66, padding: "12px 10px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff", fontSize: 16, fontFamily: "inherit", color: INK, boxSizing: "border-box", textAlign: "center" }} />
+                <PrimaryBtn disabled={!newRewardName.trim() || !(Number(newRewardCost) > 0)} onClick={addReward} style={{ padding: "10px 16px", fontSize: 15 }}>Add</PrimaryBtn>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 6, paddingTop: 20, borderTop: `1px solid ${LINE}` }}>
             <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>Backup</div>
             <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 12px" }}>Save this profile to a file, or restore it from a backup.</p>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -1346,6 +1482,7 @@ function DayDetailSheet({ data, dateStr, onClose }) {
   const rows = sched.map((t) => ({ task: t, entry: entries.find((e) => e.taskId === t.id) }));
   // Include any recorded entries for tasks not scheduled that day (e.g. later edited).
   entries.forEach((e) => {
+    if (!e.taskId) return; // skip non-task entries (e.g. reward redemptions)
     if (!schedIds.has(e.taskId)) {
       const task = data.tasks.find((t) => t.id === e.taskId);
       rows.push({ task: task || { id: e.taskId, name: "(removed task)", categoryId: null }, entry: e });
