@@ -121,6 +121,7 @@ function migrate(data) {
         subtasks: Array.isArray(t.subtasks) ? t.subtasks : [],
         eta: t.eta ?? null,
         pairId: t.pairId ?? null,
+        pleasantNote: t.pleasantNote ?? null,
         priority: t.priority ?? null,
         deadline: t.deadline ?? null,
         rotationLabel: t.rotationLabel ?? null,
@@ -182,6 +183,17 @@ function weeklyDoneCount(data, task, dateStr) {
   }
   return n;
 }
+// The task paired with `task` (link is one-directional but recognized from
+// either side), but only if that partner is present in `pool` (e.g. still due
+// and unlogged today). Returns null otherwise.
+function pairPartner(data, task, pool) {
+  if (!task) return null;
+  let p = task.pairId ? data.tasks.find((t) => t.id === task.pairId) : null;
+  if (!p) p = data.tasks.find((t) => t.pairId === task.id) || null;
+  if (!p || p.id === task.id) return null;
+  return pool.some((t) => t.id === p.id) ? p : null;
+}
+
 // Whether a one-time task has ever been completed.
 function onceDone(data, taskId) {
   const h = (data && data.history) || {};
@@ -410,13 +422,16 @@ function FreqEditor({ freq, onChange }) {
 }
 
 /* ————— Task editor form ————— */
-function TaskForm({ categories, initial, onSave, onCancel }) {
+function TaskForm({ categories, initial, onSave, onCancel, allTasks = [] }) {
   const [name, setName] = useState(initial?.name || "");
   const [note, setNote] = useState(initial?.note || "");
   const [categoryId, setCategoryId] = useState(initial?.categoryId || categories[0]?.id);
   const [freq, setFreq] = useState(initial?.freq || { type: "daily", days: [] });
   const [rotationLabel, setRotationLabel] = useState(initial?.rotationLabel || "");
   const [eta, setEta] = useState(initial?.eta != null ? String(initial.eta) : "");
+  const [pairId, setPairId] = useState(initial?.pairId || "");
+  const [pleasantNote, setPleasantNote] = useState(initial?.pleasantNote || "");
+  const pairChoices = allTasks.filter((t) => t.id !== initial?.id);
   const [subtasks, setSubtasks] = useState(initial?.subtasks || []);
   const [newSub, setNewSub] = useState("");
   const addSub = () => {
@@ -465,10 +480,28 @@ function TaskForm({ categories, initial, onSave, onCancel }) {
           </div>
         </div>
       </div>
+      {pairChoices.length > 0 && (
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 8 }}>Habit stacking — optional</div>
+          <select value={pairId} onChange={(e) => setPairId(e.target.value)}
+            style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff", fontSize: 16, fontFamily: "inherit", color: INK, boxSizing: "border-box" }}>
+            <option value="">Not paired</option>
+            {pairChoices.map((t) => <option key={t.id} value={t.id}>Pair with {t.name}</option>)}
+          </select>
+          {pairId && (
+            <div style={{ marginTop: 8 }}>
+              <TextInput placeholder="A pleasant touch — e.g. with your favorite playlist" value={pleasantNote} onChange={(e) => setPleasantNote(e.target.value)} />
+            </div>
+          )}
+          <p style={{ fontSize: 13, color: INK_SOFT, margin: "8px 2px 0" }}>
+            Paired tasks show up together on one card and complete as a pair.
+          </p>
+        </div>
+      )}
       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
         {onCancel && <GhostBtn onClick={onCancel} style={{ padding: "10px 16px", fontSize: 15 }}>Cancel</GhostBtn>}
         <PrimaryBtn disabled={!name.trim()} style={{ padding: "10px 18px", fontSize: 15 }}
-          onClick={() => onSave({ id: initial?.id || uid(), name: name.trim(), note: note.trim(), categoryId, freq, rotationLabel: freq.type === "rotate" ? (rotationLabel.trim() || null) : null, eta: Number(eta) > 0 ? Math.round(Number(eta)) : null, subtasks: subtasks.filter((s) => s.name.trim()).map((s) => ({ id: s.id, name: s.name.trim() })) })}>
+          onClick={() => onSave({ id: initial?.id || uid(), name: name.trim(), note: note.trim(), categoryId, freq, rotationLabel: freq.type === "rotate" ? (rotationLabel.trim() || null) : null, eta: Number(eta) > 0 ? Math.round(Number(eta)) : null, pairId: pairId || null, pleasantNote: pairId && pleasantNote.trim() ? pleasantNote.trim() : null, subtasks: subtasks.filter((s) => s.name.trim()).map((s) => ({ id: s.id, name: s.name.trim() })) })}>
           {initial ? "Save changes" : "Add task"}
         </PrimaryBtn>
       </div>
@@ -590,7 +623,7 @@ function SetupView({ profileName, onFinish }) {
             </div>
           )}
           {adding ? (
-            <TaskForm key={tasks.length} categories={chosenCats}
+            <TaskForm key={tasks.length} categories={chosenCats} allTasks={tasks}
               onSave={(t) => { setTasks([...tasks, t]); }}
               onCancel={tasks.length ? () => setAdding(false) : null} />
           ) : (
@@ -650,6 +683,9 @@ function TodayView({ data, persist, nav }) {
 
   const current = remaining.find((t) => t.id === jumpId) || remaining[0] || null;
   useEffect(() => { setSubChecks({}); setTimerStart(null); }, [current?.id]);
+  const partner = pairPartner(data, current, remaining);
+  const pairTasks = current ? (partner ? [current, partner] : [current]) : [];
+  const pleasantNote = current && (current.pleasantNote || (partner && partner.pleasantNote));
   const subs = (current && current.subtasks) || [];
   const allSubsChecked = subs.length > 0 && subs.every((s) => subChecks[s.id]);
   const elapsedSec = timerStart == null ? 0 : Math.floor((nowMs - timerStart) / 1000);
@@ -658,32 +694,41 @@ function TodayView({ data, persist, nav }) {
   const doneCount = entries.filter((e) => e.status === "done").length;
   const skipCount = entries.filter((e) => e.status === "skipped").length;
 
-  const record = (task, status, reason, spent) => {
+  // Logs one entry per task (paired cards log both at once), persists once.
+  const record = (tasks, status, reason, spentMap) => {
+    const list = Array.isArray(tasks) ? tasks : [tasks];
+    const now = Date.now();
+    const added = list.map((t) => ({ taskId: t.id, status, ...(reason ? { reason } : {}), ...(spentMap && spentMap[t.id] != null ? { spent: spentMap[t.id] } : {}), at: now }));
     const history = { ...(data.history || {}) };
-    history[tk] = [...entriesFor(data, tk), { taskId: task.id, status, ...(reason ? { reason } : {}), ...(spent != null ? { spent } : {}), at: Date.now() }];
+    history[tk] = [...entriesFor(data, tk), ...added];
     persist({ ...data, history });
     setJumpId(null); setSkipping(false); setSkipText(""); setTimerStart(null);
-    setUndo({ label: status === "done" ? `Marked "${task.name}" done` : `Skipped "${task.name}"` });
+    const label = list.length > 1
+      ? (status === "done" ? "Logged both tasks" : "Skipped both tasks")
+      : (status === "done" ? `Marked "${list[0].name}" done` : `Skipped "${list[0].name}"`);
+    setUndo({ label, count: added.length });
     clearTimeout(undoTimer.current);
     undoTimer.current = setTimeout(() => setUndo(null), 5000);
   };
 
   const undoLast = () => {
     clearTimeout(undoTimer.current);
+    const n = (undo && undo.count) || 1;
     setUndo(null);
     const dayEntries = entriesFor(data, tk);
     if (!dayEntries.length) return;
     const history = { ...(data.history || {}) };
-    history[tk] = dayEntries.slice(0, -1);
+    history[tk] = dayEntries.slice(0, Math.max(0, dayEntries.length - n));
     persist({ ...data, history });
   };
 
   const markDone = () => {
     if (!current) return;
     setCelebrate(true);
-    const task = current;
+    const list = pairTasks;
     const spent = timerStart != null ? Math.max(0, Math.floor((Date.now() - timerStart) / 1000)) : null;
-    timer.current = setTimeout(() => { setCelebrate(false); record(task, "done", null, spent); }, 620);
+    const spentMap = spent != null ? { [current.id]: spent } : null;
+    timer.current = setTimeout(() => { setCelebrate(false); record(list, "done", null, spentMap); }, 620);
   };
 
   const bgTint = cat ? cat.color : INK;
@@ -713,11 +758,12 @@ function TodayView({ data, persist, nav }) {
           </div>
         ) : current ? (
           <div key={current.id} className="df-card-in" style={{ textAlign: "center", position: "relative" }}>
-            <Eyebrow color={cat.color}>{current.rotationLabel ? `${cat.name} · ${current.rotationLabel}` : cat.name}</Eyebrow>
+            <Eyebrow color={cat.color}>{partner ? `${cat.name} · paired` : current.rotationLabel ? `${cat.name} · ${current.rotationLabel}` : cat.name}</Eyebrow>
             <h1 className="df-display" style={{ fontSize: "clamp(34px, 9vw, 52px)", fontWeight: 500, lineHeight: 1.12, margin: "18px 0 0", letterSpacing: "-0.01em" }}>
-              {current.name}
+              {pairTasks.map((t) => t.name).join(" + ")}
             </h1>
             {current.note && <p style={{ fontSize: 17, color: INK_SOFT, marginTop: 14, lineHeight: 1.5 }}>{current.note}</p>}
+            {pleasantNote && <p style={{ fontStyle: "italic", fontSize: 15.5, color: INK_SOFT, marginTop: 8, lineHeight: 1.5 }}>{pleasantNote}</p>}
             {current.freq.type === "weekly" && (
               <p style={{ fontSize: 14.5, color: INK_SOFT, marginTop: 12, fontWeight: 700, letterSpacing: "0.02em" }}>
                 {weeklyDoneCount(data, current, tk)} of {Math.max(1, current.freq.count || 1)} this week
@@ -790,7 +836,7 @@ function TodayView({ data, persist, nav }) {
                 <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 10 }}>Skipping — any reason? <span style={{ fontWeight: 500, color: INK_SOFT }}>(optional)</span></div>
                 <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 10 }}>
                   {SKIP_CHIPS.map((c) => (
-                    <button key={c} onClick={() => record(current, "skipped", c)} className="df-btn"
+                    <button key={c} onClick={() => record(pairTasks, "skipped", c)} className="df-btn"
                       style={{ padding: "8px 14px", borderRadius: 99, border: `1px solid ${LINE}`, background: "#fff", fontSize: 14, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", color: INK }}>
                       {c}
                     </button>
@@ -798,14 +844,14 @@ function TodayView({ data, persist, nav }) {
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <TextInput placeholder="Other reason…" value={skipText} onChange={(e) => setSkipText(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter" && skipText.trim()) record(current, "skipped", skipText.trim()); }} />
+                    onKeyDown={(e) => { if (e.key === "Enter" && skipText.trim()) record(pairTasks, "skipped", skipText.trim()); }} />
                   {skipText.trim() && (
-                    <PrimaryBtn onClick={() => record(current, "skipped", skipText.trim())} style={{ padding: "10px 16px", fontSize: 15 }}>Save</PrimaryBtn>
+                    <PrimaryBtn onClick={() => record(pairTasks, "skipped", skipText.trim())} style={{ padding: "10px 16px", fontSize: 15 }}>Save</PrimaryBtn>
                   )}
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
                   <button onClick={() => setSkipping(false)} style={{ background: "none", border: "none", color: INK_SOFT, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>Cancel</button>
-                  <button onClick={() => record(current, "skipped")} style={{ background: "none", border: "none", color: INK_SOFT, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>Skip without reason</button>
+                  <button onClick={() => record(pairTasks, "skipped")} style={{ background: "none", border: "none", color: INK_SOFT, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>Skip without reason</button>
                 </div>
               </div>
             )}
@@ -1148,12 +1194,12 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {tasks.length === 0 && <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 2px 2px" }}>No tasks yet.</p>}
                   {tasks.map((t) => editingId === t.id ? (
-                    <TaskForm key={t.id} categories={data.categories} initial={t} onSave={saveTask} onCancel={() => setEditingId(null)} />
+                    <TaskForm key={t.id} categories={data.categories} allTasks={data.tasks} initial={t} onSave={saveTask} onCancel={() => setEditingId(null)} />
                   ) : (
                     <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 14, background: CARD, border: `1px solid ${LINE}` }}>
                       <span style={{ flex: 1 }}>
                         <span style={{ fontWeight: 700, fontSize: 15.5 }}>{t.name}</span>
-                        <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>{freqLabel(t.freq)}{t.note ? ` · ${t.note}` : ""}</span>
+                        <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>{freqLabel(t.freq)}{t.note ? ` · ${t.note}` : ""}{(() => { const p = pairPartner(data, t, data.tasks); return p ? ` · paired with ${p.name}` : ""; })()}</span>
                       </span>
                       <button aria-label="Edit task" onClick={() => setEditingId(t.id)} style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 5 }}><Pencil size={15} /></button>
                       <button aria-label="Delete task" onClick={() => deleteTask(t.id)} style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 5 }}><Trash2 size={15} /></button>
@@ -1165,7 +1211,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
           })}
 
           {addingTask ? (
-            <TaskForm categories={data.categories} onSave={saveTask} onCancel={() => setAddingTask(false)} />
+            <TaskForm categories={data.categories} allTasks={data.tasks} onSave={saveTask} onCancel={() => setAddingTask(false)} />
           ) : (
             <GhostBtn onClick={() => setAddingTask(true)}><Plus size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />Add task</GhostBtn>
           )}
