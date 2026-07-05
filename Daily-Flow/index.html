@@ -151,6 +151,9 @@ const fmtKey = (d) => {
   return `${y}-${m}-${day}`;
 };
 const todayKey = () => fmtKey(new Date());
+// Whole days from today until a YYYY-MM-DD date (negative once it's past).
+const daysUntil = (dateStr) =>
+  Math.round((new Date(dateStr + "T12:00:00") - new Date(todayKey() + "T12:00:00")) / 86400000);
 const addDays = (d, n) => { const c = new Date(d); c.setDate(c.getDate() + n); return c; };
 const niceDate = (d) => d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
@@ -173,6 +176,14 @@ function weeklyDoneCount(data, task, dateStr) {
     }
   }
   return n;
+}
+// Whether a one-time task has ever been completed.
+function onceDone(data, taskId) {
+  const h = (data && data.history) || {};
+  for (const k in h) {
+    for (const e of h[k]) if (e.taskId === taskId && e.status === "done") return true;
+  }
+  return false;
 }
 
 function scheduledTasks(data, dateStr) {
@@ -199,6 +210,11 @@ function scheduledTasks(data, dateStr) {
     if (t.freq.type === "weekly") {
       const need = Math.max(1, t.freq.count || 1);
       return weeklyDoneCount(data, t, dateStr) < need;
+    }
+    if (t.freq.type === "once") {
+      if (onceDone(data, t.id)) return false;          // finished — stop appearing
+      if (t.freq.deadline && dateStr > t.freq.deadline) return false; // deadline passed
+      return true;                                     // otherwise every day
     }
     if (t.freq.type === "rotate") {
       const g = rotGroups[t.categoryId];
@@ -314,24 +330,37 @@ function freqLabel(freq) {
   if (freq.type === "daily") return "Every day";
   if (freq.type === "rotate") return "Rotates";
   if (freq.type === "weekly") return `${Math.max(1, freq.count || 1)}× per week`;
+  if (freq.type === "once") return freq.deadline ? `One-time · due ${freq.deadline}` : "One-time";
   const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   return (freq.days || []).map((d) => names[d]).join(" · ") || "No days set";
 }
 
 function FreqEditor({ freq, onChange }) {
-  const opts = [["daily", "Every day"], ["days", "Some days"], ["weekly", "Weekly"], ["rotate", "Rotation"]];
-  const selectType = (v) =>
-    v === "weekly" ? onChange({ type: "weekly", count: freq.count || 3 }) : onChange({ type: v, days: freq.days || [] });
+  const opts = [["daily", "Every day"], ["days", "Some days"], ["weekly", "Weekly"], ["once", "One-time"], ["rotate", "Rotation"]];
+  const selectType = (v) => {
+    if (v === "weekly") return onChange({ type: "weekly", count: freq.count || 3 });
+    if (v === "once") return onChange({ type: "once", deadline: freq.deadline || fmtKey(addDays(new Date(), 7)) });
+    return onChange({ type: v, days: freq.days || [] });
+  };
   return (
     <div>
-      <div style={{ display: "flex", gap: 6 }}>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {opts.map(([v, label]) => (
           <button key={v} onClick={() => selectType(v)} className="df-btn"
-            style={{ flex: 1, padding: "9px 4px", borderRadius: 10, fontSize: 13.5, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${freq.type === v ? INK : LINE}`, background: freq.type === v ? INK : "transparent", color: freq.type === v ? "#FAFBF6" : INK }}>
+            style={{ flex: "1 1 30%", minWidth: 82, padding: "9px 4px", borderRadius: 10, fontSize: 13.5, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${freq.type === v ? INK : LINE}`, background: freq.type === v ? INK : "transparent", color: freq.type === v ? "#FAFBF6" : INK }}>
             {label}
           </button>
         ))}
       </div>
+      {freq.type === "once" && (
+        <div style={{ marginTop: 8 }}>
+          <TextInput type="date" value={freq.deadline || ""} min={todayKey()}
+            onChange={(e) => onChange({ type: "once", deadline: e.target.value })} />
+          <p style={{ fontSize: 13, color: INK_SOFT, margin: "8px 2px 0" }}>
+            Shows every day until you finish it or the date passes.
+          </p>
+        </div>
+      )}
       {freq.type === "weekly" && (
         <div style={{ marginTop: 8 }}>
           <div style={{ display: "flex", gap: 6 }}>
@@ -641,6 +670,18 @@ function TodayView({ data, persist, nav }) {
                 {weeklyDoneCount(data, current, tk)} of {Math.max(1, current.freq.count || 1)} this week
               </p>
             )}
+            {current.freq.type === "once" && current.freq.deadline && (() => {
+              const dleft = daysUntil(current.freq.deadline);
+              const urgent = dleft <= 1;
+              const txt = dleft <= 0 ? "due today" : dleft === 1 ? "due tomorrow" : `due in ${dleft} days`;
+              return (
+                <span style={{ display: "inline-block", marginTop: 12, fontSize: 14.5, fontWeight: 700, letterSpacing: "0.02em",
+                  color: urgent ? "#A14E3A" : INK_SOFT,
+                  ...(urgent ? { background: "#A14E3A1A", border: "1px solid #A14E3A55", padding: "4px 12px", borderRadius: 99 } : {}) }}>
+                  {txt}
+                </span>
+              );
+            })()}
 
             {!skipping ? (
               <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 40 }}>
