@@ -186,7 +186,12 @@ function scheduledTasks(data, dateStr) {
       (rotGroups[t.categoryId] = rotGroups[t.categoryId] || []).push(t);
     }
   });
-  Object.values(rotGroups).forEach((g) => g.sort((a, b) => (a.id < b.id ? -1 : 1)));
+  // Rotation order: by label (so a body-part split cycles predictably), then id.
+  Object.values(rotGroups).forEach((g) => g.sort((a, b) => {
+    const la = (a.rotationLabel || "").toLowerCase(), lb = (b.rotationLabel || "").toLowerCase();
+    if (la !== lb) return la < lb ? -1 : 1;
+    return a.id < b.id ? -1 : 1;
+  }));
   const catOrder = data.categories.map((c) => c.id);
   const out = data.tasks.filter((t) => {
     if (t.freq.type === "daily") return true;
@@ -376,6 +381,7 @@ function TaskForm({ categories, initial, onSave, onCancel }) {
   const [note, setNote] = useState(initial?.note || "");
   const [categoryId, setCategoryId] = useState(initial?.categoryId || categories[0]?.id);
   const [freq, setFreq] = useState(initial?.freq || { type: "daily", days: [] });
+  const [rotationLabel, setRotationLabel] = useState(initial?.rotationLabel || "");
   return (
     <div style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: 16, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
       <TextInput placeholder="Task name (e.g. 10-minute stretch)" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
@@ -389,10 +395,13 @@ function TaskForm({ categories, initial, onSave, onCancel }) {
         ))}
       </div>
       <FreqEditor freq={freq} onChange={setFreq} />
+      {freq.type === "rotate" && (
+        <TextInput placeholder="Rotation label — optional (e.g. Push, Pull, Legs)" value={rotationLabel} onChange={(e) => setRotationLabel(e.target.value)} />
+      )}
       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
         {onCancel && <GhostBtn onClick={onCancel} style={{ padding: "10px 16px", fontSize: 15 }}>Cancel</GhostBtn>}
         <PrimaryBtn disabled={!name.trim()} style={{ padding: "10px 18px", fontSize: 15 }}
-          onClick={() => onSave({ id: initial?.id || uid(), name: name.trim(), note: note.trim(), categoryId, freq })}>
+          onClick={() => onSave({ id: initial?.id || uid(), name: name.trim(), note: note.trim(), categoryId, freq, rotationLabel: freq.type === "rotate" ? (rotationLabel.trim() || null) : null })}>
           {initial ? "Save changes" : "Add task"}
         </PrimaryBtn>
       </div>
@@ -622,7 +631,7 @@ function TodayView({ data, persist, nav }) {
           </div>
         ) : current ? (
           <div key={current.id} className="df-card-in" style={{ textAlign: "center", position: "relative" }}>
-            <Eyebrow color={cat.color}>{cat.name}</Eyebrow>
+            <Eyebrow color={cat.color}>{current.rotationLabel ? `${cat.name} · ${current.rotationLabel}` : cat.name}</Eyebrow>
             <h1 className="df-display" style={{ fontSize: "clamp(34px, 9vw, 52px)", fontWeight: 500, lineHeight: 1.12, margin: "18px 0 0", letterSpacing: "-0.01em" }}>
               {current.name}
             </h1>
