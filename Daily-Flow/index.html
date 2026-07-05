@@ -514,8 +514,10 @@ function TodayView({ data, persist, nav }) {
   const [skipText, setSkipText] = useState("");
   const [celebrate, setCelebrate] = useState(false);
   const [showOverview, setShowOverview] = useState(false);
+  const [undo, setUndo] = useState(null); // { label } for the most recent entry
   const timer = useRef(null);
-  useEffect(() => () => clearTimeout(timer.current), []);
+  const undoTimer = useRef(null);
+  useEffect(() => () => { clearTimeout(timer.current); clearTimeout(undoTimer.current); }, []);
 
   const current = remaining.find((t) => t.id === jumpId) || remaining[0] || null;
   const cat = current ? data.categories.find((c) => c.id === current.categoryId) : null;
@@ -527,6 +529,19 @@ function TodayView({ data, persist, nav }) {
     history[tk] = [...entriesFor(data, tk), { taskId: task.id, status, ...(reason ? { reason } : {}), at: Date.now() }];
     persist({ ...data, history });
     setJumpId(null); setSkipping(false); setSkipText("");
+    setUndo({ label: status === "done" ? `Marked "${task.name}" done` : `Skipped "${task.name}"` });
+    clearTimeout(undoTimer.current);
+    undoTimer.current = setTimeout(() => setUndo(null), 5000);
+  };
+
+  const undoLast = () => {
+    clearTimeout(undoTimer.current);
+    setUndo(null);
+    const dayEntries = entriesFor(data, tk);
+    if (!dayEntries.length) return;
+    const history = { ...(data.history || {}) };
+    history[tk] = dayEntries.slice(0, -1);
+    persist({ ...data, history });
   };
 
   const markDone = () => {
@@ -669,6 +684,18 @@ function TodayView({ data, persist, nav }) {
               })}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* undo toast */}
+      {undo && (
+        <div className="df-card-in" role="status"
+          style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 60, display: "flex", alignItems: "center", gap: 14, maxWidth: "calc(100% - 32px)", background: INK, color: "#FAFBF6", padding: "12px 14px 12px 18px", borderRadius: 14, boxShadow: "0 12px 40px rgba(0,0,0,0.22)" }}>
+          <span style={{ fontSize: 14.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{undo.label}</span>
+          <button onClick={undoLast} className="df-btn"
+            style={{ flexShrink: 0, background: "rgba(255,255,255,0.16)", border: "none", color: "#FAFBF6", fontSize: 14.5, fontWeight: 700, padding: "8px 15px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit" }}>
+            Undo
+          </button>
         </div>
       )}
     </div>
