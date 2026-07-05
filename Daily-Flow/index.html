@@ -49,6 +49,7 @@ const Pencil = svgIcon('<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5
 
 /* ————— Daily Flow app ————— */
 
+
 /* ————— Design tokens ————— */
 const BASE_BG = "#E8EDE3";     // pale eucalyptus
 const INK = "#243329";         // deep pine ink
@@ -96,11 +97,47 @@ input::placeholder { color: #9AA79C; }
 }
 `;
 
+/* ————— Migration ————— */
+// Brings any older profile shape up to the current version, filling defaults
+// for missing fields. Must never throw on unexpected/old data.
+const DATA_VERSION = 2;
+function migrate(data) {
+  if (!data || typeof data !== "object") return data;
+  try {
+    const d = { ...data };
+    d.version = DATA_VERSION;
+    if (!d.settings || typeof d.settings !== "object") d.settings = {};
+    if (!Array.isArray(d.rewards)) d.rewards = [];
+    if (!Array.isArray(d.categories)) d.categories = [];
+    if (!d.history || typeof d.history !== "object") d.history = {};
+    if (!d.createdAt) d.createdAt = todayKey();
+    d.tasks = (Array.isArray(d.tasks) ? d.tasks : []).map((raw) => {
+      const t = raw && typeof raw === "object" ? raw : {};
+      return {
+        ...t,
+        subtasks: Array.isArray(t.subtasks) ? t.subtasks : [],
+        eta: t.eta ?? null,
+        pairId: t.pairId ?? null,
+        priority: t.priority ?? null,
+        deadline: t.deadline ?? null,
+        rotationLabel: t.rotationLabel ?? null,
+      };
+    });
+    return d;
+  } catch (e) {
+    console.error("migrate failed", e);
+    return data;
+  }
+}
+
 /* ————— Storage ————— */
 async function loadKey(key, fallback) {
   try {
     const r = await window.storage.get(key);
-    return r && r.value != null ? JSON.parse(r.value) : fallback;
+    const val = r && r.value != null ? JSON.parse(r.value) : fallback;
+    // Migrate whenever a profile's data blob loads.
+    if (val && typeof key === "string" && key.startsWith("flow:p:")) return migrate(val);
+    return val;
   } catch { return fallback; }
 }
 async function saveKey(key, val) {
@@ -792,6 +829,47 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
   const [addingCat, setAddingCat] = useState(false);
   const [newCat, setNewCat] = useState("");
   const [addingTask, setAddingTask] = useState(false);
+  const [ioMsg, setIoMsg] = useState(null);
+  const fileRef = useRef(null);
+
+  const exportProfile = () => {
+    try {
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const safe = (data.name || "profile").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `daily-flow-${safe}-${todayKey()}.json`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      setIoMsg("Backup downloaded.");
+    } catch (e) { setIoMsg("Export failed."); }
+  };
+
+  const importProfile = (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        const next = migrate(parsed);
+        if (!next || typeof next !== "object" || !Array.isArray(next.tasks)) {
+          setIoMsg("That file doesn't look like a Daily Flow backup.");
+          return;
+        }
+        if (!window.confirm("Replace this profile's tasks and history with the imported backup?")) return;
+        persist({ ...next, name: data.name });
+        setIoMsg("Backup imported.");
+      } catch (err) {
+        setIoMsg("Couldn't read that file — is it valid JSON?");
+      }
+    };
+    reader.onerror = () => setIoMsg("Couldn't read that file.");
+    reader.readAsText(file);
+  };
 
   const saveTask = (t) => {
     const exists = data.tasks.some((x) => x.id === t.id);
@@ -873,6 +951,17 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
               + Add a category
             </button>
           )}
+
+          <div style={{ marginTop: 6, paddingTop: 20, borderTop: `1px solid ${LINE}` }}>
+            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>Backup</div>
+            <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 12px" }}>Save this profile to a file, or restore it from a backup.</p>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <GhostBtn onClick={exportProfile} style={{ padding: "11px 16px", fontSize: 15 }}>Export JSON</GhostBtn>
+              <GhostBtn onClick={() => fileRef.current && fileRef.current.click()} style={{ padding: "11px 16px", fontSize: 15 }}>Import JSON</GhostBtn>
+              <input ref={fileRef} type="file" accept="application/json,.json" onChange={importProfile} style={{ display: "none" }} />
+            </div>
+            {ioMsg && <p style={{ fontSize: 13.5, color: INK_SOFT, margin: "10px 2px 0" }}>{ioMsg}</p>}
+          </div>
         </div>
       </div>
     </div>
@@ -917,7 +1006,7 @@ function DailyFlow() {
   const finishSetup = async (categories, tasks) => {
     const p = pendingProfile;
     const nextProfiles = [...profiles, p];
-    const d = { name: p.name, categories, tasks, history: {}, createdAt: todayKey() };
+    const d = migrate({ version: DATA_VERSION, name: p.name, categories, tasks, history: {}, createdAt: todayKey() });
     setProfiles(nextProfiles);
     await saveKey("flow:profiles", nextProfiles);
     await saveKey("flow:p:" + p.id, d);
