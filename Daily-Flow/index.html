@@ -89,7 +89,10 @@ const DEFAULT_CATEGORIES = [
 ];
 
 const SKIP_CHIPS = ["No time", "Not feeling it", "Forgot"];
-const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
+// 2-letter weekday labels indexed by Date.getDay() (0 = Sunday).
+const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+// Day-of-week numbers in display order for the given week-start setting.
+const weekdayOrder = (mondayStart) => (mondayStart ? [1, 2, 3, 4, 5, 6, 0] : [0, 1, 2, 3, 4, 5, 6]);
 
 // A fixed set of identity tokens, rendered as colored letter circles.
 // Each token can be claimed by only one profile (its id is stored on the profile).
@@ -612,6 +615,26 @@ function Why({ id, seen, onSeen, anchor }) {
   );
 }
 
+// A small "i" that toggles a short plain-language tooltip explaining a chart or
+// section. Like Why, but generic (no persistence) — pass the text to show.
+function InfoDot({ text, label, anchor }) {
+  const [open, setOpen] = useState(false);
+  if (!text) return null;
+  return (
+    <span style={{ position: "relative", display: "inline-flex", verticalAlign: "middle" }}>
+      <button aria-label={label || "What this shows"} onClick={() => setOpen((o) => !o)} className="df-btn"
+        style={{ width: 20, height: 20, borderRadius: 99, border: `1px solid ${LINE}`, background: "transparent", color: INK_SOFT, fontSize: 12.5, fontWeight: 800, cursor: "pointer", fontFamily: "Georgia, 'Times New Roman', serif", fontStyle: "italic", lineHeight: 1, padding: 0, flexShrink: 0 }}>i</button>
+      {open && (
+        <span onClick={(e) => e.stopPropagation()} className="df-card-in"
+          style={{ position: "absolute", top: 27, [anchor === "right" ? "right" : "left"]: 0, zIndex: 80, width: 236, maxWidth: "78vw", background: INK, color: "#FFFFFF", borderRadius: 12, padding: "12px 14px", boxShadow: SHADOW, textAlign: "left", fontWeight: 400 }}>
+          <span style={{ display: "block", fontSize: 13, lineHeight: 1.55, color: "#DDE3D9" }}>{text}</span>
+          <button onClick={() => setOpen(false)} className="df-btn" style={{ marginTop: 10, background: "rgba(255,255,255,0.16)", border: "none", color: "#FFFFFF", fontSize: 12.5, fontWeight: 700, padding: "6px 13px", borderRadius: R_PILL, cursor: "pointer", fontFamily: "inherit" }}>Got it</button>
+        </span>
+      )}
+    </span>
+  );
+}
+
 function TextInput(props) {
   return (
     <input {...props}
@@ -657,7 +680,7 @@ function freqLabel(freq) {
   return (freq.days || []).map((d) => names[d]).join(" · ") || "No days set";
 }
 
-function FreqEditor({ freq, onChange }) {
+function FreqEditor({ freq, onChange, mondayStart = true }) {
   const opts = [["daily", "Every day"], ["days", "Some days"], ["weekly", "Weekly"], ["once", "One-time"], ["rotate", "Rotation"]];
   const selectType = (v) => {
     if (v === "weekly") return onChange({ type: "weekly", count: freq.count || 3 });
@@ -703,15 +726,15 @@ function FreqEditor({ freq, onChange }) {
       )}
       {freq.type === "days" && (
         <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-          {WEEKDAYS.map((w, i) => {
-            const on = (freq.days || []).includes(i);
+          {weekdayOrder(mondayStart).map((dow) => {
+            const on = (freq.days || []).includes(dow);
             return (
-              <button key={i} onClick={() => {
-                const days = on ? freq.days.filter((d) => d !== i) : [...(freq.days || []), i].sort();
+              <button key={dow} onClick={() => {
+                const days = on ? freq.days.filter((d) => d !== dow) : [...(freq.days || []), dow].sort((a, b) => a - b);
                 onChange({ ...freq, days });
               }} className="df-btn"
-                style={{ flex: 1, padding: "8px 0", borderRadius: R_PILL, fontSize: 13, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${on ? INK : LINE}`, background: on ? INK : "transparent", color: on ? "#FFFFFF" : INK_SOFT }}>
-                {w}
+                style={{ flex: 1, padding: "8px 2px", borderRadius: R_PILL, fontSize: 12.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${on ? INK : LINE}`, background: on ? INK : "transparent", color: on ? "#FFFFFF" : INK_SOFT }}>
+                {WEEKDAY_LABELS[dow]}
               </button>
             );
           })}
@@ -762,7 +785,7 @@ function ExerciseSheet({ library, onPick, onClose }) {
 }
 
 /* ————— Task editor form ————— */
-function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySeen = [], onWhySeen, library = EXERCISE_LIBRARY }) {
+function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySeen = [], onWhySeen, library = EXERCISE_LIBRARY, mondayStart = true }) {
   const [name, setName] = useState(initial?.name || "");
   const [note, setNote] = useState(initial?.note || "");
   const [categoryId, setCategoryId] = useState(initial?.categoryId || categories[0]?.id);
@@ -811,7 +834,7 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySee
       {showLib && (
         <ExerciseSheet library={library} onPick={pickExercise} onClose={() => setShowLib(false)} />
       )}
-      <FreqEditor freq={freq} onChange={setFreq} />
+      <FreqEditor freq={freq} onChange={setFreq} mondayStart={mondayStart} />
       {freq.type === "rotate" && (
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
@@ -1770,6 +1793,20 @@ function SummaryView({ data, nav }) {
     return { task: t, sched, done };
   }).filter((s) => s.sched > 0), [data, days]);
 
+  // Split everything into Personal (all non-Household areas) and Household.
+  const householdIds = useMemo(() => new Set(data.categories.filter((c) => c.name === "Household").map((c) => c.id)), [data]);
+  const isHousehold = (t) => householdIds.has(t.categoryId);
+  const hasHousehold = householdIds.size > 0;
+  // Per-day scheduled/done counts for a task subset, for the completion bars.
+  const groupDays = (pred) => days.map((d) => {
+    const sched = d.scheduled.filter(pred);
+    return { key: d.key, date: d.date, sched: sched.length, done: sched.filter((t) => d.entries.some((e) => e.taskId === t.id && e.status === "done")).length };
+  });
+  const personalDays = groupDays((t) => !isHousehold(t));
+  const householdDays = groupDays((t) => isHousehold(t));
+  const personalTasks = taskStats.filter((s) => !isHousehold(s.task));
+  const householdTasks = taskStats.filter((s) => isHousehold(s.task));
+
   const cur = useMemo(() => currentStreak(data), [data]);
   const best = useMemo(() => bestStreak(data), [data]);
   const catStreaks = useMemo(() => Object.fromEntries(data.categories.map((c) => [c.id, currentStreak(data, c.id)])), [data]);
@@ -1792,12 +1829,70 @@ function SummaryView({ data, nav }) {
   }, [days]);
   const hasPriorities = Object.values(matrix).some((x) => x.s > 0);
 
-  const Section = ({ title, children }) => (
+  const Section = ({ title, info, children }) => (
     <div style={{ background: "#FFFFFF", border: `1px solid ${LINE}`, borderRadius: R_CARD, padding: 18, boxShadow: SHADOW }}>
-      <div style={{ fontSize: 13, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600, color: INK_SOFT, marginBottom: 12 }}>{title}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <span style={{ fontSize: 13, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600, color: INK_SOFT }}>{title}</span>
+        {info && <InfoDot text={info} label={"About " + title} />}
+      </div>
       {children}
     </div>
   );
+
+  // Sub-heading used inside a section to separate Personal / Household groups.
+  const GroupLabel = ({ children }) => (
+    <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>{children}</div>
+  );
+
+  // One completion block: a percentage headline plus per-day bars.
+  const completionBlock = (label, gDays) => {
+    const s = gDays.reduce((a, x) => a + x.sched, 0);
+    const dn = gDays.reduce((a, x) => a + x.done, 0);
+    const p = s ? Math.round((dn / s) * 100) : 0;
+    return (
+      <div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: INK, flex: 1 }}>{label}</span>
+          <span className="df-display df-num" style={{ fontSize: 22, fontWeight: 600 }}>{p}%</span>
+          <span style={{ fontSize: 13, color: INK_SOFT }}>{dn} of {s}</span>
+        </div>
+        {s === 0 ? (
+          <p style={{ fontSize: 13.5, color: INK_SOFT, margin: "8px 0 0" }}>Nothing scheduled in this period.</p>
+        ) : (
+          <div style={{ display: "flex", alignItems: "flex-end", gap: range >= 30 ? 3 : 8, height: range === 1 ? 42 : 72, marginTop: 10 }}>
+            {gDays.map((d) => {
+              const pr = d.sched ? d.done / d.sched : null;
+              return (
+                <div key={d.key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
+                  <div style={{ width: "100%", height: range === 1 ? 28 : 56, background: INK + "14", borderRadius: 6, display: "flex", alignItems: "flex-end", overflow: "hidden" }}>
+                    {pr != null && <div style={{ width: "100%", height: `${Math.max(pr * 100, 4)}%`, background: BRAND, opacity: 0.35 + pr * 0.65, borderRadius: 6, transition: "height 400ms ease" }} />}
+                  </div>
+                  {range <= 7 && <span style={{ fontSize: 11.5, fontWeight: 700, color: INK_SOFT }}>{WEEKDAY_LABELS[d.date.getDay()]}</span>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // One task's completion bar (used in the By-task groups).
+  const taskStatRow = ({ task, sched, done }) => {
+    const c = data.categories.find((x) => x.id === task.categoryId);
+    return (
+      <div key={task.id}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 4 }}>
+          <CatDot color={c?.color || INK} size={7} />
+          <span style={{ flex: 1, fontSize: 15.5, fontWeight: 600 }}>{task.name}</span>
+          <span style={{ fontSize: 13.5, fontWeight: 700, color: INK_SOFT }}>done {done}/{sched} {sched === 1 ? "day" : "days"}</span>
+        </div>
+        <div style={{ height: 7, background: INK + "12", borderRadius: 99 }}>
+          <div style={{ width: `${sched ? (done / sched) * 100 : 0}%`, height: "100%", background: BRAND, opacity: sched ? 0.4 + 0.6 * (done / sched) : 0.4, borderRadius: 99, transition: "width 400ms ease" }} />
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: BASE_BG }}>
@@ -1806,7 +1901,7 @@ function SummaryView({ data, nav }) {
           <IconBtn label="Back to today" onClick={() => nav("today")}><ChevronLeft size={18} /></IconBtn>
           <div className="df-display" style={{ fontSize: 26, fontWeight: 500, flex: 1 }}>Summary</div>
           <div style={{ display: "flex", gap: 5, background: CARD, border: `1px solid ${LINE}`, borderRadius: 12, padding: 4 }}>
-            {[[7, "Week"], [30, "Month"]].map(([v, l]) => (
+            {[[1, "Day"], [7, "Week"], [30, "Month"]].map(([v, l]) => (
               <button key={v} onClick={() => setRange(v)} className="df-btn"
                 style={{ padding: "6px 12px", borderRadius: R_PILL, border: "none", fontSize: 13.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", background: range === v ? BRAND : "transparent", color: range === v ? "#FFFFFF" : INK_SOFT }}>
                 {l}
@@ -1816,27 +1911,14 @@ function SummaryView({ data, nav }) {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <Section title="Completion">
-            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-              <span className="df-display df-num" style={{ fontSize: 28, fontWeight: 600 }}>{pct}%</span>
-              <span style={{ fontSize: 14.5, color: INK_SOFT }}>{totDone} of {totSched} scheduled tasks, last {range} days</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: range === 7 ? 8 : 3, height: 72, marginTop: 14 }}>
-              {days.map((d) => {
-                const p = d.scheduled.length ? d.done / d.scheduled.length : null;
-                return (
-                  <div key={d.key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
-                    <div style={{ width: "100%", height: 56, background: INK + "14", borderRadius: 6, display: "flex", alignItems: "flex-end", overflow: "hidden" }}>
-                      {p != null && <div style={{ width: "100%", height: `${Math.max(p * 100, 4)}%`, background: BRAND, opacity: 0.35 + p * 0.65, borderRadius: 6, transition: "height 400ms ease" }} />}
-                    </div>
-                    {range === 7 && <span style={{ fontSize: 11.5, fontWeight: 700, color: INK_SOFT }}>{"SMTWTFS"[d.date.getDay()]}</span>}
-                  </div>
-                );
-              })}
+          <Section title="Completion" info={`How many of your scheduled tasks you finished over the selected ${range === 1 ? "day" : range === 7 ? "week" : "month"}. Each bar is a day. Taller and darker means more done. Personal covers every area except Household.`}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+              {completionBlock("Personal", personalDays)}
+              {hasHousehold && completionBlock("Household", householdDays)}
             </div>
           </Section>
 
-          <Section title="Streaks">
+          <Section title="Streaks" info="A day counts toward a streak only when everything scheduled that day is done. Current is your active run; best is your longest ever. The chips show each area's own streak.">
             <div style={{ display: "flex", gap: 24, marginBottom: 12 }}>
               <div><span className="df-display df-num" style={{ fontSize: 28, fontWeight: 600 }}>{cur}</span><span style={{ fontSize: 14, color: INK_SOFT, marginLeft: 7 }}>current</span></div>
               <div><span className="df-display df-num" style={{ fontSize: 28, fontWeight: 600 }}>{best}</span><span style={{ fontSize: 14, color: INK_SOFT, marginLeft: 7 }}>best</span></div>
@@ -1851,7 +1933,7 @@ function SummaryView({ data, nav }) {
             <p style={{ fontSize: 12.5, color: INK_SOFT, margin: "10px 0 0" }}>A day counts toward a streak when everything scheduled that day is done.</p>
           </Section>
 
-          <Section title="Why tasks were skipped">
+          <Section title="Why tasks were skipped" info="How often each skip reason came up in this period. Spotting the common ones helps you see what tends to get in the way.">
             {skipCounts.length === 0 ? (
               <p style={{ fontSize: 15, color: INK_SOFT, margin: 0 }}>No skips in this period.</p>
             ) : (
@@ -1869,32 +1951,35 @@ function SummaryView({ data, nav }) {
             )}
           </Section>
 
-          <Section title="By task">
+          <Section title="By task" info="How often you completed each task out of the days it was scheduled in this period. Personal covers every area except Household.">
             {taskStats.length === 0 ? (
               <p style={{ fontSize: 15, color: INK_SOFT, margin: 0 }}>Nothing scheduled in this period yet.</p>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
-                {taskStats.map(({ task, sched, done }) => {
-                  const c = data.categories.find((x) => x.id === task.categoryId);
-                  return (
-                    <div key={task.id}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 4 }}>
-                        <CatDot color={c?.color || INK} size={7} />
-                        <span style={{ flex: 1, fontSize: 15.5, fontWeight: 600 }}>{task.name}</span>
-                        <span style={{ fontSize: 13.5, fontWeight: 700, color: INK_SOFT }}>done {done}/{sched} days</span>
-                      </div>
-                      <div style={{ height: 7, background: INK + "12", borderRadius: 99 }}>
-                        <div style={{ width: `${sched ? (done / sched) * 100 : 0}%`, height: "100%", background: BRAND, opacity: sched ? 0.4 + 0.6 * (done / sched) : 0.4, borderRadius: 99, transition: "width 400ms ease" }} />
-                      </div>
-                    </div>
-                  );
-                })}
+              <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+                <div>
+                  <GroupLabel>Personal</GroupLabel>
+                  {personalTasks.length === 0 ? (
+                    <p style={{ fontSize: 14, color: INK_SOFT, margin: 0 }}>Nothing scheduled here yet.</p>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>{personalTasks.map(taskStatRow)}</div>
+                  )}
+                </div>
+                {hasHousehold && (
+                  <div>
+                    <GroupLabel>Household</GroupLabel>
+                    {householdTasks.length === 0 ? (
+                      <p style={{ fontSize: 14, color: INK_SOFT, margin: 0 }}>Nothing scheduled here yet.</p>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>{householdTasks.map(taskStatRow)}</div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </Section>
 
           {hasPriorities && (
-            <Section title="Priority">
+            <Section title="Priority" info="Completion rate for tasks you flagged by priority, so you can see whether the ones that matter most actually get done.">
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
                 {PRIORITY_LEVELS.map((q) => {
                   const { s, d } = matrix[q.key];
@@ -1919,7 +2004,7 @@ function SummaryView({ data, nav }) {
             </Section>
           )}
 
-          <Section title="Rewards">
+          <Section title="Rewards" info="Points you have available to spend, plus anything you redeemed in this period. You earn a point for each task you finish.">
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: redemptions.length ? 14 : 0 }}>
               <span className="df-display df-num" style={{ fontSize: 28, fontWeight: 600 }}>{pointsBalance(data)}</span>
               <span style={{ fontSize: 14.5, color: INK_SOFT }}>points to spend</span>
@@ -2116,7 +2201,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {tasks.length === 0 && <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 2px 2px" }}>No tasks yet.</p>}
                   {tasks.map((t) => editingId === t.id ? (
-                    <TaskForm key={t.id} categories={data.categories} allTasks={data.tasks} initial={t} onSave={saveTask} onCancel={() => setEditingId(null)} whySeen={whySeen} onWhySeen={markWhySeen} library={library} />
+                    <TaskForm key={t.id} categories={data.categories} allTasks={data.tasks} initial={t} onSave={saveTask} onCancel={() => setEditingId(null)} whySeen={whySeen} onWhySeen={markWhySeen} library={library} mondayStart={weekStartsMonday(data)} />
                   ) : (
                     <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12, background: CARD, border: `1px solid ${LINE}` }}>
                       <span style={{ flex: 1 }}>
@@ -2133,7 +2218,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
           })}
 
           {addingTask ? (
-            <TaskForm categories={data.categories} allTasks={data.tasks} onSave={saveTask} onCancel={() => setAddingTask(false)} whySeen={whySeen} onWhySeen={markWhySeen} library={library} />
+            <TaskForm categories={data.categories} allTasks={data.tasks} onSave={saveTask} onCancel={() => setAddingTask(false)} whySeen={whySeen} onWhySeen={markWhySeen} library={library} mondayStart={weekStartsMonday(data)} />
           ) : (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <GhostBtn onClick={() => setAddingTask(true)}><Plus size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />Add task</GhostBtn>
@@ -2343,10 +2428,12 @@ function CalendarView({ data, nav }) {
   const view = new Date(now.getFullYear(), now.getMonth() + monthOffset, 1);
   const year = view.getFullYear(), month = view.getMonth();
   const monthName = view.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  const mondayStart = weekStartsMonday(data);
   const firstDow = new Date(year, month, 1).getDay();
+  const lead = (firstDow - (mondayStart ? 1 : 0) + 7) % 7; // blank cells before day 1, per week-start
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const cells = [];
-  for (let i = 0; i < firstDow; i++) cells.push(null);
+  for (let i = 0; i < lead; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
   const legend = [["all", "All done"], ["partial", "Partial"], ["skips", "Skipped"], ["empty", "Nothing logged"]];
@@ -2368,8 +2455,8 @@ function CalendarView({ data, nav }) {
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 6 }}>
-          {["S", "M", "T", "W", "T", "F", "S"].map((w, i) => (
-            <div key={i} style={{ textAlign: "center", fontSize: 12, fontWeight: 600, color: INK_SOFT }}>{w}</div>
+          {weekdayOrder(mondayStart).map((dow) => (
+            <div key={dow} style={{ textAlign: "center", fontSize: 12, fontWeight: 600, color: INK_SOFT }}>{WEEKDAY_LABELS[dow]}</div>
           ))}
         </div>
 
@@ -2393,7 +2480,8 @@ function CalendarView({ data, nav }) {
           })}
         </div>
 
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px 16px", marginTop: 18 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px 16px", marginTop: 18 }}>
+          <InfoDot label="About the calendar" text="Each square is a day this month. The dot shows how it went: all tasks done, some done, a skip logged, or scheduled but nothing recorded. Empty days had nothing scheduled." />
           {legend.map(([kind, label]) => (
             <span key={kind} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 12.5, color: INK_SOFT, fontWeight: 600 }}>
               <DayDot kind={kind} />{label}
