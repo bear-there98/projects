@@ -77,11 +77,15 @@ const CAT_COLORS = [
   { color: "#8C4A6B", tint: "#8C4A6B" }, // mulberry
 ];
 
+// Household gets its own color/hint object so "create it if missing" (Setup and
+// Manage) always produces the same category as the default.
+const HOUSEHOLD_CATEGORY = { name: "Household", color: "#3F7D6A", hint: "cleaning, laundry, dishes" };
 const DEFAULT_CATEGORIES = [
   { id: "body", name: "Body", color: "#A14E3A", hint: "workout · food · sleep · water" },
   { id: "mind", name: "Mind", color: "#3D648C", hint: "reading · learning · focus" },
   { id: "soul", name: "Soul", color: "#6E5F9E", hint: "meditation · gratitude · people" },
   { id: "hobbies", name: "Hobbies", color: "#8F6E22", hint: "guitar · drawing · anything for joy" },
+  { id: "household", ...HOUSEHOLD_CATEGORY },
 ];
 
 const SKIP_CHIPS = ["No time", "Not feeling it", "Forgot"];
@@ -187,6 +191,45 @@ function makeWorkoutSplit(library, categoryId) {
       .filter(Boolean)
       .map((ex) => ({ id: uid(), name: exerciseSubtaskName(ex) })),
   }));
+}
+
+// One-tap suggested daily routine (Setup step 2). Each toggles a daily task on;
+// `cat` names its preferred category, falling back to the first chosen area.
+const ROUTINE_TEMPLATES = [
+  { key: "stretch", name: "Morning stretch", cat: "Body", eta: 5, note: "A few easy minutes to wake the body up." },
+  { key: "water", name: "Drink water", cat: "Body", eta: null, note: "A glass to start the day hydrated." },
+  { key: "read", name: "Read 10 min", cat: "Mind", eta: 10, note: "" },
+  { key: "tidy", name: "Tidy 10 min", cat: "Household", eta: 10, note: "A quick reset of one space." },
+  { key: "plan", name: "Plan tomorrow", cat: "Mind", eta: 5, note: "Jot the top few things for tomorrow." },
+];
+function makeRoutineTask(tpl, categoryId) {
+  return { id: uid(), name: tpl.name, note: tpl.note || "", categoryId, freq: { type: "daily", days: [] },
+    rotationLabel: null, priority: null, eta: tpl.eta ?? null, pairId: null, pleasantNote: null, subtasks: [], _tpl: tpl.key };
+}
+
+// Preset weekly chores for the Household category (Setup + Manage one-tap).
+const HOUSEHOLD_LIBRARY = [
+  { name: "Vacuum", freq: { type: "weekly", count: 1 }, note: "" },
+  { name: "Laundry", freq: { type: "weekly", count: 2 }, note: "" },
+  { name: "Clean bathroom", freq: { type: "weekly", count: 1 }, note: "" },
+  { name: "Change sheets", freq: { type: "weekly", count: 1 }, note: "" },
+  { name: "Groceries", freq: { type: "weekly", count: 1 }, note: "" },
+  { name: "Take out trash", freq: { type: "days", days: [1, 4] }, note: "On your bin days, edit to match." },
+];
+function makeHouseholdTasks(categoryId) {
+  return HOUSEHOLD_LIBRARY.map((h) => ({
+    id: uid(), name: h.name, note: h.note || "", categoryId,
+    freq: h.freq.type === "weekly" ? { type: "weekly", count: h.freq.count } : { type: "days", days: [...h.freq.days] },
+    rotationLabel: null, priority: null, eta: null, pairId: null, pleasantNote: null, subtasks: [],
+  }));
+}
+// Ensure a Household category exists in `categories`; returns { categories, id }.
+function ensureHouseholdCategory(categories, withHint) {
+  const existing = categories.find((c) => c.name === "Household");
+  if (existing) return { categories, id: existing.id };
+  const id = categories.some((c) => c.id === "household") ? uid() : "household";
+  const cat = withHint ? { id, ...HOUSEHOLD_CATEGORY } : { id, name: "Household", color: HOUSEHOLD_CATEGORY.color };
+  return { categories: [...categories, cat], id };
 }
 
 const GLOBAL_CSS = `
@@ -932,17 +975,26 @@ function ProfilesView({ profiles, onOpen, onCreate }) {
   );
 }
 
-/* ————— Setup flow ————— */
+/* ————— Setup flow (guided 3-step wizard) ————— */
+const SETUP_STEPS = ["Your areas", "Your daily routine", "This week"];
 function SetupView({ profileName, onFinish }) {
   const [step, setStep] = useState(0);
   const [cats, setCats] = useState(DEFAULT_CATEGORIES.map((c) => ({ ...c, on: true })));
   const [customName, setCustomName] = useState("");
   const [tasks, setTasks] = useState([]);
-  const [adding, setAdding] = useState(true);
+  const [formOpen, setFormOpen] = useState(false); // "add a task" form (step 2)
+  const [editId, setEditId] = useState(null);       // task being edited (step 2)
   const [whySeen, setWhySeen] = useState([]);
   const markWhySeen = (id) => setWhySeen((s) => [...s, id]);
+  // Step 3 "this week" goal composer
+  const [goalName, setGoalName] = useState("");
+  const [goalMode, setGoalMode] = useState("once"); // "once" | "weekly"
+  const [goalDate, setGoalDate] = useState("");
+  const [goalCount, setGoalCount] = useState(1);
+  const [goalCatId, setGoalCatId] = useState(null);
 
   const chosenCats = cats.filter((c) => c.on).map(({ on, hint, ...c }) => c);
+  const catName = (id) => (chosenCats.find((c) => c.id === id) || {}).name;
 
   const addCustom = () => {
     if (!customName.trim()) return;
@@ -962,78 +1014,213 @@ function SetupView({ profileName, onFinish }) {
     setTasks([...tasks, ...makeWorkoutSplit(EXERCISE_LIBRARY, body.id)]);
   };
 
+  const addHouseholdBasics = () => {
+    let hh = cats.find((c) => c.name === "Household");
+    let hhId;
+    if (!hh) {
+      hhId = cats.some((c) => c.id === "household") ? uid() : "household";
+      setCats([...cats, { id: hhId, ...HOUSEHOLD_CATEGORY, on: true }]);
+    } else {
+      hhId = hh.id;
+      if (!hh.on) setCats(cats.map((c) => (c.id === hhId ? { ...c, on: true } : c)));
+    }
+    setTasks([...tasks, ...makeHouseholdTasks(hhId)]);
+  };
+
+  const templateOn = (key) => tasks.some((t) => t._tpl === key);
+  const toggleTemplate = (tpl) => {
+    if (templateOn(tpl.key)) { setTasks(tasks.filter((t) => t._tpl !== tpl.key)); return; }
+    const cat = chosenCats.find((c) => c.name === tpl.cat) || chosenCats[0];
+    if (!cat) return;
+    setTasks([...tasks, makeRoutineTask(tpl, cat.id)]);
+  };
+
+  const saveNewTask = (t) => { setTasks([...tasks, t]); setFormOpen(false); };
+  const saveEditTask = (t) => {
+    setTasks(tasks.map((x) => (x.id === t.id ? { ...t, _tpl: x._tpl, _goal: x._goal } : x)));
+    setEditId(null);
+  };
+  const removeTask = (id) => setTasks(tasks.filter((t) => t.id !== id));
+
+  const goals = tasks.filter((t) => t._goal);
+  const addGoal = () => {
+    const nm = goalName.trim();
+    const catId = goalCatId || chosenCats[0]?.id;
+    if (!nm || !catId) return;
+    const freq = goalMode === "weekly"
+      ? { type: "weekly", count: Math.max(1, goalCount) }
+      : { type: "once", deadline: goalDate || null };
+    setTasks([...tasks, { id: uid(), name: nm, note: "", categoryId: catId, freq, rotationLabel: null, priority: null, eta: null, pairId: null, pleasantNote: null, subtasks: [], _goal: true }]);
+    setGoalName(""); setGoalDate(""); setGoalCount(1);
+  };
+
+  const finish = () => onFinish(chosenCats, tasks.map(({ _tpl, _goal, ...t }) => t));
+
+  // A simple task row (name + category · frequency) with edit + remove.
+  const taskRow = (t) => (
+    <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, background: CARD, border: `1px solid ${LINE}` }}>
+      <CatDot color={(chosenCats.find((c) => c.id === t.categoryId) || {}).color || INK} />
+      <span style={{ flex: 1 }}>
+        <span style={{ fontWeight: 700, fontSize: 15.5 }}>{t.name}</span>
+        <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>{catName(t.categoryId)} · {freqLabel(t.freq)}</span>
+      </span>
+      <button aria-label="Edit task" onClick={() => { setFormOpen(false); setEditId(t.id); }} style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 6 }}><Pencil size={15} /></button>
+      <button aria-label="Remove task" onClick={() => removeTask(t.id)} style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 6 }}><Trash2 size={16} /></button>
+    </div>
+  );
+
   return (
     <div style={{ maxWidth: 480, margin: "0 auto", padding: "40px 20px 80px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
         {step > 0 && <IconBtn label="Back" onClick={() => setStep(step - 1)}><ChevronLeft size={18} /></IconBtn>}
         <div>
-          <div style={{ fontSize: 13, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600, color: INK_SOFT }}>Setting up · {profileName}</div>
-          <div className="df-display" style={{ fontSize: 28, fontWeight: 500, marginTop: 2 }}>
-            {step === 0 ? "Pick your categories" : "Add your tasks"}
-          </div>
+          <div style={{ fontSize: 13, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600, color: INK_SOFT }}>Step {step + 1} of 3 · {profileName}</div>
+          <div className="df-display" style={{ fontSize: 28, fontWeight: 500, marginTop: 2 }}>{SETUP_STEPS[step]}</div>
         </div>
+      </div>
+
+      {/* progress dots */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 22 }}>
+        {SETUP_STEPS.map((_, i) => (
+          <div key={i} style={{ flex: 1, height: 4, borderRadius: 99, background: i <= step ? BRAND : LINE, transition: "background 200ms ease" }} />
+        ))}
       </div>
 
       {step === 0 && (
         <div className="df-card-in" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <p style={{ fontSize: 14.5, color: INK_SOFT, margin: "0 0 2px" }}>Pick the areas of life you want to nurture. You can change these later.</p>
           {cats.map((c, i) => (
             <button key={c.id} onClick={() => setCats(cats.map((x, j) => (j === i ? { ...x, on: !x.on } : x)))} className="df-btn"
               style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", textAlign: "left", border: `1.5px solid ${c.on ? BRAND : LINE}`, background: c.on ? BRAND_SOFT : "#FFFFFF" }}>
               <CatDot color={c.color} size={12} />
               <span style={{ flex: 1 }}>
-                <span style={{ fontSize: 17, fontWeight: 700, color: c.on ? INK : INK }}>{c.name}</span>
+                <span style={{ fontSize: 17, fontWeight: 700, color: INK }}>{c.name}</span>
                 <span style={{ display: "block", fontSize: 13.5, color: INK_SOFT }}>{c.hint}</span>
               </span>
               {c.on && <Check size={18} color={BRAND} />}
             </button>
           ))}
           <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-            <TextInput placeholder="Add your own category" value={customName} onChange={(e) => setCustomName(e.target.value)}
+            <TextInput placeholder="Add your own area" value={customName} onChange={(e) => setCustomName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addCustom()} />
             <GhostBtn onClick={addCustom} style={{ padding: "10px 14px" }}><Plus size={18} /></GhostBtn>
           </div>
-          <PrimaryBtn disabled={!chosenCats.length} onClick={() => setStep(1)} style={{ marginTop: 12 }}>
-            Continue
-          </PrimaryBtn>
+          <PrimaryBtn disabled={!chosenCats.length} onClick={() => setStep(1)} style={{ marginTop: 12 }}>Continue</PrimaryBtn>
         </div>
       )}
 
       {step === 1 && (
         <div className="df-card-in" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <p style={{ fontSize: 14.5, color: INK_SOFT, margin: 0 }}>Tap a suggestion to add it, then edit anything to fit your day.</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {ROUTINE_TEMPLATES.map((tpl) => {
+              const on = templateOn(tpl.key);
+              const dest = (chosenCats.find((c) => c.name === tpl.cat) || chosenCats[0] || {}).name;
+              return (
+                <button key={tpl.key} onClick={() => toggleTemplate(tpl)} disabled={!chosenCats.length} className="df-btn"
+                  style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 15px", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", textAlign: "left", border: `1.5px solid ${on ? BRAND : LINE}`, background: on ? BRAND_SOFT : "#FFFFFF" }}>
+                  <span style={{ width: 24, height: 24, borderRadius: 7, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${on ? BRAND : "#C7CED4"}`, background: on ? BRAND : "transparent" }}>
+                    {on ? <Check size={15} color="#FFFFFF" strokeWidth={3} /> : <Plus size={14} color="#9BA3AB" />}
+                  </span>
+                  <span style={{ flex: 1 }}>
+                    <span style={{ fontSize: 15.5, fontWeight: 700, color: INK }}>{tpl.name}</span>
+                    <span style={{ display: "block", fontSize: 12.5, color: INK_SOFT }}>Every day{dest ? ` · ${dest}` : ""}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           {tasks.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {tasks.map((t) => {
-                const cat = chosenCats.find((c) => c.id === t.categoryId);
-                return (
-                  <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, background: CARD, border: `1px solid ${LINE}` }}>
-                    <CatDot color={cat?.color || INK} />
-                    <span style={{ flex: 1 }}>
-                      <span style={{ fontWeight: 700, fontSize: 15.5 }}>{t.name}</span>
-                      <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>{cat?.name} · {freqLabel(t.freq)}</span>
-                    </span>
-                    <button aria-label="Remove task" onClick={() => setTasks(tasks.filter((x) => x.id !== t.id))}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 6 }}>
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                );
-              })}
+              <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT }}>Your tasks · {tasks.length}</div>
+              {tasks.map((t) => (editId === t.id ? (
+                <TaskForm key={t.id} categories={chosenCats} allTasks={tasks} initial={t} whySeen={whySeen} onWhySeen={markWhySeen} library={EXERCISE_LIBRARY}
+                  onSave={saveEditTask} onCancel={() => setEditId(null)} />
+              ) : taskRow(t)))}
             </div>
           )}
-          {adding ? (
-            <TaskForm key={tasks.length} categories={chosenCats} allTasks={tasks} whySeen={whySeen} onWhySeen={markWhySeen} library={EXERCISE_LIBRARY}
-              onSave={(t) => { setTasks([...tasks, t]); }}
-              onCancel={tasks.length ? () => setAdding(false) : null} />
+
+          {formOpen ? (
+            <TaskForm key={"new" + tasks.length} categories={chosenCats} allTasks={tasks} whySeen={whySeen} onWhySeen={markWhySeen} library={EXERCISE_LIBRARY}
+              onSave={saveNewTask} onCancel={() => setFormOpen(false)} />
           ) : (
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <GhostBtn onClick={() => setAdding(true)}><Plus size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />Add another task</GhostBtn>
+              <GhostBtn onClick={() => { setEditId(null); setFormOpen(true); }}><Plus size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />Add your own</GhostBtn>
               <GhostBtn onClick={addWorkoutSplit}>Add home workout split</GhostBtn>
+              <GhostBtn onClick={addHouseholdBasics}>Add household basics</GhostBtn>
             </div>
           )}
-          <PrimaryBtn disabled={!tasks.length} onClick={() => onFinish(chosenCats, tasks)} style={{ marginTop: 6 }}>
+
+          <PrimaryBtn onClick={() => setStep(2)} style={{ marginTop: 6 }}>Continue</PrimaryBtn>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="df-card-in" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <p style={{ fontSize: 14.5, color: INK_SOFT, margin: 0 }}>Optional. Add a few goals for this week: a one-time to-do with a date, or something to hit a set number of times.</p>
+
+          {goals.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {goals.map((t) => (
+                <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, background: CARD, border: `1px solid ${LINE}` }}>
+                  <CatDot color={(chosenCats.find((c) => c.id === t.categoryId) || {}).color || INK} />
+                  <span style={{ flex: 1 }}>
+                    <span style={{ fontWeight: 700, fontSize: 15.5 }}>{t.name}</span>
+                    <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>{catName(t.categoryId)} · {freqLabel(t.freq)}</span>
+                  </span>
+                  <button aria-label="Remove goal" onClick={() => removeTask(t.id)} style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 6 }}><Trash2 size={16} /></button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: R_CARD, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+            <TextInput placeholder="Goal (e.g. call the dentist)" value={goalName} onChange={(e) => setGoalName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addGoal(); } }} />
+            <div style={{ display: "flex", gap: 6 }}>
+              {[["once", "One-time"], ["weekly", "Weekly"]].map(([v, l]) => (
+                <button key={v} onClick={() => setGoalMode(v)} className="df-btn"
+                  style={{ flex: 1, padding: "9px 4px", borderRadius: R_PILL, fontSize: 14, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${goalMode === v ? INK : LINE}`, background: goalMode === v ? INK : "transparent", color: goalMode === v ? "#FFFFFF" : INK }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+            {goalMode === "once" ? (
+              <div>
+                <TextInput type="date" value={goalDate} min={todayKey()} onChange={(e) => setGoalDate(e.target.value)} />
+                <p style={{ fontSize: 12.5, color: INK_SOFT, margin: "6px 2px 0" }}>Date optional, shows every day until you finish it or the date passes.</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 6 }}>
+                {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+                  <button key={n} onClick={() => setGoalCount(n)} className="df-btn"
+                    style={{ flex: 1, padding: "8px 0", borderRadius: R_PILL, fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${goalCount === n ? INK : LINE}`, background: goalCount === n ? INK : "transparent", color: goalCount === n ? "#FFFFFF" : INK_SOFT }}>
+                    {n}
+                  </button>
+                ))}
+              </div>
+            )}
+            {chosenCats.length > 1 && (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {chosenCats.map((c) => {
+                  const on = (goalCatId || chosenCats[0]?.id) === c.id;
+                  return (
+                    <button key={c.id} onClick={() => setGoalCatId(c.id)} className="df-btn"
+                      style={{ display: "flex", alignItems: "center", gap: 7, padding: "8px 12px", borderRadius: 99, fontSize: 14, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${on ? BRAND : LINE}`, background: on ? BRAND_SOFT : "transparent", color: on ? BRAND : INK_SOFT }}>
+                      <CatDot color={c.color} size={7} /> {c.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <PrimaryBtn disabled={!goalName.trim()} onClick={addGoal} style={{ padding: "11px 18px", fontSize: 15 }}>Add goal</PrimaryBtn>
+          </div>
+
+          <PrimaryBtn disabled={!tasks.length} onClick={finish} style={{ marginTop: 6 }}>
             Start my flow{tasks.length ? ` · ${tasks.length} task${tasks.length > 1 ? "s" : ""}` : ""}
           </PrimaryBtn>
-          <p style={{ fontSize: 13, color: INK_SOFT, textAlign: "center", margin: 0 }}>You can add, edit, or remove tasks any time.</p>
+          <p style={{ fontSize: 13, color: INK_SOFT, textAlign: "center", margin: 0 }}>You can add, edit, or remove anything later in Manage.</p>
         </div>
       )}
     </div>
@@ -1793,6 +1980,10 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
     }
     persist({ ...data, categories, tasks: [...data.tasks, ...makeWorkoutSplit(library, body.id)] });
   };
+  const addHouseholdBasics = () => {
+    const { categories, id } = ensureHouseholdCategory(data.categories);
+    persist({ ...data, categories, tasks: [...data.tasks, ...makeHouseholdTasks(id)] });
+  };
 
   const setOverrides = (next) => persist({ ...data, libraryOverrides: next });
   const editExercise = (ex, field, value) => {
@@ -1947,6 +2138,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <GhostBtn onClick={() => setAddingTask(true)}><Plus size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />Add task</GhostBtn>
               <GhostBtn onClick={addWorkoutSplit}>Add home workout split</GhostBtn>
+              <GhostBtn onClick={addHouseholdBasics}>Add household basics</GhostBtn>
             </div>
           )}
 
