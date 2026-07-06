@@ -136,6 +136,53 @@ const EXERCISE_LIBRARY = [
   { name: "World's greatest stretch", bodyPart: "Mobility", defaultReps: "2×5 each", note: "Deep lunge, drop the elbow inside, then rotate open to the sky." },
   { name: "Neck rolls", bodyPart: "Mobility", defaultReps: "2×5 each", note: "Slow half-circles; never force the range, keep shoulders relaxed." },
 ];
+const BODY_PARTS = ["Legs", "Chest & Arms", "Core", "Back", "Full body", "Mobility"];
+
+// The exercise library with a profile's edits/additions/deletions merged over
+// the built-in EXERCISE_LIBRARY. overrides = { edits: {name: {..}}, deleted: [name], added: [entry] }.
+function effectiveLibrary(data) {
+  const ov = (data && data.libraryOverrides) || {};
+  const edits = ov.edits || {};
+  const deleted = new Set(ov.deleted || []);
+  const added = Array.isArray(ov.added) ? ov.added : [];
+  const base = EXERCISE_LIBRARY
+    .filter((e) => !deleted.has(e.name))
+    .map((e) => ({ ...e, ...(edits[e.name] || {}), _base: e.name }));
+  return [...base, ...added.map((a) => ({ ...a, _added: true }))];
+}
+// Whether a built-in exercise has been changed or hidden (so it can be reset).
+function isExerciseModified(data, name) {
+  const ov = (data && data.libraryOverrides) || {};
+  return !!(ov.edits && ov.edits[name]) || (Array.isArray(ov.deleted) && ov.deleted.includes(name));
+}
+const exerciseSubtaskName = (ex) => `${ex.name} · ${ex.defaultReps}`;
+
+// The one-tap home split: 3 rotating Body tasks, 4 library exercises each, eta 20.
+const WORKOUT_SPLIT = [
+  { name: "Push day", rotationLabel: "Push", picks: ["Push-ups", "Incline push-ups on a chair", "Tricep dips on a chair", "Pike push-ups"] },
+  { name: "Legs + core day", rotationLabel: "Legs+Core", picks: ["Squats", "Lunges", "Plank", "Dead bug"] },
+  { name: "Pull + full-body day", rotationLabel: "Pull+Full-body", picks: ["Superman hold", "Reverse snow angels", "Burpees", "Mountain climbers"] },
+];
+function makeWorkoutSplit(library, categoryId) {
+  const byName = {};
+  library.forEach((e) => { byName[e.name] = e; });
+  return WORKOUT_SPLIT.map((split) => ({
+    id: uid(),
+    name: split.name,
+    note: "",
+    categoryId,
+    freq: { type: "rotate" },
+    rotationLabel: split.rotationLabel,
+    priority: null,
+    eta: 20,
+    pairId: null,
+    pleasantNote: null,
+    subtasks: split.picks
+      .map((n) => byName[n])
+      .filter(Boolean)
+      .map((ex) => ({ id: uid(), name: exerciseSubtaskName(ex) })),
+  }));
+}
 
 const GLOBAL_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
@@ -175,6 +222,7 @@ function migrate(data) {
     if (!Array.isArray(d.rewards)) d.rewards = [];
     if (!Array.isArray(d.categories)) d.categories = [];
     if (!d.history || typeof d.history !== "object") d.history = {};
+    if (!d.libraryOverrides || typeof d.libraryOverrides !== "object") d.libraryOverrides = {};
     if (!d.createdAt) d.createdAt = todayKey();
     d.tasks = (Array.isArray(d.tasks) ? d.tasks : []).map((raw) => {
       const t = raw && typeof raw === "object" ? raw : {};
@@ -571,11 +619,59 @@ function FreqEditor({ freq, onChange }) {
   );
 }
 
+/* ————— Exercise picker sheet ————— */
+function ExerciseSheet({ library, onPick, onClose }) {
+  const known = BODY_PARTS.filter((bp) => library.some((e) => e.bodyPart === bp));
+  const extra = [...new Set(library.map((e) => e.bodyPart))].filter((bp) => !BODY_PARTS.includes(bp));
+  const groups = [...known, ...extra];
+  return (
+    <div className="df-veil" onClick={onClose}
+      style={{ position: "fixed", inset: 0, background: "rgba(17,24,32,0.4)", zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      <div onClick={(e) => e.stopPropagation()} className="df-card-in"
+        style={{ background: CARD, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 520, maxHeight: "80vh", overflowY: "auto", padding: "20px 20px 30px", boxSizing: "border-box", boxShadow: SHADOW }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+          <span className="df-display" style={{ fontSize: 21, fontWeight: 500 }}>Exercise library</span>
+          <IconBtn label="Close" onClick={onClose}><X size={18} /></IconBtn>
+        </div>
+        <p style={{ fontSize: 13, color: INK_SOFT, margin: "0 0 16px" }}>Bodyweight, no equipment. Pick one — you can edit it after.</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          {groups.map((bp) => (
+            <div key={bp}>
+              <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>{bp}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {library.filter((e) => e.bodyPart === bp).map((ex, i) => (
+                  <button key={ex.name + i} onClick={() => onPick(ex)} className="df-btn"
+                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#FFFFFF", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                    <span style={{ flex: 1 }}>
+                      <span style={{ fontWeight: 700, fontSize: 15.5 }}>{ex.name} <span style={{ color: INK_SOFT, fontWeight: 600 }}>· {ex.defaultReps}</span></span>
+                      <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>{ex.note}</span>
+                    </span>
+                    <Plus size={16} color={BRAND} />
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ————— Task editor form ————— */
-function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySeen = [], onWhySeen }) {
+function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySeen = [], onWhySeen, library = EXERCISE_LIBRARY }) {
   const [name, setName] = useState(initial?.name || "");
   const [note, setNote] = useState(initial?.note || "");
   const [categoryId, setCategoryId] = useState(initial?.categoryId || categories[0]?.id);
+  const [showLib, setShowLib] = useState(false);
+  const selectedCat = categories.find((c) => c.id === categoryId);
+  const isBody = selectedCat && selectedCat.name === "Body";
+  const pickExercise = (ex) => {
+    setName(ex.name);
+    setNote(`${ex.note} · ${ex.defaultReps}`);
+    setEta("5");
+    setShowLib(false);
+  };
   const [freq, setFreq] = useState(initial?.freq || { type: "daily", days: [] });
   const [rotationLabel, setRotationLabel] = useState(initial?.rotationLabel || "");
   const [priority, setPriority] = useState(initial?.priority || "");
@@ -604,6 +700,14 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySee
           </button>
         ))}
       </div>
+      {isBody && (
+        <GhostBtn onClick={() => setShowLib(true)} style={{ padding: "11px 16px", fontSize: 15 }}>
+          Choose from exercise library
+        </GhostBtn>
+      )}
+      {showLib && (
+        <ExerciseSheet library={library} onPick={pickExercise} onClose={() => setShowLib(false)} />
+      )}
       <FreqEditor freq={freq} onChange={setFreq} />
       {freq.type === "rotate" && (
         <div>
@@ -773,6 +877,17 @@ function SetupView({ profileName, onFinish }) {
     setCustomName("");
   };
 
+  const addWorkoutSplit = () => {
+    let body = cats.find((c) => c.name === "Body");
+    if (!body) {
+      body = { id: uid(), name: "Body", color: CAT_COLORS[cats.length % CAT_COLORS.length].color, hint: "workout · food · sleep · water", on: true };
+      setCats([...cats, body]);
+    } else if (!body.on) {
+      setCats(cats.map((c) => (c.id === body.id ? { ...c, on: true } : c)));
+    }
+    setTasks([...tasks, ...makeWorkoutSplit(EXERCISE_LIBRARY, body.id)]);
+  };
+
   return (
     <div style={{ maxWidth: 480, margin: "0 auto", padding: "40px 20px 80px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
@@ -832,11 +947,14 @@ function SetupView({ profileName, onFinish }) {
             </div>
           )}
           {adding ? (
-            <TaskForm key={tasks.length} categories={chosenCats} allTasks={tasks} whySeen={whySeen} onWhySeen={markWhySeen}
+            <TaskForm key={tasks.length} categories={chosenCats} allTasks={tasks} whySeen={whySeen} onWhySeen={markWhySeen} library={EXERCISE_LIBRARY}
               onSave={(t) => { setTasks([...tasks, t]); }}
               onCancel={tasks.length ? () => setAdding(false) : null} />
           ) : (
-            <GhostBtn onClick={() => setAdding(true)}><Plus size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />Add another task</GhostBtn>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <GhostBtn onClick={() => setAdding(true)}><Plus size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />Add another task</GhostBtn>
+              <GhostBtn onClick={addWorkoutSplit}>Add home workout split</GhostBtn>
+            </div>
           )}
           <PrimaryBtn disabled={!tasks.length} onClick={() => onFinish(chosenCats, tasks)} style={{ marginTop: 6 }}>
             Start my flow{tasks.length ? ` · ${tasks.length} task${tasks.length > 1 ? "s" : ""}` : ""}
@@ -1435,9 +1553,60 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
   const [ioMsg, setIoMsg] = useState(null);
   const [newRewardName, setNewRewardName] = useState("");
   const [newRewardCost, setNewRewardCost] = useState("");
+  const [newExName, setNewExName] = useState("");
+  const [newExPart, setNewExPart] = useState(BODY_PARTS[0]);
+  const [newExReps, setNewExReps] = useState("");
+  const [newExNote, setNewExNote] = useState("");
   const fileRef = useRef(null);
   const whySeen = data.settings?.whySeen || [];
   const markWhySeen = (id) => persist({ ...data, settings: { ...(data.settings || {}), whySeen: [...whySeen, id] } });
+
+  const library = effectiveLibrary(data);
+
+  const addWorkoutSplit = () => {
+    let categories = data.categories;
+    let body = categories.find((c) => c.name === "Body");
+    if (!body) {
+      body = { id: uid(), name: "Body", color: CAT_COLORS[categories.length % CAT_COLORS.length].color };
+      categories = [...categories, body];
+    }
+    persist({ ...data, categories, tasks: [...data.tasks, ...makeWorkoutSplit(library, body.id)] });
+  };
+
+  const setOverrides = (next) => persist({ ...data, libraryOverrides: next });
+  const editExercise = (ex, field, value) => {
+    const ov = { ...(data.libraryOverrides || {}) };
+    if (ex._added) {
+      ov.added = (ov.added || []).map((a) => (a.id === ex.id ? { ...a, [field]: value } : a));
+    } else {
+      ov.edits = { ...(ov.edits || {}), [ex._base]: { ...((ov.edits || {})[ex._base] || {}), [field]: value } };
+    }
+    setOverrides(ov);
+  };
+  const deleteExercise = (ex) => {
+    const ov = { ...(data.libraryOverrides || {}) };
+    if (ex._added) {
+      ov.added = (ov.added || []).filter((a) => a.id !== ex.id);
+    } else {
+      ov.deleted = [...new Set([...(ov.deleted || []), ex._base])];
+      if (ov.edits) { const e = { ...ov.edits }; delete e[ex._base]; ov.edits = e; }
+    }
+    setOverrides(ov);
+  };
+  const resetExercise = (ex) => {
+    const ov = { ...(data.libraryOverrides || {}) };
+    if (ov.edits) { const e = { ...ov.edits }; delete e[ex._base]; ov.edits = e; }
+    ov.deleted = (ov.deleted || []).filter((n) => n !== ex._base);
+    setOverrides(ov);
+  };
+  const addExercise = () => {
+    const name = newExName.trim();
+    if (!name) return;
+    const ov = { ...(data.libraryOverrides || {}) };
+    ov.added = [...(ov.added || []), { id: uid(), name, bodyPart: newExPart, defaultReps: newExReps.trim() || "3×10", note: newExNote.trim() }];
+    setOverrides(ov);
+    setNewExName(""); setNewExReps(""); setNewExNote("");
+  };
 
   const addReward = () => {
     const name = newRewardName.trim();
@@ -1535,7 +1704,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {tasks.length === 0 && <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 2px 2px" }}>No tasks yet.</p>}
                   {tasks.map((t) => editingId === t.id ? (
-                    <TaskForm key={t.id} categories={data.categories} allTasks={data.tasks} initial={t} onSave={saveTask} onCancel={() => setEditingId(null)} whySeen={whySeen} onWhySeen={markWhySeen} />
+                    <TaskForm key={t.id} categories={data.categories} allTasks={data.tasks} initial={t} onSave={saveTask} onCancel={() => setEditingId(null)} whySeen={whySeen} onWhySeen={markWhySeen} library={library} />
                   ) : (
                     <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12, background: CARD, border: `1px solid ${LINE}` }}>
                       <span style={{ flex: 1 }}>
@@ -1552,9 +1721,12 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
           })}
 
           {addingTask ? (
-            <TaskForm categories={data.categories} allTasks={data.tasks} onSave={saveTask} onCancel={() => setAddingTask(false)} whySeen={whySeen} onWhySeen={markWhySeen} />
+            <TaskForm categories={data.categories} allTasks={data.tasks} onSave={saveTask} onCancel={() => setAddingTask(false)} whySeen={whySeen} onWhySeen={markWhySeen} library={library} />
           ) : (
-            <GhostBtn onClick={() => setAddingTask(true)}><Plus size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />Add task</GhostBtn>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <GhostBtn onClick={() => setAddingTask(true)}><Plus size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />Add task</GhostBtn>
+              <GhostBtn onClick={addWorkoutSplit}>Add home workout split</GhostBtn>
+            </div>
           )}
 
           {addingCat ? (
@@ -1593,6 +1765,69 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
                   style={{ width: 66, padding: "12px 10px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff", fontSize: 16, fontFamily: "inherit", color: INK, boxSizing: "border-box", textAlign: "center" }} />
                 <PrimaryBtn disabled={!newRewardName.trim() || !(Number(newRewardCost) > 0)} onClick={addReward} style={{ padding: "10px 16px", fontSize: 15 }}>Add</PrimaryBtn>
               </div>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 6, paddingTop: 20, borderTop: `1px solid ${LINE}` }}>
+            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>Exercise library</div>
+            <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 12px" }}>Edit reps and cues, add your own, or reset any built-in exercise to its default.</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {[...BODY_PARTS.filter((bp) => library.some((e) => e.bodyPart === bp)), ...[...new Set(library.map((e) => e.bodyPart))].filter((bp) => !BODY_PARTS.includes(bp))].map((bp) => (
+                <div key={bp}>
+                  <div style={{ fontSize: 12.5, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>{bp}</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {library.filter((e) => e.bodyPart === bp).map((ex) => (
+                      <div key={ex._added ? ex.id : ex._base} style={{ border: `1px solid ${LINE}`, borderRadius: 12, background: "#FFFFFF", padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <TextInput value={ex.name} placeholder="Exercise" onChange={(e) => editExercise(ex, "name", e.target.value)} />
+                          <input value={ex.defaultReps} placeholder="3×12" onChange={(e) => editExercise(ex, "defaultReps", e.target.value)}
+                            style={{ width: 84, padding: "12px 10px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff", fontSize: 15, fontFamily: "inherit", color: INK, boxSizing: "border-box", textAlign: "center" }} />
+                          <button aria-label="Delete exercise" onClick={() => deleteExercise(ex)}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 6, flexShrink: 0 }}>
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                        <TextInput value={ex.note || ""} placeholder="Form cue" onChange={(e) => editExercise(ex, "note", e.target.value)} />
+                        {!ex._added && isExerciseModified(data, ex._base) && (
+                          <div><TextBtn onClick={() => resetExercise(ex)}>Reset to default</TextBtn></div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {(() => {
+              const hidden = EXERCISE_LIBRARY.filter((e) => (data.libraryOverrides?.deleted || []).includes(e.name));
+              return hidden.length ? (
+                <div style={{ marginTop: 14 }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>Hidden built-ins</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {hidden.map((ex) => (
+                      <div key={ex.name} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: INK_SOFT }}>
+                        <span style={{ flex: 1 }}>{ex.name} <span style={{ opacity: 0.7 }}>· {ex.bodyPart}</span></span>
+                        <TextBtn onClick={() => resetExercise({ _base: ex.name })}>Restore</TextBtn>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null;
+            })()}
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${LINE}`, display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: INK_SOFT }}>Add your own</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <TextInput placeholder="Exercise name" value={newExName} onChange={(e) => setNewExName(e.target.value)} />
+                <input value={newExReps} placeholder="3×12" onChange={(e) => setNewExReps(e.target.value)}
+                  style={{ width: 84, padding: "12px 10px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff", fontSize: 15, fontFamily: "inherit", color: INK, boxSizing: "border-box", textAlign: "center" }} />
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <select value={newExPart} onChange={(e) => setNewExPart(e.target.value)}
+                  style={{ padding: "12px 12px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff", fontSize: 15, fontFamily: "inherit", color: INK, boxSizing: "border-box" }}>
+                  {BODY_PARTS.map((bp) => <option key={bp} value={bp}>{bp}</option>)}
+                </select>
+                <TextInput placeholder="Form cue — optional" value={newExNote} onChange={(e) => setNewExNote(e.target.value)} />
+              </div>
+              <div><PrimaryBtn disabled={!newExName.trim()} onClick={addExercise} style={{ padding: "10px 16px", fontSize: 15 }}>Add exercise</PrimaryBtn></div>
             </div>
           </div>
 
