@@ -58,7 +58,7 @@ const Star = svgIcon('<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21
 /* ————— Design tokens (minimal fintech) ————— */
 const BASE_BG = "#FFFFFF";     // page stays white
 const INK = "#111820";         // primary text
-const INK_SOFT = "#6B7580";    // secondary text
+const INK_SOFT = "#5F6875";    // secondary text (≥4.5:1 on white)
 const CARD = "#F7F9FA";        // sections / cards
 const LINE = "#E4E8EC";        // hairline borders
 const BRAND = "#0A3D91";       // single brand color for primary actions
@@ -199,13 +199,14 @@ const GLOBAL_CSS = `
 .df-fade { animation: dfVeil 200ms ease both; }
 @keyframes dfPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.72; } }
 .df-pulse { animation: dfPulse 2s ease-in-out infinite; }
+.df-progress { transition: width 300ms ease; }
 .df-btn { transition: transform 120ms ease, opacity 120ms ease, background 120ms ease; }
 .df-btn:active { transform: scale(.97); }
-button:focus-visible, input:focus-visible { outline: 2px solid ${INK}; outline-offset: 2px; }
+button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible { outline: 2px solid ${BRAND}; outline-offset: 2px; }
 input::placeholder { color: #9BA3AB; }
 @media (prefers-reduced-motion: reduce) {
   .df-card-in, .df-pop, .df-veil, .df-fade, .df-pulse { animation: none !important; }
-  .df-fade-bg, .df-btn { transition: none !important; }
+  .df-fade-bg, .df-btn, .df-progress { transition: none !important; }
 }
 `;
 
@@ -258,6 +259,13 @@ async function saveKey(key, val) {
   try { await window.storage.set(key, JSON.stringify(val)); }
   catch (e) { console.error("save failed", e); }
 }
+// Trailing-debounced writes (400ms) so rapid edits don't hammer storage.
+const _writeTimers = {};
+function saveKeyDebounced(key, val) {
+  clearTimeout(_writeTimers[key]);
+  _writeTimers[key] = setTimeout(() => { delete _writeTimers[key]; saveKey(key, val); }, 400);
+}
+const MAX_HISTORY_DAYS = 60; // cap day-by-day history reads in Feed/Summary
 
 // Shared store — visible to every user of this artifact (opt-in feed only).
 async function loadShared(key, fallback) {
@@ -295,20 +303,25 @@ const timeAgo = (ts) => {
 const addDays = (d, n) => { const c = new Date(d); c.setDate(c.getDate() + n); return c; };
 const niceDate = (d) => d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
-/* ————— Scheduling ————— */
-// The seven Mon–Sun date keys of the week containing dateStr.
-function weekDates(dateStr) {
+/* ————— Settings + scheduling ————— */
+const settingsOf = (data) => (data && data.settings) || {};
+const weekStartsMonday = (data) => settingsOf(data).weekStart !== "sun"; // Monday is the default
+const isVacationDay = (data, dateStr) => (settingsOf(data).vacationDays || []).includes(dateStr);
+
+// The seven date keys of the week containing dateStr, honoring the week-start setting.
+function weekDates(dateStr, mondayStart = true) {
   const d = new Date(dateStr + "T12:00:00");
-  const offsetToMon = (d.getDay() + 6) % 7; // 0=Sun..6=Sat -> days since Monday
-  const monday = addDays(d, -offsetToMon);
+  const startDow = mondayStart ? 1 : 0; // 1=Mon, 0=Sun
+  const offset = (d.getDay() - startDow + 7) % 7;
+  const first = addDays(d, -offset);
   const out = [];
-  for (let i = 0; i < 7; i++) out.push(fmtKey(addDays(monday, i)));
+  for (let i = 0; i < 7; i++) out.push(fmtKey(addDays(first, i)));
   return out;
 }
-// How many times a task has been completed in the Mon–Sun week of dateStr.
+// How many times a task has been completed in the week of dateStr.
 function weeklyDoneCount(data, task, dateStr) {
   let n = 0;
-  for (const k of weekDates(dateStr)) {
+  for (const k of weekDates(dateStr, weekStartsMonday(data))) {
     for (const e of entriesFor(data, k)) {
       if (e.taskId === task.id && e.status === "done") n++;
     }
@@ -405,6 +418,7 @@ function scheduledTasks(data, dateStr) {
 function entriesFor(data, dateStr) { return (data.history && data.history[dateStr]) || []; }
 
 function dayStatus(data, dateStr, categoryId) {
+  if (isVacationDay(data, dateStr)) return null; // break days never count for/against streaks
   let sched = scheduledTasks(data, dateStr);
   if (categoryId) sched = sched.filter((t) => t.categoryId === categoryId);
   if (!sched.length) return null; // nothing scheduled that day
@@ -466,9 +480,44 @@ function Eyebrow({ children, color }) {
 function IconBtn({ onClick, label, children }) {
   return (
     <button aria-label={label} title={label} onClick={onClick} className="df-btn"
-      style={{ width: 40, height: 40, borderRadius: R_PILL, border: `1px solid ${LINE}`, background: "#FFFFFF", color: INK, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+      style={{ width: 44, height: 44, borderRadius: R_PILL, border: `1px solid ${LINE}`, background: "#FFFFFF", color: INK, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
       {children}
     </button>
+  );
+}
+
+// Accessible bottom sheet: focus trap, Escape to close, restores focus, and
+// role="dialog" / aria-modal. Wraps the shared overlay + card chrome.
+function Sheet({ onClose, children, maxHeight = "80vh", label }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    const prev = document.activeElement;
+    const sel = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    const list = () => Array.from(el.querySelectorAll(sel)).filter((n) => !n.disabled && n.offsetParent !== null);
+    const firstEl = list()[0];
+    if (firstEl) firstEl.focus();
+    const onKey = (e) => {
+      if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
+      if (e.key === "Tab") {
+        const f = list();
+        if (!f.length) return;
+        const a = f[0], b = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === a) { e.preventDefault(); b.focus(); }
+        else if (!e.shiftKey && document.activeElement === b) { e.preventDefault(); a.focus(); }
+      }
+    };
+    el.addEventListener("keydown", onKey);
+    return () => { el.removeEventListener("keydown", onKey); if (prev && prev.focus) prev.focus(); };
+  }, []);
+  return (
+    <div className="df-veil" onClick={onClose} role="dialog" aria-modal="true" aria-label={label || "Sheet"}
+      style={{ position: "fixed", inset: 0, background: "rgba(17,24,32,0.4)", zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      <div ref={ref} onClick={(e) => e.stopPropagation()} className="df-card-in"
+        style={{ background: CARD, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 520, maxHeight, overflowY: "auto", padding: "20px 20px 30px", boxSizing: "border-box", boxShadow: SHADOW }}>
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -625,10 +674,7 @@ function ExerciseSheet({ library, onPick, onClose }) {
   const extra = [...new Set(library.map((e) => e.bodyPart))].filter((bp) => !BODY_PARTS.includes(bp));
   const groups = [...known, ...extra];
   return (
-    <div className="df-veil" onClick={onClose}
-      style={{ position: "fixed", inset: 0, background: "rgba(17,24,32,0.4)", zIndex: 60, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-      <div onClick={(e) => e.stopPropagation()} className="df-card-in"
-        style={{ background: CARD, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 520, maxHeight: "80vh", overflowY: "auto", padding: "20px 20px 30px", boxSizing: "border-box", boxShadow: SHADOW }}>
+    <Sheet onClose={onClose} label="Exercise library">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
           <span className="df-display" style={{ fontSize: 21, fontWeight: 500 }}>Exercise library</span>
           <IconBtn label="Close" onClick={onClose}><X size={18} /></IconBtn>
@@ -653,8 +699,7 @@ function ExerciseSheet({ library, onPick, onClose }) {
             </div>
           ))}
         </div>
-      </div>
-    </div>
+    </Sheet>
   );
 }
 
@@ -978,6 +1023,9 @@ function TodayView({ data, persist, nav, profileId, token }) {
   const [celebrate, setCelebrate] = useState(false);
   const [showOverview, setShowOverview] = useState(false);
   const [showRewards, setShowRewards] = useState(false);
+  const [showQuick, setShowQuick] = useState(false);
+  const [quickName, setQuickName] = useState("");
+  const [breakPeek, setBreakPeek] = useState(false); // "do something anyway" while on break
   const [undo, setUndo] = useState(null); // { label } for the most recent entry
   const [subChecks, setSubChecks] = useState({}); // subtaskId -> true, for the current task
   const [timerStart, setTimerStart] = useState(null); // ms when the countdown began, or null
@@ -1001,6 +1049,38 @@ function TodayView({ data, persist, nav, profileId, token }) {
   const elapsedSec = timerStart == null ? 0 : Math.floor((nowMs - timerStart) / 1000);
   const remainingSec = current && current.eta > 0 ? current.eta * 60 - elapsedSec : 0;
   const cat = current ? data.categories.find((c) => c.id === current.categoryId) : null;
+
+  // Vacation mode: mark each day it's on so streaks skip it.
+  const vacation = !!(data.settings && data.settings.vacation);
+  useEffect(() => {
+    if (vacation && !isVacationDay(data, tk)) {
+      persist({ ...data, settings: { ...(data.settings || {}), vacationDays: [...(data.settings?.vacationDays || []), tk] } });
+    }
+  }, [vacation, tk]);
+
+  const addQuickTask = () => {
+    const nm = quickName.trim();
+    if (!nm) return;
+    const catId = (data.categories[0] && data.categories[0].id) || null;
+    const t = { id: uid(), name: nm, note: "", categoryId: catId, freq: { type: "once", deadline: tk }, rotationLabel: null, priority: null, eta: null, pairId: null, pleasantNote: null, subtasks: [] };
+    persist({ ...data, tasks: [...data.tasks, t] });
+    setQuickName(""); setShowQuick(false);
+  };
+
+  // End-of-day rollover: yesterday incomplete and not yet reviewed.
+  const yKey = fmtKey(addDays(new Date(), -1));
+  const ySched = useMemo(() => scheduledTasks(data, yKey), [data, yKey]);
+  const yEntries = entriesFor(data, yKey);
+  const yDone = ySched.filter((t) => yEntries.some((e) => e.taskId === t.id && e.status === "done"));
+  const yUnlogged = ySched.filter((t) => !yEntries.some((e) => e.taskId === t.id));
+  const showRollover = !vacation && data.settings?.rolloverSeen !== yKey &&
+    (!data.createdAt || yKey >= data.createdAt) && ySched.length > 0 && yUnlogged.length > 0;
+  const backfillLate = (task) => {
+    const history = { ...(data.history || {}) };
+    history[yKey] = [...entriesFor(data, yKey), { taskId: task.id, status: "done", late: true, at: Date.now() }];
+    persist({ ...data, history });
+  };
+  const dismissRollover = () => persist({ ...data, settings: { ...(data.settings || {}), rolloverSeen: yKey } });
   const doneCount = entries.filter((e) => e.status === "done").length;
   const skipCount = entries.filter((e) => e.status === "skipped").length;
   const whySeen = data.settings?.whySeen || [];
@@ -1061,7 +1141,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
     timer.current = setTimeout(() => { setCelebrate(false); record(list, "done", null, spentMap); }, 620);
   };
 
-  const streak = currentStreak(data);
+  const streak = useMemo(() => currentStreak(data), [data]);
   const points = pointsBalance(data);
 
   const redeem = (reward) => {
@@ -1080,7 +1160,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
       {/* top progress bar */}
       {scheduled.length > 0 && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 3, background: LINE, zIndex: 100 }}>
-          <div style={{ height: "100%", width: `${Math.round(progress * 100)}%`, background: BRAND, transition: "width 300ms ease" }} />
+          <div className="df-progress" style={{ height: "100%", width: `${Math.round(progress * 100)}%`, background: BRAND }} />
         </div>
       )}
       {/* header */}
@@ -1093,10 +1173,11 @@ function TodayView({ data, persist, nav, profileId, token }) {
             <Why id="one-task" seen={whySeen} onSeen={markWhySeen} />
           </div>
         </div>
-        <button onClick={() => setShowRewards(true)} aria-label="Rewards" className="df-btn"
-          style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 11px", borderRadius: 999, border: `1px solid ${LINE}`, background: "transparent", color: INK_SOFT, fontSize: 13.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
+        <button onClick={() => setShowRewards(true)} aria-label={`Rewards, ${points} points`} className="df-btn"
+          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, minHeight: 44, padding: "6px 12px", borderRadius: 999, border: `1px solid ${LINE}`, background: "transparent", color: INK_SOFT, fontSize: 13.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
           <Star size={13} color="#8F6E22" /> {points}
         </button>
+        <IconBtn label="Add a task just for today" onClick={() => setShowQuick(true)}><Plus size={18} /></IconBtn>
         <IconBtn label="Today's tasks" onClick={() => setShowOverview(true)}><List size={18} /></IconBtn>
         <IconBtn label="Calendar" onClick={() => nav("calendar")}><Calendar size={18} /></IconBtn>
         <IconBtn label="Activity feed" onClick={() => nav("feed")}><Users size={18} /></IconBtn>
@@ -1106,7 +1187,16 @@ function TodayView({ data, persist, nav, profileId, token }) {
 
       {/* main card area — generous whitespace, card centered with >= 15vh above */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: 520, width: "100%", margin: "0 auto", padding: "15vh 20px 24px", boxSizing: "border-box" }}>
-        {scheduled.length === 0 ? (
+        {vacation && !breakPeek ? (
+          <div className="df-card-in" style={{ textAlign: "center" }}>
+            <div className="df-display" style={{ fontSize: 32, fontWeight: 600 }}>On break</div>
+            <p style={{ color: INK_SOFT, fontSize: 16, marginTop: 12, lineHeight: 1.5 }}>Streaks are paused. Rest as long as you like — nothing counts against you.</p>
+            <div style={{ marginTop: 22, display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+              {scheduled.length > 0 && <GhostBtn onClick={() => setBreakPeek(true)}>Do something anyway</GhostBtn>}
+              <GhostBtn onClick={() => nav("manage")}>End break in settings</GhostBtn>
+            </div>
+          </div>
+        ) : scheduled.length === 0 ? (
           <div className="df-card-in" style={{ textAlign: "center" }}>
             <div className="df-display" style={{ fontSize: 30, fontWeight: 500 }}>Nothing scheduled today</div>
             <p style={{ color: INK_SOFT, fontSize: 16, marginTop: 10 }}>Add tasks or adjust their days to fill your flow.</p>
@@ -1212,10 +1302,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
 
       {/* skip sheet */}
       {skipping && (
-        <div className="df-veil" onClick={() => setSkipping(false)}
-          style={{ position: "fixed", inset: 0, background: "rgba(17,24,32,0.4)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-          <div onClick={(e) => e.stopPropagation()} className="df-card-in"
-            style={{ background: CARD, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 520, padding: "20px 20px 30px", boxSizing: "border-box", boxShadow: SHADOW }}>
+        <Sheet onClose={() => setSkipping(false)} label="Skip — any reason?" maxHeight="72vh">
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
               <span className="df-display" style={{ fontSize: 21, fontWeight: 500, flex: 1 }}>Skip — any reason?</span>
               <Why id="skip-reasons" seen={whySeen} onSeen={markWhySeen} anchor="right" />
@@ -1239,16 +1326,12 @@ function TodayView({ data, persist, nav, profileId, token }) {
             <div style={{ marginTop: 14, textAlign: "center" }}>
               <TextBtn onClick={() => record(pairTasks, "skipped")}>Skip without a reason</TextBtn>
             </div>
-          </div>
-        </div>
+        </Sheet>
       )}
 
       {/* overview sheet */}
       {showOverview && (
-        <div className="df-veil" onClick={() => setShowOverview(false)}
-          style={{ position: "fixed", inset: 0, background: "rgba(17,24,32,0.4)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-          <div onClick={(e) => e.stopPropagation()} className="df-card-in"
-            style={{ background: CARD, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 520, maxHeight: "72vh", overflowY: "auto", padding: "20px 20px 30px", boxSizing: "border-box", boxShadow: SHADOW }}>
+        <Sheet onClose={() => setShowOverview(false)} label="Today's tasks" maxHeight="72vh">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
               <span className="df-display" style={{ fontSize: 21, fontWeight: 500 }}>Today</span>
               <IconBtn label="Close" onClick={() => setShowOverview(false)}><X size={18} /></IconBtn>
@@ -1276,16 +1359,12 @@ function TodayView({ data, persist, nav, profileId, token }) {
                 );
               })}
             </div>
-          </div>
-        </div>
+        </Sheet>
       )}
 
       {/* rewards sheet */}
       {showRewards && (
-        <div className="df-veil" onClick={() => setShowRewards(false)}
-          style={{ position: "fixed", inset: 0, background: "rgba(17,24,32,0.4)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-          <div onClick={(e) => e.stopPropagation()} className="df-card-in"
-            style={{ background: CARD, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 520, maxHeight: "72vh", overflowY: "auto", padding: "20px 20px 30px", boxSizing: "border-box", boxShadow: SHADOW }}>
+        <Sheet onClose={() => setShowRewards(false)} label="Rewards" maxHeight="72vh">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
               <span className="df-display" style={{ fontSize: 21, fontWeight: 500 }}>Rewards</span>
               <IconBtn label="Close" onClick={() => setShowRewards(false)}><X size={18} /></IconBtn>
@@ -1312,8 +1391,49 @@ function TodayView({ data, persist, nav, profileId, token }) {
                 })}
               </div>
             )}
+        </Sheet>
+      )}
+
+      {/* quick-add sheet */}
+      {showQuick && (
+        <Sheet onClose={() => setShowQuick(false)} label="Add a task just for today" maxHeight="60vh">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <span className="df-display" style={{ fontSize: 21, fontWeight: 500 }}>Add a task just for today</span>
+            <IconBtn label="Close" onClick={() => setShowQuick(false)}><X size={18} /></IconBtn>
           </div>
-        </div>
+          <p style={{ fontSize: 13, color: INK_SOFT, margin: "0 0 14px" }}>A one-off, due today. It won't repeat.</p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <TextInput placeholder="What needs doing?" value={quickName} autoFocus
+              onChange={(e) => setQuickName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") addQuickTask(); }} />
+            <PrimaryBtn disabled={!quickName.trim()} onClick={addQuickTask} style={{ padding: "10px 18px", fontSize: 15 }}>Add</PrimaryBtn>
+          </div>
+        </Sheet>
+      )}
+
+      {/* end-of-day rollover */}
+      {showRollover && (
+        <Sheet onClose={dismissRollover} label="Yesterday's tasks" maxHeight="72vh">
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+            <span className="df-display" style={{ fontSize: 21, fontWeight: 500 }}>Yesterday</span>
+            <IconBtn label="Close" onClick={dismissRollover}><X size={18} /></IconBtn>
+          </div>
+          <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 14px" }}>{yDone.length} done, {yUnlogged.length} not logged — mark any as done late?</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {yUnlogged.map((t) => {
+              const c = data.categories.find((x) => x.id === t.categoryId);
+              return (
+                <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#FFFFFF" }}>
+                  <CatDot color={c?.color || INK_SOFT} />
+                  <span style={{ flex: 1, fontWeight: 700, fontSize: 15.5 }}>{t.name}</span>
+                  <PrimaryBtn onClick={() => backfillLate(t)} style={{ padding: "9px 14px", fontSize: 14 }}>Done (late)</PrimaryBtn>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ marginTop: 14, textAlign: "center" }}>
+            <TextBtn onClick={dismissRollover}>That's okay — dismiss</TextBtn>
+          </div>
+        </Sheet>
       )}
 
       {/* undo toast */}
@@ -1371,7 +1491,9 @@ function SummaryView({ data, nav }) {
     return { task: t, sched, done };
   }).filter((s) => s.sched > 0), [data, days]);
 
-  const cur = currentStreak(data), best = bestStreak(data);
+  const cur = useMemo(() => currentStreak(data), [data]);
+  const best = useMemo(() => bestStreak(data), [data]);
+  const catStreaks = useMemo(() => Object.fromEntries(data.categories.map((c) => [c.id, currentStreak(data, c.id)])), [data]);
 
   const redemptions = useMemo(() => {
     const out = [];
@@ -1443,7 +1565,7 @@ function SummaryView({ data, nav }) {
             <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
               {data.categories.map((c) => (
                 <span key={c.id} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 12px", borderRadius: 99, background: "#FFFFFF", border: `1px solid ${LINE}`, color: INK, fontSize: 13.5, fontWeight: 700 }}>
-                  <CatDot color={c.color} size={7} /> {c.name} · {currentStreak(data, c.id)}
+                  <CatDot color={c.color} size={7} /> {c.name} · {catStreaks[c.id]}
                 </span>
               ))}
             </div>
@@ -1560,6 +1682,13 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
   const fileRef = useRef(null);
   const whySeen = data.settings?.whySeen || [];
   const markWhySeen = (id) => persist({ ...data, settings: { ...(data.settings || {}), whySeen: [...whySeen, id] } });
+  const setSetting = (patch) => persist({ ...data, settings: { ...(data.settings || {}), ...patch } });
+  const toggleVacation = () => {
+    const on = !(data.settings && data.settings.vacation);
+    const vd = new Set(data.settings?.vacationDays || []);
+    if (on) vd.add(todayKey());
+    setSetting({ vacation: on, vacationDays: [...vd] });
+  };
 
   const library = effectiveLibrary(data);
 
@@ -1740,6 +1869,39 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
               + Add a category
             </button>
           )}
+
+          <div style={{ marginTop: 6, paddingTop: 20, borderTop: `1px solid ${LINE}` }}>
+            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 12 }}>Preferences</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              <span style={{ flex: 1, fontSize: 15.5, fontWeight: 700 }}>Week starts on</span>
+              <div style={{ display: "flex", gap: 5, background: CARD, border: `1px solid ${LINE}`, borderRadius: R_PILL, padding: 4 }}>
+                {[["mon", "Monday"], ["sun", "Sunday"]].map(([v, l]) => {
+                  const on = (data.settings?.weekStart || "mon") === v;
+                  return (
+                    <button key={v} onClick={() => setSetting({ weekStart: v })} className="df-btn"
+                      style={{ padding: "8px 14px", minHeight: 36, borderRadius: R_PILL, border: "none", fontSize: 13.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", background: on ? BRAND : "transparent", color: on ? "#FFFFFF" : INK_SOFT }}>
+                      {l}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <button onClick={toggleVacation} aria-pressed={!!(data.settings && data.settings.vacation)} className="df-btn"
+              style={{ width: "100%", minHeight: 44, display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+              <span style={{ flex: 1 }}>
+                <span style={{ fontWeight: 700, fontSize: 15.5 }}>Vacation mode</span>
+                <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>Pause streaks — today's screen shows a calm break</span>
+              </span>
+              {(() => {
+                const on = !!(data.settings && data.settings.vacation);
+                return (
+                  <span style={{ width: 46, height: 27, borderRadius: 99, flexShrink: 0, background: on ? BRAND : "#C7CED4", position: "relative", transition: "background 200ms ease" }}>
+                    <span style={{ position: "absolute", top: 3, left: on ? 22 : 3, width: 21, height: 21, borderRadius: 99, background: "#fff", transition: "left 200ms ease" }} />
+                  </span>
+                );
+              })()}
+            </button>
+          </div>
 
           <div style={{ marginTop: 6, paddingTop: 20, borderTop: `1px solid ${LINE}` }}>
             <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>Rewards</div>
@@ -1981,10 +2143,7 @@ function DayDetailSheet({ data, dateStr, onClose }) {
   const heading = d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
   return (
-    <div className="df-veil" onClick={onClose}
-      style={{ position: "fixed", inset: 0, background: "rgba(17,24,32,0.4)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-      <div onClick={(e) => e.stopPropagation()} className="df-card-in"
-        style={{ background: CARD, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 520, maxHeight: "72vh", overflowY: "auto", padding: "20px 20px 30px", boxSizing: "border-box", boxShadow: SHADOW }}>
+    <Sheet onClose={onClose} label={heading} maxHeight="72vh">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <span className="df-display" style={{ fontSize: 21, fontWeight: 500 }}>{heading}</span>
           <IconBtn label="Close" onClick={onClose}><X size={18} /></IconBtn>
@@ -1997,7 +2156,7 @@ function DayDetailSheet({ data, dateStr, onClose }) {
               const c = task.categoryId && data.categories.find((x) => x.id === task.categoryId);
               const done = entry && entry.status === "done";
               const skipped = entry && entry.status === "skipped";
-              const label = done ? "Done" : skipped ? `Skipped${entry.reason ? ` · ${entry.reason}` : ""}` : "Not done";
+              const label = done ? (entry.late ? "Done (late)" : "Done") : skipped ? `Skipped${entry.reason ? ` · ${entry.reason}` : ""}` : "Not done";
               const color = done ? CAL_COLORS.all : skipped ? CAL_COLORS.skips : INK_SOFT;
               return (
                 <div key={task.id + "-" + i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff" }}>
@@ -2012,8 +2171,7 @@ function DayDetailSheet({ data, dateStr, onClose }) {
             })}
           </div>
         )}
-      </div>
-    </div>
+    </Sheet>
   );
 }
 
@@ -2022,7 +2180,8 @@ function FeedView({ nav }) {
   const [events, setEvents] = useState(null); // null = loading
   const load = async () => {
     const f = await loadShared(FEED_KEY, []);
-    setEvents(Array.isArray(f) ? f.slice().reverse() : []);
+    const cutoff = Date.now() - MAX_HISTORY_DAYS * 86400000; // cap to last 60 days
+    setEvents(Array.isArray(f) ? f.filter((e) => (e.timestamp || 0) >= cutoff).slice().reverse() : []);
   };
   useEffect(() => { load(); }, []);
 
@@ -2082,7 +2241,7 @@ function DailyFlow() {
     })();
   }, []);
 
-  const persist = (next) => { setData(next); saveKey("flow:p:" + activeId, next); };
+  const persist = (next) => { setData(next); saveKeyDebounced("flow:p:" + activeId, next); };
 
   const openProfile = async (id) => {
     const d = await loadKey("flow:p:" + id, null);
