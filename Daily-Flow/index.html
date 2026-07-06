@@ -84,6 +84,16 @@ const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
 // Monopoly-style tokens — a fixed set; each can be claimed by only one profile.
 const TOKENS = ["🐢", "🦊", "🦉", "🐙", "🦄", "🐝", "🐳", "🦁", "🐧", "🦋", "🚀", "🎩"];
 
+// Eisenhower priority (all optional). Unset ranks with "neither" so that when
+// nothing is prioritized the queue keeps its original category order.
+const PRIORITY_RANK = { "urgent-important": 0, important: 1, urgent: 2, neither: 3, _unset: 3 };
+const PRIORITY_QUADRANTS = [
+  { key: "urgent-important", label: "Do first", sub: "urgent + important", color: "#A14E3A" },
+  { key: "important", label: "Schedule", sub: "important", color: "#3F7D6A" },
+  { key: "urgent", label: "Delegate?", sub: "urgent", color: "#8F6E22" },
+  { key: "neither", label: "Trim?", sub: "neither", color: "#6E5F9E" },
+];
+
 const GLOBAL_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Karla:wght@400;500;600;700&display=swap');
 .df-root { font-family: 'Karla', system-ui, sans-serif; color: ${INK}; }
@@ -289,8 +299,11 @@ function scheduledTasks(data, dateStr) {
     return false;
   });
   out.sort((a, b) => {
+    const pa = PRIORITY_RANK[a.priority] ?? PRIORITY_RANK._unset;
+    const pb = PRIORITY_RANK[b.priority] ?? PRIORITY_RANK._unset;
+    if (pa !== pb) return pa - pb; // priority first
     const ca = catOrder.indexOf(a.categoryId), cb = catOrder.indexOf(b.categoryId);
-    if (ca !== cb) return ca - cb;
+    if (ca !== cb) return ca - cb; // then category
     return data.tasks.indexOf(a) - data.tasks.indexOf(b);
   });
   return out;
@@ -363,6 +376,39 @@ function IconBtn({ onClick, label, children }) {
       style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${LINE}`, background: CARD, color: INK, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
       {children}
     </button>
+  );
+}
+
+/* ————— "Why this works" micro-explanations ————— */
+const WHY = {
+  "one-task": { title: "One thing at a time", text: "You see a single next step, not a wall of to-dos. Fewer choices means less decision fatigue — so beginning feels light." },
+  "skip-reasons": { title: "Skips are data, not guilt", text: "Naming why you skipped builds gentle pattern awareness. Over time you notice what actually gets in the way — no shame required." },
+  "rotation": { title: "Variety you can keep up", text: "Letting tasks take turns keeps a routine feeling fresh instead of stale, which makes it far easier to sustain." },
+  "pairing": { title: "Bundle a treat with the task", text: "Pair a task with something you enjoy. Temptation bundling lends the pull of the fun thing to the one you keep putting off." },
+  "two-minute": { title: "Shrink the first step", text: "Break it into two-minute pieces. Lowering the activation energy makes starting almost effortless — and starting is the whole game." },
+};
+
+// A small "?" that opens a warm explanation card. Auto-opens once until the
+// profile has seen it (persisted via onSeen); the "?" reopens it anytime.
+function Why({ id, seen, onSeen, anchor }) {
+  const info = WHY[id];
+  const already = (seen || []).includes(id);
+  const [open, setOpen] = useState(!already);
+  if (!info) return null;
+  const dismiss = () => { setOpen(false); if (!already && onSeen) onSeen(id); };
+  return (
+    <span style={{ position: "relative", display: "inline-flex", verticalAlign: "middle" }}>
+      <button aria-label={"Why this works: " + info.title} onClick={() => setOpen((o) => !o)} className="df-btn"
+        style={{ width: 20, height: 20, borderRadius: 99, border: `1px solid ${LINE}`, background: "transparent", color: INK_SOFT, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", lineHeight: 1, padding: 0, flexShrink: 0 }}>?</button>
+      {open && (
+        <span onClick={(e) => e.stopPropagation()} className="df-card-in"
+          style={{ position: "absolute", top: 27, [anchor === "right" ? "right" : "left"]: 0, zIndex: 80, width: 244, maxWidth: "78vw", background: INK, color: "#FAFBF6", borderRadius: 14, padding: "13px 15px", boxShadow: "0 14px 40px rgba(0,0,0,0.28)", textAlign: "left", fontWeight: 400 }}>
+          <span style={{ display: "block", fontWeight: 700, fontSize: 14, marginBottom: 5 }}>{info.title}</span>
+          <span style={{ display: "block", fontSize: 13, lineHeight: 1.55, color: "#DDE3D9" }}>{info.text}</span>
+          <button onClick={dismiss} className="df-btn" style={{ marginTop: 11, background: "rgba(255,255,255,0.16)", border: "none", color: "#FAFBF6", fontSize: 12.5, fontWeight: 700, padding: "6px 13px", borderRadius: 9, cursor: "pointer", fontFamily: "inherit" }}>Got it</button>
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -470,12 +516,13 @@ function FreqEditor({ freq, onChange }) {
 }
 
 /* ————— Task editor form ————— */
-function TaskForm({ categories, initial, onSave, onCancel, allTasks = [] }) {
+function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySeen = [], onWhySeen }) {
   const [name, setName] = useState(initial?.name || "");
   const [note, setNote] = useState(initial?.note || "");
   const [categoryId, setCategoryId] = useState(initial?.categoryId || categories[0]?.id);
   const [freq, setFreq] = useState(initial?.freq || { type: "daily", days: [] });
   const [rotationLabel, setRotationLabel] = useState(initial?.rotationLabel || "");
+  const [priority, setPriority] = useState(initial?.priority || "");
   const [eta, setEta] = useState(initial?.eta != null ? String(initial.eta) : "");
   const [pairId, setPairId] = useState(initial?.pairId || "");
   const [pleasantNote, setPleasantNote] = useState(initial?.pleasantNote || "");
@@ -503,8 +550,30 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [] }) {
       </div>
       <FreqEditor freq={freq} onChange={setFreq} />
       {freq.type === "rotate" && (
-        <TextInput placeholder="Rotation label — optional (e.g. Push, Pull, Legs)" value={rotationLabel} onChange={(e) => setRotationLabel(e.target.value)} />
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase" }}>Rotation</span>
+            <Why id="rotation" seen={whySeen} onSeen={onWhySeen} />
+          </div>
+          <TextInput placeholder="Rotation label — optional (e.g. Push, Pull, Legs)" value={rotationLabel} onChange={(e) => setRotationLabel(e.target.value)} />
+        </div>
       )}
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 8 }}>Priority — optional</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+          {PRIORITY_QUADRANTS.map((q) => {
+            const on = priority === q.key;
+            return (
+              <button key={q.key} onClick={() => setPriority(on ? "" : q.key)} className="df-btn"
+                style={{ padding: "9px 10px", borderRadius: 10, fontFamily: "inherit", cursor: "pointer", textAlign: "left",
+                  border: `1px solid ${on ? q.color : LINE}`, background: on ? q.color + "1A" : "transparent" }}>
+                <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: on ? q.color : INK }}>{q.sub}</span>
+                <span style={{ display: "block", fontSize: 11.5, color: INK_SOFT, marginTop: 1 }}>{q.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <TextInput type="number" min="1" inputMode="numeric" placeholder="Estimated minutes — optional" value={eta} onChange={(e) => setEta(e.target.value)} />
         <span style={{ fontSize: 14, color: INK_SOFT, fontWeight: 600, flexShrink: 0 }}>min</span>
@@ -530,7 +599,10 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [] }) {
       </div>
       {pairChoices.length > 0 && (
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 8 }}>Habit stacking — optional</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase" }}>Habit stacking — optional</span>
+            <Why id="pairing" seen={whySeen} onSeen={onWhySeen} />
+          </div>
           <select value={pairId} onChange={(e) => setPairId(e.target.value)}
             style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff", fontSize: 16, fontFamily: "inherit", color: INK, boxSizing: "border-box" }}>
             <option value="">Not paired</option>
@@ -549,7 +621,7 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [] }) {
       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
         {onCancel && <GhostBtn onClick={onCancel} style={{ padding: "10px 16px", fontSize: 15 }}>Cancel</GhostBtn>}
         <PrimaryBtn disabled={!name.trim()} style={{ padding: "10px 18px", fontSize: 15 }}
-          onClick={() => onSave({ id: initial?.id || uid(), name: name.trim(), note: note.trim(), categoryId, freq, rotationLabel: freq.type === "rotate" ? (rotationLabel.trim() || null) : null, eta: Number(eta) > 0 ? Math.round(Number(eta)) : null, pairId: pairId || null, pleasantNote: pairId && pleasantNote.trim() ? pleasantNote.trim() : null, subtasks: subtasks.filter((s) => s.name.trim()).map((s) => ({ id: s.id, name: s.name.trim() })) })}>
+          onClick={() => onSave({ id: initial?.id || uid(), name: name.trim(), note: note.trim(), categoryId, freq, rotationLabel: freq.type === "rotate" ? (rotationLabel.trim() || null) : null, priority: priority || null, eta: Number(eta) > 0 ? Math.round(Number(eta)) : null, pairId: pairId || null, pleasantNote: pairId && pleasantNote.trim() ? pleasantNote.trim() : null, subtasks: subtasks.filter((s) => s.name.trim()).map((s) => ({ id: s.id, name: s.name.trim() })) })}>
           {initial ? "Save changes" : "Add task"}
         </PrimaryBtn>
       </div>
@@ -633,6 +705,8 @@ function SetupView({ profileName, onFinish }) {
   const [customName, setCustomName] = useState("");
   const [tasks, setTasks] = useState([]);
   const [adding, setAdding] = useState(true);
+  const [whySeen, setWhySeen] = useState([]);
+  const markWhySeen = (id) => setWhySeen((s) => [...s, id]);
 
   const chosenCats = cats.filter((c) => c.on).map(({ on, hint, ...c }) => c);
 
@@ -702,7 +776,7 @@ function SetupView({ profileName, onFinish }) {
             </div>
           )}
           {adding ? (
-            <TaskForm key={tasks.length} categories={chosenCats} allTasks={tasks}
+            <TaskForm key={tasks.length} categories={chosenCats} allTasks={tasks} whySeen={whySeen} onWhySeen={markWhySeen}
               onSave={(t) => { setTasks([...tasks, t]); }}
               onCancel={tasks.length ? () => setAdding(false) : null} />
           ) : (
@@ -773,6 +847,8 @@ function TodayView({ data, persist, nav, profileId, token }) {
   const cat = current ? data.categories.find((c) => c.id === current.categoryId) : null;
   const doneCount = entries.filter((e) => e.status === "done").length;
   const skipCount = entries.filter((e) => e.status === "skipped").length;
+  const whySeen = data.settings?.whySeen || [];
+  const markWhySeen = (id) => persist({ ...data, settings: { ...(data.settings || {}), whySeen: [...whySeen, id] } });
 
   // Opt-in only: post completed tasks to the shared feed. Never includes
   // skip reasons or notes — just token, task name, category, and time.
@@ -847,7 +923,10 @@ function TodayView({ data, persist, nav, profileId, token }) {
       <div style={{ maxWidth: 520, width: "100%", margin: "0 auto", padding: "18px 20px 0", display: "flex", alignItems: "center", gap: 8, boxSizing: "border-box" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, color: INK_SOFT }}>{data.name}</div>
-          <div className="df-display" style={{ fontSize: 19, fontWeight: 500 }}>{niceDate(new Date())}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span className="df-display" style={{ fontSize: 19, fontWeight: 500 }}>{niceDate(new Date())}</span>
+            <Why id="one-task" seen={whySeen} onSeen={markWhySeen} />
+          </div>
         </div>
         <button onClick={() => setShowRewards(true)} aria-label="Rewards" className="df-btn"
           style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "6px 11px", borderRadius: 999, border: `1px solid ${LINE}`, background: "transparent", color: INK_SOFT, fontSize: 13.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
@@ -896,6 +975,10 @@ function TodayView({ data, persist, nav, profileId, token }) {
 
             {subs.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 24, textAlign: "left", maxWidth: 340, marginLeft: "auto", marginRight: "auto" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                  <span style={{ fontSize: 12.5, fontWeight: 700, color: INK_SOFT, letterSpacing: "0.06em", textTransform: "uppercase" }}>Steps</span>
+                  <Why id="two-minute" seen={whySeen} onSeen={markWhySeen} />
+                </div>
                 {subs.map((s) => {
                   const on = !!subChecks[s.id];
                   return (
@@ -945,7 +1028,10 @@ function TodayView({ data, persist, nav, profileId, token }) {
               </>
             ) : (
               <div className="df-card-in" style={{ marginTop: 30, background: CARD, border: `1px solid ${LINE}`, borderRadius: 18, padding: 18, textAlign: "left" }}>
-                <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 10 }}>Skipping — any reason? <span style={{ fontWeight: 500, color: INK_SOFT }}>(optional)</span></div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700 }}>Skipping — any reason? <span style={{ fontWeight: 500, color: INK_SOFT }}>(optional)</span></span>
+                  <Why id="skip-reasons" seen={whySeen} onSeen={markWhySeen} anchor="right" />
+                </div>
                 <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 10 }}>
                   {SKIP_CHIPS.map((c) => (
                     <button key={c} onClick={() => record(pairTasks, "skipped", c)} className="df-btn"
@@ -1147,6 +1233,18 @@ function SummaryView({ data, nav }) {
     return out.sort((a, b) => (b.at || 0) - (a.at || 0));
   }, [days]);
 
+  const matrix = useMemo(() => {
+    const q = { "urgent-important": { s: 0, d: 0 }, important: { s: 0, d: 0 }, urgent: { s: 0, d: 0 }, neither: { s: 0, d: 0 } };
+    days.forEach((day) => day.scheduled.forEach((t) => {
+      if (t.priority && q[t.priority]) {
+        q[t.priority].s++;
+        if (day.entries.some((e) => e.taskId === t.id && e.status === "done")) q[t.priority].d++;
+      }
+    }));
+    return q;
+  }, [days]);
+  const hasPriorities = Object.values(matrix).some((x) => x.s > 0);
+
   const Section = ({ title, children }) => (
     <div style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: 18, padding: 18 }}>
       <div style={{ fontSize: 13, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700, color: INK_SOFT, marginBottom: 12 }}>{title}</div>
@@ -1248,6 +1346,32 @@ function SummaryView({ data, nav }) {
             )}
           </Section>
 
+          {hasPriorities && (
+            <Section title="Priority matrix">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {PRIORITY_QUADRANTS.map((q) => {
+                  const { s, d } = matrix[q.key];
+                  const pct = s ? Math.round((d / s) * 100) : null;
+                  return (
+                    <div key={q.key} style={{ borderRadius: 14, border: `1px solid ${q.color}44`, background: q.color + "12", padding: "13px 14px" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: q.color }}>{q.sub}</div>
+                      <div style={{ fontSize: 11.5, color: INK_SOFT, marginBottom: 8 }}>{q.label}</div>
+                      {s === 0 ? (
+                        <div style={{ fontSize: 13.5, color: INK_SOFT }}>none scheduled</div>
+                      ) : (
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                          <span className="df-display" style={{ fontSize: 30, fontWeight: 500, color: INK }}>{pct}%</span>
+                          <span style={{ fontSize: 12.5, color: INK_SOFT }}>{d}/{s} done</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              <p style={{ fontSize: 12.5, color: INK_SOFT, margin: "10px 0 0" }}>Completion rate by Eisenhower quadrant, last {range} days.</p>
+            </Section>
+          )}
+
           <Section title="Rewards">
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: redemptions.length ? 14 : 0 }}>
               <span className="df-display" style={{ fontSize: 42, fontWeight: 500 }}>{pointsBalance(data)}</span>
@@ -1284,6 +1408,8 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
   const [newRewardName, setNewRewardName] = useState("");
   const [newRewardCost, setNewRewardCost] = useState("");
   const fileRef = useRef(null);
+  const whySeen = data.settings?.whySeen || [];
+  const markWhySeen = (id) => persist({ ...data, settings: { ...(data.settings || {}), whySeen: [...whySeen, id] } });
 
   const addReward = () => {
     const name = newRewardName.trim();
@@ -1381,7 +1507,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {tasks.length === 0 && <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 2px 2px" }}>No tasks yet.</p>}
                   {tasks.map((t) => editingId === t.id ? (
-                    <TaskForm key={t.id} categories={data.categories} allTasks={data.tasks} initial={t} onSave={saveTask} onCancel={() => setEditingId(null)} />
+                    <TaskForm key={t.id} categories={data.categories} allTasks={data.tasks} initial={t} onSave={saveTask} onCancel={() => setEditingId(null)} whySeen={whySeen} onWhySeen={markWhySeen} />
                   ) : (
                     <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 14, background: CARD, border: `1px solid ${LINE}` }}>
                       <span style={{ flex: 1 }}>
@@ -1398,7 +1524,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
           })}
 
           {addingTask ? (
-            <TaskForm categories={data.categories} allTasks={data.tasks} onSave={saveTask} onCancel={() => setAddingTask(false)} />
+            <TaskForm categories={data.categories} allTasks={data.tasks} onSave={saveTask} onCancel={() => setAddingTask(false)} whySeen={whySeen} onWhySeen={markWhySeen} />
           ) : (
             <GhostBtn onClick={() => setAddingTask(true)}><Plus size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />Add task</GhostBtn>
           )}
