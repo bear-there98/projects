@@ -63,6 +63,9 @@ const CARD = "#F7F9FA";        // sections / cards
 const LINE = "#E4E8EC";        // hairline borders
 const BRAND = "#0A3D91";       // single brand color for primary actions
 const BRAND_SOFT = "#0A3D9114"; // faint brand tint for selected states
+const SHADOW = "0 1px 3px rgba(16,24,40,0.08)"; // the one and only shadow, on cards
+const R_CARD = 12;             // border radius: cards
+const R_PILL = 999;            // border radius: buttons & chips
 
 const CAT_COLORS = [
   { color: "#A14E3A", tint: "#A14E3A" }, // madder
@@ -108,6 +111,7 @@ const GLOBAL_CSS = `
 .df-pop { animation: dfPop 480ms cubic-bezier(.22,.9,.3,1) both; }
 @keyframes dfVeil { from { opacity: 0; } to { opacity: 1; } }
 .df-veil { animation: dfVeil 200ms ease both; }
+.df-fade { animation: dfVeil 200ms ease both; }
 @keyframes dfPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.05); opacity: 0.72; } }
 .df-pulse { animation: dfPulse 2s ease-in-out infinite; }
 .df-btn { transition: transform 120ms ease, opacity 120ms ease, background 120ms ease; }
@@ -115,7 +119,7 @@ const GLOBAL_CSS = `
 button:focus-visible, input:focus-visible { outline: 2px solid ${INK}; outline-offset: 2px; }
 input::placeholder { color: #9BA3AB; }
 @media (prefers-reduced-motion: reduce) {
-  .df-card-in, .df-pop, .df-veil, .df-pulse { animation: none !important; }
+  .df-card-in, .df-pop, .df-veil, .df-fade, .df-pulse { animation: none !important; }
   .df-fade-bg, .df-btn { transition: none !important; }
 }
 `;
@@ -376,7 +380,7 @@ function Eyebrow({ children, color }) {
 function IconBtn({ onClick, label, children }) {
   return (
     <button aria-label={label} title={label} onClick={onClick} className="df-btn"
-      style={{ width: 40, height: 40, borderRadius: 12, border: `1px solid ${LINE}`, background: CARD, color: INK, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+      style={{ width: 40, height: 40, borderRadius: R_PILL, border: `1px solid ${LINE}`, background: "#FFFFFF", color: INK, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
       {children}
     </button>
   );
@@ -405,10 +409,10 @@ function Why({ id, seen, onSeen, anchor }) {
         style={{ width: 20, height: 20, borderRadius: 99, border: `1px solid ${LINE}`, background: "transparent", color: INK_SOFT, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", lineHeight: 1, padding: 0, flexShrink: 0 }}>?</button>
       {open && (
         <span onClick={(e) => e.stopPropagation()} className="df-card-in"
-          style={{ position: "absolute", top: 27, [anchor === "right" ? "right" : "left"]: 0, zIndex: 80, width: 244, maxWidth: "78vw", background: INK, color: "#FAFBF6", borderRadius: 14, padding: "13px 15px", boxShadow: "0 14px 40px rgba(0,0,0,0.28)", textAlign: "left", fontWeight: 400 }}>
+          style={{ position: "absolute", top: 27, [anchor === "right" ? "right" : "left"]: 0, zIndex: 80, width: 244, maxWidth: "78vw", background: INK, color: "#FAFBF6", borderRadius: 12, padding: "13px 15px", boxShadow: SHADOW, textAlign: "left", fontWeight: 400 }}>
           <span style={{ display: "block", fontWeight: 700, fontSize: 14, marginBottom: 5 }}>{info.title}</span>
           <span style={{ display: "block", fontSize: 13, lineHeight: 1.55, color: "#DDE3D9" }}>{info.text}</span>
-          <button onClick={dismiss} className="df-btn" style={{ marginTop: 11, background: "rgba(255,255,255,0.16)", border: "none", color: "#FAFBF6", fontSize: 12.5, fontWeight: 700, padding: "6px 13px", borderRadius: 9, cursor: "pointer", fontFamily: "inherit" }}>Got it</button>
+          <button onClick={dismiss} className="df-btn" style={{ marginTop: 11, background: "rgba(255,255,255,0.16)", border: "none", color: "#FAFBF6", fontSize: 12.5, fontWeight: 700, padding: "6px 13px", borderRadius: R_PILL, cursor: "pointer", fontFamily: "inherit" }}>Got it</button>
         </span>
       )}
     </span>
@@ -425,16 +429,27 @@ function TextInput(props) {
 function PrimaryBtn({ onClick, children, color = BRAND, disabled, style }) {
   return (
     <button onClick={onClick} disabled={disabled} className="df-btn"
-      style={{ padding: "14px 22px", borderRadius: 12, border: "none", background: disabled ? "#C7CED4" : color, color: "#FFFFFF", fontSize: 17, fontWeight: 700, cursor: disabled ? "default" : "pointer", fontFamily: "inherit", ...style }}>
+      style={{ padding: "14px 22px", borderRadius: R_PILL, border: "none", background: disabled ? "#C7CED4" : color, color: "#FFFFFF", fontSize: 17, fontWeight: 700, cursor: disabled ? "default" : "pointer", fontFamily: "inherit", ...style }}>
       {children}
     </button>
   );
 }
 
+// Secondary: white pill with a hairline border.
 function GhostBtn({ onClick, children, style }) {
   return (
     <button onClick={onClick} className="df-btn"
-      style={{ padding: "13px 20px", borderRadius: 14, border: `1px solid ${LINE}`, background: "transparent", color: INK, fontSize: 16, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", ...style }}>
+      style={{ padding: "13px 20px", borderRadius: R_PILL, border: `1px solid ${LINE}`, background: "#FFFFFF", color: INK, fontSize: 16, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", ...style }}>
+      {children}
+    </button>
+  );
+}
+
+// Tertiary: plain brand-colored text button, no fill or border.
+function TextBtn({ onClick, children, style }) {
+  return (
+    <button onClick={onClick} className="df-btn"
+      style={{ background: "none", border: "none", color: BRAND, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 4, ...style }}>
       {children}
     </button>
   );
@@ -461,7 +476,7 @@ function FreqEditor({ freq, onChange }) {
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {opts.map(([v, label]) => (
           <button key={v} onClick={() => selectType(v)} className="df-btn"
-            style={{ flex: "1 1 30%", minWidth: 82, padding: "9px 4px", borderRadius: 10, fontSize: 13.5, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${freq.type === v ? INK : LINE}`, background: freq.type === v ? INK : "transparent", color: freq.type === v ? "#FAFBF6" : INK }}>
+            style={{ flex: "1 1 30%", minWidth: 82, padding: "9px 4px", borderRadius: R_PILL, fontSize: 13.5, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${freq.type === v ? INK : LINE}`, background: freq.type === v ? INK : "transparent", color: freq.type === v ? "#FAFBF6" : INK }}>
             {label}
           </button>
         ))}
@@ -482,7 +497,7 @@ function FreqEditor({ freq, onChange }) {
               const on = (freq.count || 3) === n;
               return (
                 <button key={n} onClick={() => onChange({ type: "weekly", count: n })} className="df-btn"
-                  style={{ flex: 1, padding: "8px 0", borderRadius: 9, fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${on ? INK : LINE}`, background: on ? INK : "transparent", color: on ? "#FAFBF6" : INK_SOFT }}>
+                  style={{ flex: 1, padding: "8px 0", borderRadius: R_PILL, fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${on ? INK : LINE}`, background: on ? INK : "transparent", color: on ? "#FAFBF6" : INK_SOFT }}>
                   {n}
                 </button>
               );
@@ -502,7 +517,7 @@ function FreqEditor({ freq, onChange }) {
                 const days = on ? freq.days.filter((d) => d !== i) : [...(freq.days || []), i].sort();
                 onChange({ ...freq, days });
               }} className="df-btn"
-                style={{ flex: 1, padding: "8px 0", borderRadius: 9, fontSize: 13, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${on ? INK : LINE}`, background: on ? INK : "transparent", color: on ? "#FAFBF6" : INK_SOFT }}>
+                style={{ flex: 1, padding: "8px 0", borderRadius: R_PILL, fontSize: 13, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${on ? INK : LINE}`, background: on ? INK : "transparent", color: on ? "#FAFBF6" : INK_SOFT }}>
                 {w}
               </button>
             );
@@ -540,7 +555,7 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySee
   const renameSub = (id, name) => setSubtasks(subtasks.map((s) => (s.id === id ? { ...s, name } : s)));
   const removeSub = (id) => setSubtasks(subtasks.filter((s) => s.id !== id));
   return (
-    <div style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: 16, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+    <div style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: R_CARD, padding: 16, display: "flex", flexDirection: "column", gap: 12, boxShadow: SHADOW }}>
       <TextInput placeholder="Task name (e.g. 10-minute stretch)" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
       <TextInput placeholder="Note or instruction — optional" value={note} onChange={(e) => setNote(e.target.value)} />
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -568,7 +583,7 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySee
             const on = priority === q.key;
             return (
               <button key={q.key} onClick={() => setPriority(on ? "" : q.key)} className="df-btn"
-                style={{ padding: "9px 10px", borderRadius: 10, fontFamily: "inherit", cursor: "pointer", textAlign: "left",
+                style={{ padding: "9px 10px", borderRadius: R_PILL, fontFamily: "inherit", cursor: "pointer", textAlign: "left",
                   border: `1px solid ${on ? q.color : LINE}`, background: on ? q.color + "1A" : "transparent" }}>
                 <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: on ? q.color : INK }}>{q.sub}</span>
                 <span style={{ display: "block", fontSize: 11.5, color: INK_SOFT, marginTop: 1 }}>{q.label}</span>
@@ -658,7 +673,7 @@ function ProfilesView({ profiles, onOpen, onCreate }) {
               onClick={() => (owner ? onOpen(owner.id) : pick(tok))}
               aria-label={owner ? `Open ${owner.name}` : `Claim ${tok}`}
               style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, aspectRatio: "1 / 1",
-                borderRadius: 16, cursor: "pointer", fontFamily: "inherit",
+                borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
                 border: `1.5px solid ${selected ? INK : owner ? LINE : LINE}`,
                 background: selected ? INK + "0D" : owner ? CARD : "#fff",
                 opacity: owner || selected || !selectedToken ? 1 : 0.55 }}>
@@ -672,7 +687,7 @@ function ProfilesView({ profiles, onOpen, onCreate }) {
       </div>
 
       {selectedToken && (
-        <div className="df-card-in" style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: 16, padding: 16, display: "flex", gap: 10, alignItems: "center" }}>
+        <div className="df-card-in" style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: R_CARD, padding: 16, display: "flex", gap: 10, alignItems: "center", boxShadow: SHADOW }}>
           <span style={{ fontSize: 30, lineHeight: 1 }}>{selectedToken}</span>
           <TextInput placeholder="Your name" value={name} autoFocus
             onChange={(e) => setName(e.target.value)}
@@ -685,7 +700,7 @@ function ProfilesView({ profiles, onOpen, onCreate }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {legacy.map((p) => (
             <button key={p.id} onClick={() => onOpen(p.id)} className="df-btn"
-              style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 14, border: `1px solid ${LINE}`, background: CARD, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 12, border: `1px solid ${LINE}`, background: CARD, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
               <span style={{ width: 34, height: 34, borderRadius: 99, background: INK, color: "#FAFBF6", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15 }}>{p.name.slice(0, 1).toUpperCase()}</span>
               <span style={{ fontSize: 16, fontWeight: 600, color: INK, flex: 1 }}>{p.name}</span>
               <ArrowRight size={18} color={INK_SOFT} />
@@ -736,7 +751,7 @@ function SetupView({ profileName, onFinish }) {
         <div className="df-card-in" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {cats.map((c, i) => (
             <button key={c.id} onClick={() => setCats(cats.map((x, j) => (j === i ? { ...x, on: !x.on } : x)))} className="df-btn"
-              style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 16, cursor: "pointer", fontFamily: "inherit", textAlign: "left", border: `1.5px solid ${c.on ? c.color : LINE}`, background: c.on ? c.color + "14" : CARD }}>
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", textAlign: "left", border: `1.5px solid ${c.on ? c.color : LINE}`, background: c.on ? c.color + "14" : CARD }}>
               <CatDot color={c.color} size={12} />
               <span style={{ flex: 1 }}>
                 <span style={{ fontSize: 17, fontWeight: 700, color: c.on ? c.color : INK }}>{c.name}</span>
@@ -763,7 +778,7 @@ function SetupView({ profileName, onFinish }) {
               {tasks.map((t) => {
                 const cat = chosenCats.find((c) => c.id === t.categoryId);
                 return (
-                  <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: CARD, border: `1px solid ${LINE}` }}>
+                  <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, background: CARD, border: `1px solid ${LINE}` }}>
                     <CatDot color={cat?.color || INK} />
                     <span style={{ flex: 1 }}>
                       <span style={{ fontWeight: 700, fontSize: 15.5 }}>{t.name}</span>
@@ -951,6 +966,11 @@ function TodayView({ data, persist, nav, profileId, token }) {
           </div>
         ) : current ? (
           <div key={current.id} className="df-card-in" style={{ textAlign: "center", position: "relative" }}>
+            {celebrate && (
+              <div className="df-fade" style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(255,255,255,0.72)", pointerEvents: "none", zIndex: 5 }}>
+                <Check size={40} color={BRAND} strokeWidth={2.5} />
+              </div>
+            )}
             <Eyebrow color={cat.color}>{partner ? `${cat.name} · paired` : current.rotationLabel ? `${cat.name} · ${current.rotationLabel}` : cat.name}</Eyebrow>
             <h1 className="df-display" style={{ fontSize: 32, fontWeight: 600, lineHeight: 1.15, margin: "18px 0 0" }}>
               {pairTasks.map((t) => t.name).join(" + ")}
@@ -985,7 +1005,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
                   const on = !!subChecks[s.id];
                   return (
                     <button key={s.id} onClick={() => setSubChecks((c) => ({ ...c, [s.id]: !c[s.id] }))} className="df-btn"
-                      style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, border: `1px solid ${on ? BRAND : LINE}`, background: on ? BRAND_SOFT : CARD, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                      style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, border: `1px solid ${on ? BRAND : LINE}`, background: on ? BRAND_SOFT : CARD, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
                       <span style={{ width: 22, height: 22, borderRadius: 7, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${on ? BRAND : "#C7CED4"}`, background: on ? BRAND : "transparent" }}>
                         {on && <Check size={14} color="#FAFBF6" strokeWidth={3} />}
                       </span>
@@ -1006,7 +1026,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
                   {remainingSec <= 0 ? "time's up — finish when you're ready" : `of ${current.eta} min`}
                 </div>
                 <button onClick={() => setTimerStart(null)}
-                  style={{ marginTop: 10, background: "none", border: "none", color: INK_SOFT, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>
+                  style={{ marginTop: 10, background: "none", border: "none", color: BRAND, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>
                   Stop timer
                 </button>
               </div>
@@ -1015,10 +1035,10 @@ function TodayView({ data, persist, nav, profileId, token }) {
             {!skipping ? (
               <>
                 <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 40 }}>
-                  <PrimaryBtn onClick={markDone} color={BRAND} style={{ minWidth: 150, fontSize: 18, padding: "16px 26px", borderRadius: 18 }}>
+                  <PrimaryBtn onClick={markDone} color={BRAND} style={{ minWidth: 150, fontSize: 18, padding: "16px 26px", borderRadius: R_PILL }}>
                     <Check size={19} style={{ verticalAlign: "-4px", marginRight: 8 }} />Done
                   </PrimaryBtn>
-                  <GhostBtn onClick={() => setSkipping(true)} style={{ minWidth: 110, padding: "15px 22px", borderRadius: 18 }}>Skip</GhostBtn>
+                  <GhostBtn onClick={() => setSkipping(true)} style={{ minWidth: 110, padding: "15px 22px", borderRadius: R_PILL }}>Skip</GhostBtn>
                 </div>
                 {current.eta > 0 && timerStart == null && (
                   <div style={{ marginTop: 16 }}>
@@ -1029,7 +1049,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
                 )}
               </>
             ) : (
-              <div className="df-card-in" style={{ marginTop: 30, background: CARD, border: `1px solid ${LINE}`, borderRadius: 18, padding: 18, textAlign: "left" }}>
+              <div className="df-card-in" style={{ marginTop: 30, background: CARD, border: `1px solid ${LINE}`, borderRadius: R_CARD, padding: 18, textAlign: "left", boxShadow: SHADOW }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                   <span style={{ fontSize: 15, fontWeight: 700 }}>Skipping — any reason? <span style={{ fontWeight: 500, color: INK_SOFT }}>(optional)</span></span>
                   <Why id="skip-reasons" seen={whySeen} onSeen={markWhySeen} anchor="right" />
@@ -1050,8 +1070,8 @@ function TodayView({ data, persist, nav, profileId, token }) {
                   )}
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
-                  <button onClick={() => setSkipping(false)} style={{ background: "none", border: "none", color: INK_SOFT, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>Cancel</button>
-                  <button onClick={() => record(pairTasks, "skipped")} style={{ background: "none", border: "none", color: INK_SOFT, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>Skip without reason</button>
+                  <button onClick={() => setSkipping(false)} style={{ background: "none", border: "none", color: BRAND, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>Cancel</button>
+                  <button onClick={() => record(pairTasks, "skipped")} style={{ background: "none", border: "none", color: BRAND, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>Skip without reason</button>
                 </div>
               </div>
             )}
@@ -1090,21 +1110,12 @@ function TodayView({ data, persist, nav, profileId, token }) {
         </div>
       )}
 
-      {/* done celebration overlay */}
-      {celebrate && (
-        <div className="df-veil" style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: BASE_BG + "AA", pointerEvents: "none", zIndex: 40 }}>
-          <div className="df-pop" style={{ width: 92, height: 92, borderRadius: 99, background: BRAND, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 12px 40px rgba(0,0,0,0.18)" }}>
-            <Check size={44} strokeWidth={2.5} />
-          </div>
-        </div>
-      )}
-
       {/* overview sheet */}
       {showOverview && (
         <div className="df-veil" onClick={() => setShowOverview(false)}
           style={{ position: "fixed", inset: 0, background: "rgba(17,24,32,0.4)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div onClick={(e) => e.stopPropagation()} className="df-card-in"
-            style={{ background: CARD, borderRadius: "22px 22px 0 0", width: "100%", maxWidth: 520, maxHeight: "72vh", overflowY: "auto", padding: "20px 20px 30px", boxSizing: "border-box" }}>
+            style={{ background: CARD, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 520, maxHeight: "72vh", overflowY: "auto", padding: "20px 20px 30px", boxSizing: "border-box", boxShadow: SHADOW }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
               <span className="df-display" style={{ fontSize: 21, fontWeight: 500 }}>Today</span>
               <IconBtn label="Close" onClick={() => setShowOverview(false)}><X size={18} /></IconBtn>
@@ -1118,7 +1129,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
                   <button key={t.id} disabled={!pending}
                     onClick={() => { setJumpId(t.id); setSkipping(false); setShowOverview(false); }}
                     className="df-btn"
-                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 14, border: `1px solid ${LINE}`, background: pending ? "#fff" : "transparent", cursor: pending ? "pointer" : "default", fontFamily: "inherit", textAlign: "left", opacity: pending ? 1 : 0.55 }}>
+                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: pending ? "#fff" : "transparent", cursor: pending ? "pointer" : "default", fontFamily: "inherit", textAlign: "left", opacity: pending ? 1 : 0.55 }}>
                     <CatDot color={c?.color || INK} />
                     <span style={{ flex: 1 }}>
                       <span style={{ fontWeight: 700, fontSize: 15.5, textDecoration: e?.status === "done" ? "line-through" : "none" }}>{t.name}</span>
@@ -1141,7 +1152,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
         <div className="df-veil" onClick={() => setShowRewards(false)}
           style={{ position: "fixed", inset: 0, background: "rgba(17,24,32,0.4)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div onClick={(e) => e.stopPropagation()} className="df-card-in"
-            style={{ background: CARD, borderRadius: "22px 22px 0 0", width: "100%", maxWidth: 520, maxHeight: "72vh", overflowY: "auto", padding: "20px 20px 30px", boxSizing: "border-box" }}>
+            style={{ background: CARD, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 520, maxHeight: "72vh", overflowY: "auto", padding: "20px 20px 30px", boxSizing: "border-box", boxShadow: SHADOW }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
               <span className="df-display" style={{ fontSize: 21, fontWeight: 500 }}>Rewards</span>
               <IconBtn label="Close" onClick={() => setShowRewards(false)}><X size={18} /></IconBtn>
@@ -1157,7 +1168,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
                 {data.rewards.map((r) => {
                   const affordable = points >= r.cost;
                   return (
-                    <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 14, border: `1px solid ${LINE}`, background: "#fff" }}>
+                    <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff" }}>
                       <span style={{ flex: 1 }}>
                         <span style={{ fontWeight: 700, fontSize: 15.5 }}>{r.name}</span>
                         <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>{r.cost} point{r.cost === 1 ? "" : "s"}</span>
@@ -1175,10 +1186,10 @@ function TodayView({ data, persist, nav, profileId, token }) {
       {/* undo toast */}
       {undo && (
         <div className="df-card-in" role="status"
-          style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 60, display: "flex", alignItems: "center", gap: 14, maxWidth: "calc(100% - 32px)", background: INK, color: "#FAFBF6", padding: "12px 14px 12px 18px", borderRadius: 14, boxShadow: "0 12px 40px rgba(0,0,0,0.22)" }}>
+          style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 60, display: "flex", alignItems: "center", gap: 14, maxWidth: "calc(100% - 32px)", background: INK, color: "#FAFBF6", padding: "12px 14px 12px 18px", borderRadius: 12, boxShadow: SHADOW }}>
           <span style={{ fontSize: 14.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{undo.label}</span>
           <button onClick={undoLast} className="df-btn"
-            style={{ flexShrink: 0, background: "rgba(255,255,255,0.16)", border: "none", color: "#FAFBF6", fontSize: 14.5, fontWeight: 700, padding: "8px 15px", borderRadius: 10, cursor: "pointer", fontFamily: "inherit" }}>
+            style={{ flexShrink: 0, background: "rgba(255,255,255,0.16)", border: "none", color: "#FAFBF6", fontSize: 14.5, fontWeight: 700, padding: "8px 15px", borderRadius: R_PILL, cursor: "pointer", fontFamily: "inherit" }}>
             Undo
           </button>
         </div>
@@ -1248,7 +1259,7 @@ function SummaryView({ data, nav }) {
   const hasPriorities = Object.values(matrix).some((x) => x.s > 0);
 
   const Section = ({ title, children }) => (
-    <div style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: 18, padding: 18 }}>
+    <div style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: R_CARD, padding: 18, boxShadow: SHADOW }}>
       <div style={{ fontSize: 13, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600, color: INK_SOFT, marginBottom: 12 }}>{title}</div>
       {children}
     </div>
@@ -1263,7 +1274,7 @@ function SummaryView({ data, nav }) {
           <div style={{ display: "flex", gap: 5, background: CARD, border: `1px solid ${LINE}`, borderRadius: 12, padding: 4 }}>
             {[[7, "Week"], [30, "Month"]].map(([v, l]) => (
               <button key={v} onClick={() => setRange(v)} className="df-btn"
-                style={{ padding: "6px 12px", borderRadius: 9, border: "none", fontSize: 13.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", background: range === v ? INK : "transparent", color: range === v ? "#FAFBF6" : INK_SOFT }}>
+                style={{ padding: "6px 12px", borderRadius: R_PILL, border: "none", fontSize: 13.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", background: range === v ? INK : "transparent", color: range === v ? "#FAFBF6" : INK_SOFT }}>
                 {l}
               </button>
             ))}
@@ -1355,7 +1366,7 @@ function SummaryView({ data, nav }) {
                   const { s, d } = matrix[q.key];
                   const pct = s ? Math.round((d / s) * 100) : null;
                   return (
-                    <div key={q.key} style={{ borderRadius: 14, border: `1px solid ${q.color}44`, background: q.color + "12", padding: "13px 14px" }}>
+                    <div key={q.key} style={{ borderRadius: 12, border: `1px solid ${q.color}44`, background: q.color + "12", padding: "13px 14px" }}>
                       <div style={{ fontSize: 13, fontWeight: 700, color: q.color }}>{q.sub}</div>
                       <div style={{ fontSize: 11.5, color: INK_SOFT, marginBottom: 8 }}>{q.label}</div>
                       {s === 0 ? (
@@ -1511,7 +1522,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
                   {tasks.map((t) => editingId === t.id ? (
                     <TaskForm key={t.id} categories={data.categories} allTasks={data.tasks} initial={t} onSave={saveTask} onCancel={() => setEditingId(null)} whySeen={whySeen} onWhySeen={markWhySeen} />
                   ) : (
-                    <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 14, background: CARD, border: `1px solid ${LINE}` }}>
+                    <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12, background: CARD, border: `1px solid ${LINE}` }}>
                       <span style={{ flex: 1 }}>
                         <span style={{ fontWeight: 700, fontSize: 15.5 }}>{t.name}</span>
                         <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>{freqLabel(t.freq)}{t.note ? ` · ${t.note}` : ""}{(() => { const p = pairPartner(data, t, data.tasks); return p ? ` · paired with ${p.name}` : ""; })()}</span>
@@ -1538,7 +1549,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
               <PrimaryBtn disabled={!newCat.trim()} onClick={addCategory} style={{ padding: "10px 16px", fontSize: 15 }}>Add</PrimaryBtn>
             </div>
           ) : (
-            <button onClick={() => setAddingCat(true)} style={{ background: "none", border: "none", color: INK_SOFT, fontSize: 14.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: 4, textAlign: "center" }}>
+            <button onClick={() => setAddingCat(true)} style={{ background: "none", border: "none", color: BRAND, fontSize: 14.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: 4, textAlign: "center" }}>
               + Add a category
             </button>
           )}
@@ -1573,7 +1584,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
           <div style={{ marginTop: 6, paddingTop: 20, borderTop: `1px solid ${LINE}` }}>
             <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>Sharing</div>
             <button onClick={() => persist({ ...data, settings: { ...(data.settings || {}), shareActivity: !(data.settings && data.settings.shareActivity) } })} className="df-btn"
-              style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 14, border: `1px solid ${LINE}`, background: "#fff", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+              style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
               <span style={{ flex: 1 }}>
                 <span style={{ fontWeight: 700, fontSize: 15.5 }}>Share my activity</span>
                 <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>Post my completed tasks to the shared feed</span>
@@ -1723,7 +1734,7 @@ function DayDetailSheet({ data, dateStr, onClose }) {
     <div className="df-veil" onClick={onClose}
       style={{ position: "fixed", inset: 0, background: "rgba(17,24,32,0.4)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
       <div onClick={(e) => e.stopPropagation()} className="df-card-in"
-        style={{ background: CARD, borderRadius: "22px 22px 0 0", width: "100%", maxWidth: 520, maxHeight: "72vh", overflowY: "auto", padding: "20px 20px 30px", boxSizing: "border-box" }}>
+        style={{ background: CARD, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 520, maxHeight: "72vh", overflowY: "auto", padding: "20px 20px 30px", boxSizing: "border-box", boxShadow: SHADOW }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <span className="df-display" style={{ fontSize: 21, fontWeight: 500 }}>{heading}</span>
           <IconBtn label="Close" onClick={onClose}><X size={18} /></IconBtn>
@@ -1739,7 +1750,7 @@ function DayDetailSheet({ data, dateStr, onClose }) {
               const label = done ? "Done" : skipped ? `Skipped${entry.reason ? ` · ${entry.reason}` : ""}` : "Not done";
               const color = done ? CAL_COLORS.all : skipped ? CAL_COLORS.skips : INK_SOFT;
               return (
-                <div key={task.id + "-" + i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 14, border: `1px solid ${LINE}`, background: "#fff" }}>
+                <div key={task.id + "-" + i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff" }}>
                   <CatDot color={(c && c.color) || INK_SOFT} />
                   <span style={{ flex: 1 }}>
                     <span style={{ fontWeight: 700, fontSize: 15.5, textDecoration: done ? "none" : skipped ? "none" : "none" }}>{task.name}</span>
@@ -1784,7 +1795,7 @@ function FeedView({ nav }) {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {events.map((e, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 14, border: `1px solid ${LINE}`, background: CARD }}>
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: CARD }}>
                 <span style={{ fontSize: 26, lineHeight: 1, flexShrink: 0 }}>{e.token || "🙂"}</span>
                 <span style={{ flex: 1, minWidth: 0 }}>
                   <span style={{ fontWeight: 700, fontSize: 15.5, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.taskName}</span>
