@@ -95,14 +95,13 @@ const TOKENS = ["A", "B", "C", "D", "E", "F", "G", "H"].map((label, i) => ({
   color: CAT_COLORS[i % CAT_COLORS.length].color,
 }));
 
-// Eisenhower priority (all optional). Unset ranks with "neither" so that when
-// nothing is prioritized the queue keeps its original category order.
-const PRIORITY_RANK = { "urgent-important": 0, important: 1, urgent: 2, neither: 3, _unset: 3 };
-const PRIORITY_QUADRANTS = [
-  { key: "urgent-important", label: "Do first", sub: "urgent + important", color: "#A14E3A" },
-  { key: "important", label: "Schedule", sub: "important", color: "#3F7D6A" },
-  { key: "urgent", label: "Delegate?", sub: "urgent", color: "#8F6E22" },
-  { key: "neither", label: "Trim?", sub: "neither", color: "#6E5F9E" },
+// Priority (all optional). "Can wait" and unset share the lowest rank so that
+// when nothing is prioritized the queue keeps its original category order.
+const PRIORITY_RANK = { must: 0, important: 1, wait: 2, _unset: 2 };
+const PRIORITY_LEVELS = [
+  { key: "must", label: "Must do today", hint: "worth 2 points", color: "#A14E3A" },
+  { key: "important", label: "Important", hint: "sorts next", color: "#3F7D6A" },
+  { key: "wait", label: "Can wait", hint: "sorts last", color: "#8F6E22" },
 ];
 
 // Built-in bodyweight exercise library — no equipment, grouped by body part.
@@ -219,7 +218,14 @@ input::placeholder { color: #9BA3AB; }
 /* ————— Migration ————— */
 // Brings any older profile shape up to the current version, filling defaults
 // for missing fields. Must never throw on unexpected/old data.
-const DATA_VERSION = 2;
+const DATA_VERSION = 3;
+// Map old Eisenhower priority values onto the simplified three-level scheme.
+const PRIORITY_LEGACY = { "urgent-important": "must", important: "important", urgent: "wait", neither: "wait" };
+function migratePriority(p) {
+  if (p == null) return null;
+  if (PRIORITY_LEGACY[p]) return PRIORITY_LEGACY[p];
+  return ["must", "important", "wait"].includes(p) ? p : null;
+}
 function migrate(data) {
   if (!data || typeof data !== "object") return data;
   try {
@@ -230,6 +236,7 @@ function migrate(data) {
     if (!Array.isArray(d.categories)) d.categories = [];
     if (!d.history || typeof d.history !== "object") d.history = {};
     if (!d.libraryOverrides || typeof d.libraryOverrides !== "object") d.libraryOverrides = {};
+    if (!d.timers || typeof d.timers !== "object") d.timers = {}; // { dateKey: { taskId: elapsedSeconds } }
     if (!d.createdAt) d.createdAt = todayKey();
     d.tasks = (Array.isArray(d.tasks) ? d.tasks : []).map((raw) => {
       const t = raw && typeof raw === "object" ? raw : {};
@@ -239,7 +246,7 @@ function migrate(data) {
         eta: t.eta ?? null,
         pairId: t.pairId ?? null,
         pleasantNote: t.pleasantNote ?? null,
-        priority: t.priority ?? null,
+        priority: migratePriority(t.priority ?? null),
         deadline: t.deadline ?? null,
         rotationLabel: t.rotationLabel ?? null,
       };
@@ -313,6 +320,8 @@ const niceDate = (d) => d.toLocaleDateString(undefined, { weekday: "long", month
 const settingsOf = (data) => (data && data.settings) || {};
 const weekStartsMonday = (data) => settingsOf(data).weekStart !== "sun"; // Monday is the default
 const isVacationDay = (data, dateStr) => (settingsOf(data).vacationDays || []).includes(dateStr);
+// Seconds already banked on a task's timer for a given day (0 if none).
+const savedElapsed = (data, dateStr, taskId) => (((data && data.timers) || {})[dateStr] || {})[taskId] || 0;
 
 // The seven date keys of the week containing dateStr, honoring the week-start setting.
 function weekDates(dateStr, mondayStart = true) {
@@ -355,8 +364,8 @@ function onceDone(data, taskId) {
 }
 
 /* ————— Reward points ————— */
-// A done task earns 1 point, or 2 if flagged urgent-important.
-function taskPoints(task) { return task && task.priority === "urgent-important" ? 2 : 1; }
+// A done task earns 1 point, or 2 if flagged "Must do today".
+function taskPoints(task) { return task && task.priority === "must" ? 2 : 1; }
 function pointsEarned(data) {
   let pts = 0;
   const h = (data && data.history) || {};
@@ -771,15 +780,15 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySee
       )}
       <div>
         <div style={{ fontSize: 13, fontWeight: 600, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 8 }}>Priority, optional</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-          {PRIORITY_QUADRANTS.map((q) => {
+        <div style={{ display: "flex", gap: 6 }}>
+          {PRIORITY_LEVELS.map((q) => {
             const on = priority === q.key;
             return (
               <button key={q.key} onClick={() => setPriority(on ? "" : q.key)} className="df-btn"
-                style={{ padding: "9px 10px", borderRadius: R_PILL, fontFamily: "inherit", cursor: "pointer", textAlign: "left",
+                style={{ flex: 1, padding: "10px 8px", borderRadius: R_PILL, fontFamily: "inherit", cursor: "pointer", textAlign: "center",
                   border: `1px solid ${on ? BRAND : LINE}`, background: on ? BRAND_SOFT : "transparent" }}>
-                <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: on ? BRAND : INK }}>{q.sub}</span>
-                <span style={{ display: "block", fontSize: 11.5, color: INK_SOFT, marginTop: 1 }}>{q.label}</span>
+                <span style={{ display: "block", fontSize: 13, fontWeight: 700, color: on ? BRAND : INK }}>{q.label}</span>
+                <span style={{ display: "block", fontSize: 11, color: INK_SOFT, marginTop: 1 }}>{q.hint}</span>
               </button>
             );
           })}
@@ -1049,7 +1058,8 @@ function TodayView({ data, persist, nav, profileId, token }) {
   const [breakPeek, setBreakPeek] = useState(false); // "do something anyway" while on break
   const [undo, setUndo] = useState(null); // { label } for the most recent entry
   const [subChecks, setSubChecks] = useState({}); // subtaskId -> true, for the current task
-  const [timerStart, setTimerStart] = useState(null); // ms when the countdown began, or null
+  const [timerStart, setTimerStart] = useState(null); // ms the running segment began, or null when paused/stopped
+  const [accumSec, setAccumSec] = useState(0);        // seconds banked from earlier segments of the current task today
   const [nowMs, setNowMs] = useState(Date.now());
   const timer = useRef(null);
   const undoTimer = useRef(null);
@@ -1067,15 +1077,52 @@ function TodayView({ data, persist, nav, profileId, token }) {
   }, [showMore]);
 
   const current = remaining.find((t) => t.id === jumpId) || remaining[0] || null;
-  useEffect(() => { setSubChecks({}); setTimerStart(null); }, [current?.id]);
+  // On focusing a task (mount, jump, or auto-advance) reset sub-checks and load
+  // however many seconds were already banked for it today, paused.
+  useEffect(() => {
+    setSubChecks({});
+    setTimerStart(null);
+    setAccumSec(savedElapsed(data, tk, current?.id));
+    setNowMs(Date.now());
+  }, [current?.id]);
   const partner = pairPartner(data, current, remaining);
   const pairTasks = current ? (partner ? [current, partner] : [current]) : [];
   const pleasantNote = current && (current.pleasantNote || (partner && partner.pleasantNote));
   const subs = (current && current.subtasks) || [];
   const allSubsChecked = subs.length > 0 && subs.every((s) => subChecks[s.id]);
-  const elapsedSec = timerStart == null ? 0 : Math.floor((nowMs - timerStart) / 1000);
+  const elapsedSec = accumSec + (timerStart == null ? 0 : Math.floor((nowMs - timerStart) / 1000));
   const remainingSec = current && current.eta > 0 ? current.eta * 60 - elapsedSec : 0;
   const cat = current ? data.categories.find((c) => c.id === current.categoryId) : null;
+
+  // Timer persistence: elapsed seconds are stored per task per day, so pausing,
+  // switching tasks, or leaving and returning the same day keeps the progress.
+  const persistTimer = (taskId, seconds) => {
+    if (!taskId) return;
+    const timers = { ...(data.timers || {}) };
+    timers[tk] = { ...(timers[tk] || {}), [taskId]: seconds };
+    persist({ ...data, timers });
+  };
+  const startTimer = () => { setTimerStart(Date.now()); setNowMs(Date.now()); };
+  const pauseTimer = () => {
+    if (timerStart == null || !current) return;
+    const total = accumSec + Math.max(0, Math.floor((Date.now() - timerStart) / 1000));
+    setAccumSec(total);
+    setTimerStart(null);
+    persistTimer(current.id, total);
+  };
+  // If the user navigates away mid-run, bank the in-flight segment on unmount so
+  // returning to Today the same day resumes from where it was (paused, not reset).
+  const bankRef = useRef({});
+  bankRef.current = { taskId: current?.id, timerStart, accumSec, tk, data, persist };
+  useEffect(() => () => {
+    const s = bankRef.current;
+    if (!s.taskId || s.timerStart == null) return;
+    const seg = Math.max(0, Math.floor((Date.now() - s.timerStart) / 1000));
+    if (seg <= 0) return;
+    const timers = { ...(s.data.timers || {}) };
+    timers[s.tk] = { ...(timers[s.tk] || {}), [s.taskId]: s.accumSec + seg };
+    s.persist({ ...s.data, timers });
+  }, []);
 
   // Vacation mode: mark each day it's on so streaks skip it.
   const vacation = !!(data.settings && data.settings.vacation);
@@ -1163,8 +1210,9 @@ function TodayView({ data, persist, nav, profileId, token }) {
     if (!current) return;
     setCelebrate(true);
     const list = pairTasks;
-    const spent = timerStart != null ? Math.max(0, Math.floor((Date.now() - timerStart) / 1000)) : null;
-    const spentMap = spent != null ? { [current.id]: spent } : null;
+    const runSeg = timerStart != null ? Math.max(0, Math.floor((Date.now() - timerStart) / 1000)) : 0;
+    const spent = accumSec + runSeg;
+    const spentMap = spent > 0 ? { [current.id]: spent } : null;
     timer.current = setTimeout(() => { setCelebrate(false); record(list, "done", null, spentMap); }, 620);
   };
 
@@ -1298,18 +1346,18 @@ function TodayView({ data, persist, nav, profileId, token }) {
               </div>
             )}
 
-            {current.eta > 0 && timerStart != null && (
+            {current.eta > 0 && (timerStart != null || accumSec > 0) && (
               <div style={{ marginTop: 30 }}>
-                <div className={remainingSec <= 0 ? "df-display df-pulse" : "df-display"}
-                  style={{ fontSize: "clamp(52px, 17vw, 92px)", fontWeight: 600, lineHeight: 1, color: remainingSec <= 0 ? BRAND : INK }} className="df-num">
+                <div className={remainingSec <= 0 && timerStart != null ? "df-display df-pulse df-num" : "df-display df-num"}
+                  style={{ fontSize: "clamp(52px, 17vw, 92px)", fontWeight: 600, lineHeight: 1, color: remainingSec <= 0 ? BRAND : INK }}>
                   {fmtClock(remainingSec)}
                 </div>
                 <div style={{ fontSize: 13.5, color: INK_SOFT, marginTop: 8, fontWeight: 600 }}>
-                  {remainingSec <= 0 ? "time's up, finish when you're ready" : `of ${current.eta} min`}
+                  {timerStart == null ? "Paused" : (remainingSec <= 0 ? "time's up, finish when you're ready" : `of ${current.eta} min`)}
                 </div>
-                <button onClick={() => setTimerStart(null)}
-                  style={{ marginTop: 10, background: "none", border: "none", color: BRAND, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>
-                  Stop timer
+                <button onClick={timerStart == null ? startTimer : pauseTimer}
+                  style={{ marginTop: 10, background: "none", border: "none", color: BRAND, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>
+                  {timerStart == null ? "Resume" : "Pause"}
                 </button>
               </div>
             )}
@@ -1320,9 +1368,9 @@ function TodayView({ data, persist, nav, profileId, token }) {
               </PrimaryBtn>
               <GhostBtn onClick={() => setSkipping(true)} style={{ minWidth: 110, padding: "15px 22px", borderRadius: R_PILL }}>Skip</GhostBtn>
             </div>
-            {current.eta > 0 && timerStart == null && (
+            {current.eta > 0 && timerStart == null && accumSec === 0 && (
               <div style={{ marginTop: 16 }}>
-                <GhostBtn onClick={() => { setTimerStart(Date.now()); setNowMs(Date.now()); }} style={{ padding: "11px 20px", fontSize: 15 }}>
+                <GhostBtn onClick={startTimer} style={{ padding: "11px 20px", fontSize: 15 }}>
                   Start {current.eta}-min timer
                 </GhostBtn>
               </div>
@@ -1387,7 +1435,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
                 const pending = !e;
                 return (
                   <button key={t.id} disabled={!pending}
-                    onClick={() => { setJumpId(t.id); setSkipping(false); setShowOverview(false); }}
+                    onClick={() => { pauseTimer(); setJumpId(t.id); setSkipping(false); setShowOverview(false); }}
                     className="df-btn"
                     style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: pending ? "#fff" : "transparent", cursor: pending ? "pointer" : "default", fontFamily: "inherit", textAlign: "left", opacity: pending ? 1 : 0.55 }}>
                     <CatDot color={c?.color || INK} />
@@ -1546,7 +1594,7 @@ function SummaryView({ data, nav }) {
   }, [days]);
 
   const matrix = useMemo(() => {
-    const q = { "urgent-important": { s: 0, d: 0 }, important: { s: 0, d: 0 }, urgent: { s: 0, d: 0 }, neither: { s: 0, d: 0 } };
+    const q = { must: { s: 0, d: 0 }, important: { s: 0, d: 0 }, wait: { s: 0, d: 0 } };
     days.forEach((day) => day.scheduled.forEach((t) => {
       if (t.priority && q[t.priority]) {
         q[t.priority].s++;
@@ -1659,28 +1707,28 @@ function SummaryView({ data, nav }) {
           </Section>
 
           {hasPriorities && (
-            <Section title="Priority matrix">
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                {PRIORITY_QUADRANTS.map((q) => {
+            <Section title="Priority">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                {PRIORITY_LEVELS.map((q) => {
                   const { s, d } = matrix[q.key];
                   const pct = s ? Math.round((d / s) * 100) : null;
                   return (
-                    <div key={q.key} style={{ borderRadius: 12, border: `1px solid ${LINE}`, background: "#FFFFFF", padding: "13px 14px" }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: INK }}>{q.sub}</div>
-                      <div style={{ fontSize: 11.5, color: INK_SOFT, marginBottom: 8 }}>{q.label}</div>
+                    <div key={q.key} style={{ borderRadius: 12, border: `1px solid ${LINE}`, background: "#FFFFFF", padding: "13px 12px" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: INK }}>{q.label}</div>
+                      <div style={{ fontSize: 11.5, color: INK_SOFT, marginBottom: 8 }}>{q.hint}</div>
                       {s === 0 ? (
                         <div style={{ fontSize: 13.5, color: INK_SOFT }}>none scheduled</div>
                       ) : (
-                        <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                          <span className="df-display df-num" style={{ fontSize: 28, fontWeight: 600, color: INK }}>{pct}%</span>
-                          <span style={{ fontSize: 12.5, color: INK_SOFT }}>{d}/{s} done</span>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexWrap: "wrap" }}>
+                          <span className="df-display df-num" style={{ fontSize: 26, fontWeight: 600, color: INK }}>{pct}%</span>
+                          <span style={{ fontSize: 12, color: INK_SOFT }}>{d}/{s} done</span>
                         </div>
                       )}
                     </div>
                   );
                 })}
               </div>
-              <p style={{ fontSize: 12.5, color: INK_SOFT, margin: "10px 0 0" }}>Completion rate by Eisenhower quadrant, last {range} days.</p>
+              <p style={{ fontSize: 12.5, color: INK_SOFT, margin: "10px 0 0" }}>Completion rate by priority, last {range} days.</p>
             </Section>
           )}
 
