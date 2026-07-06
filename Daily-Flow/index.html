@@ -97,9 +97,10 @@ const PRIORITY_QUADRANTS = [
 ];
 
 const GLOBAL_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Karla:wght@400;500;600;700&display=swap');
-.df-root { font-family: 'Karla', system-ui, sans-serif; color: ${INK}; }
-.df-display { font-family: 'Fraunces', Georgia, serif; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+.df-root { font-family: 'Inter', system-ui, sans-serif; color: ${INK}; font-size: 15px; font-weight: 400; letter-spacing: 0; }
+.df-display { font-family: inherit; letter-spacing: 0; }
+.df-num { font-variant-numeric: tabular-nums; }
 .df-fade-bg { transition: background 900ms ease; }
 .df-card-in { animation: dfCardIn 380ms cubic-bezier(.22,.9,.3,1) both; }
 @keyframes dfCardIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
@@ -367,7 +368,7 @@ function Eyebrow({ children, color }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "center" }}>
       <CatDot color={color} />
-      <span style={{ fontSize: 13, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 700, color: color }}>{children}</span>
+      <span style={{ fontSize: 13, letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 600, color: color }}>{children}</span>
     </div>
   );
 }
@@ -554,14 +555,14 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySee
       {freq.type === "rotate" && (
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase" }}>Rotation</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase" }}>Rotation</span>
             <Why id="rotation" seen={whySeen} onSeen={onWhySeen} />
           </div>
           <TextInput placeholder="Rotation label — optional (e.g. Push, Pull, Legs)" value={rotationLabel} onChange={(e) => setRotationLabel(e.target.value)} />
         </div>
       )}
       <div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 8 }}>Priority — optional</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 8 }}>Priority — optional</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
           {PRIORITY_QUADRANTS.map((q) => {
             const on = priority === q.key;
@@ -581,7 +582,7 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySee
         <span style={{ fontSize: 14, color: INK_SOFT, fontWeight: 600, flexShrink: 0 }}>min</span>
       </div>
       <div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 8 }}>Subtasks — optional</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 8 }}>Subtasks — optional</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {subtasks.map((s) => (
             <div key={s.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -602,7 +603,7 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySee
       {pairChoices.length > 0 && (
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase" }}>Habit stacking — optional</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase" }}>Habit stacking — optional</span>
             <Why id="pairing" seen={whySeen} onSeen={onWhySeen} />
           </div>
           <select value={pairId} onChange={(e) => setPairId(e.target.value)}
@@ -644,7 +645,7 @@ function ProfilesView({ profiles, onOpen, onCreate }) {
   return (
     <div style={{ maxWidth: 460, margin: "0 auto", padding: "56px 20px", display: "flex", flexDirection: "column", gap: 22 }}>
       <div style={{ textAlign: "center" }}>
-        <div className="df-display" style={{ fontSize: 44, fontWeight: 500, letterSpacing: "-0.01em" }}>Daily Flow</div>
+        <div className="df-display" style={{ fontSize: 44, fontWeight: 600 }}>Daily Flow</div>
         <p style={{ color: INK_SOFT, fontSize: 16, marginTop: 8 }}>Pick your token to begin — or tap yours to continue.</p>
       </div>
 
@@ -724,7 +725,7 @@ function SetupView({ profileName, onFinish }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
         {step > 0 && <IconBtn label="Back" onClick={() => setStep(step - 1)}><ChevronLeft size={18} /></IconBtn>}
         <div>
-          <div style={{ fontSize: 13, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700, color: INK_SOFT }}>Setting up · {profileName}</div>
+          <div style={{ fontSize: 13, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600, color: INK_SOFT }}>Setting up · {profileName}</div>
           <div className="df-display" style={{ fontSize: 28, fontWeight: 500, marginTop: 2 }}>
             {step === 0 ? "Pick your categories" : "Add your tasks"}
           </div>
@@ -923,7 +924,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
       {/* header */}
       <div style={{ maxWidth: 520, width: "100%", margin: "0 auto", padding: "18px 20px 0", display: "flex", alignItems: "center", gap: 8, boxSizing: "border-box" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700, color: INK_SOFT }}>{data.name}</div>
+          <div style={{ fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 600, color: INK_SOFT }}>{data.name}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span className="df-display" style={{ fontSize: 19, fontWeight: 500 }}>{niceDate(new Date())}</span>
             <Why id="one-task" seen={whySeen} onSeen={markWhySeen} />
@@ -951,13 +952,13 @@ function TodayView({ data, persist, nav, profileId, token }) {
         ) : current ? (
           <div key={current.id} className="df-card-in" style={{ textAlign: "center", position: "relative" }}>
             <Eyebrow color={cat.color}>{partner ? `${cat.name} · paired` : current.rotationLabel ? `${cat.name} · ${current.rotationLabel}` : cat.name}</Eyebrow>
-            <h1 className="df-display" style={{ fontSize: "clamp(34px, 9vw, 52px)", fontWeight: 500, lineHeight: 1.12, margin: "18px 0 0", letterSpacing: "-0.01em" }}>
+            <h1 className="df-display" style={{ fontSize: 32, fontWeight: 600, lineHeight: 1.15, margin: "18px 0 0" }}>
               {pairTasks.map((t) => t.name).join(" + ")}
             </h1>
             {current.note && <p style={{ fontSize: 17, color: INK_SOFT, marginTop: 14, lineHeight: 1.5 }}>{current.note}</p>}
             {pleasantNote && <p style={{ fontStyle: "italic", fontSize: 15.5, color: INK_SOFT, marginTop: 8, lineHeight: 1.5 }}>{pleasantNote}</p>}
             {current.freq.type === "weekly" && (
-              <p style={{ fontSize: 14.5, color: INK_SOFT, marginTop: 12, fontWeight: 700, letterSpacing: "0.02em" }}>
+              <p style={{ fontSize: 15, color: INK_SOFT, marginTop: 12, fontWeight: 600 }}>
                 {weeklyDoneCount(data, current, tk)} of {Math.max(1, current.freq.count || 1)} this week
               </p>
             )}
@@ -966,7 +967,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
               const urgent = dleft <= 1;
               const txt = dleft <= 0 ? "due today" : dleft === 1 ? "due tomorrow" : `due in ${dleft} days`;
               return (
-                <span style={{ display: "inline-block", marginTop: 12, fontSize: 14.5, fontWeight: 700, letterSpacing: "0.02em",
+                <span style={{ display: "inline-block", marginTop: 12, fontSize: 15, fontWeight: 600,
                   color: urgent ? "#A14E3A" : INK_SOFT,
                   ...(urgent ? { background: "#A14E3A1A", border: "1px solid #A14E3A55", padding: "4px 12px", borderRadius: 99 } : {}) }}>
                   {txt}
@@ -977,7 +978,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
             {subs.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 24, textAlign: "left", maxWidth: 340, marginLeft: "auto", marginRight: "auto" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-                  <span style={{ fontSize: 12.5, fontWeight: 700, color: INK_SOFT, letterSpacing: "0.06em", textTransform: "uppercase" }}>Steps</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: INK_SOFT, letterSpacing: "0.06em", textTransform: "uppercase" }}>Steps</span>
                   <Why id="two-minute" seen={whySeen} onSeen={markWhySeen} />
                 </div>
                 {subs.map((s) => {
@@ -998,7 +999,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
             {current.eta > 0 && timerStart != null && (
               <div style={{ marginTop: 30 }}>
                 <div className={remainingSec <= 0 ? "df-display df-pulse" : "df-display"}
-                  style={{ fontSize: "clamp(52px, 17vw, 92px)", fontWeight: 500, lineHeight: 1, letterSpacing: "0.01em", color: remainingSec <= 0 ? BRAND : INK }}>
+                  style={{ fontSize: "clamp(52px, 17vw, 92px)", fontWeight: 600, lineHeight: 1, color: remainingSec <= 0 ? BRAND : INK }} className="df-num">
                   {fmtClock(remainingSec)}
                 </div>
                 <div style={{ fontSize: 13.5, color: INK_SOFT, marginTop: 8, fontWeight: 600 }}>
@@ -1248,7 +1249,7 @@ function SummaryView({ data, nav }) {
 
   const Section = ({ title, children }) => (
     <div style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: 18, padding: 18 }}>
-      <div style={{ fontSize: 13, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 700, color: INK_SOFT, marginBottom: 12 }}>{title}</div>
+      <div style={{ fontSize: 13, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600, color: INK_SOFT, marginBottom: 12 }}>{title}</div>
       {children}
     </div>
   );
@@ -1272,7 +1273,7 @@ function SummaryView({ data, nav }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <Section title="Completion">
             <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-              <span className="df-display" style={{ fontSize: 42, fontWeight: 500 }}>{pct}%</span>
+              <span className="df-display df-num" style={{ fontSize: 28, fontWeight: 600 }}>{pct}%</span>
               <span style={{ fontSize: 14.5, color: INK_SOFT }}>{totDone} of {totSched} scheduled tasks, last {range} days</span>
             </div>
             <div style={{ display: "flex", alignItems: "flex-end", gap: range === 7 ? 8 : 3, height: 72, marginTop: 14 }}>
@@ -1292,8 +1293,8 @@ function SummaryView({ data, nav }) {
 
           <Section title="Streaks">
             <div style={{ display: "flex", gap: 24, marginBottom: 12 }}>
-              <div><span className="df-display" style={{ fontSize: 34, fontWeight: 500 }}>{cur}</span><span style={{ fontSize: 14, color: INK_SOFT, marginLeft: 7 }}>current</span></div>
-              <div><span className="df-display" style={{ fontSize: 34, fontWeight: 500 }}>{best}</span><span style={{ fontSize: 14, color: INK_SOFT, marginLeft: 7 }}>best</span></div>
+              <div><span className="df-display df-num" style={{ fontSize: 28, fontWeight: 600 }}>{cur}</span><span style={{ fontSize: 14, color: INK_SOFT, marginLeft: 7 }}>current</span></div>
+              <div><span className="df-display df-num" style={{ fontSize: 28, fontWeight: 600 }}>{best}</span><span style={{ fontSize: 14, color: INK_SOFT, marginLeft: 7 }}>best</span></div>
             </div>
             <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
               {data.categories.map((c) => (
@@ -1361,7 +1362,7 @@ function SummaryView({ data, nav }) {
                         <div style={{ fontSize: 13.5, color: INK_SOFT }}>none scheduled</div>
                       ) : (
                         <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                          <span className="df-display" style={{ fontSize: 30, fontWeight: 500, color: INK }}>{pct}%</span>
+                          <span className="df-display df-num" style={{ fontSize: 28, fontWeight: 600, color: INK }}>{pct}%</span>
                           <span style={{ fontSize: 12.5, color: INK_SOFT }}>{d}/{s} done</span>
                         </div>
                       )}
@@ -1375,7 +1376,7 @@ function SummaryView({ data, nav }) {
 
           <Section title="Rewards">
             <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: redemptions.length ? 14 : 0 }}>
-              <span className="df-display" style={{ fontSize: 42, fontWeight: 500 }}>{pointsBalance(data)}</span>
+              <span className="df-display df-num" style={{ fontSize: 28, fontWeight: 600 }}>{pointsBalance(data)}</span>
               <span style={{ fontSize: 14.5, color: INK_SOFT }}>points to spend</span>
             </div>
             {redemptions.length === 0 ? (
@@ -1499,7 +1500,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
               <div key={c.id}>
                 <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 9 }}>
                   <CatDot color={c.color} size={10} />
-                  <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: c.color, flex: 1 }}>{c.name}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: c.color, flex: 1 }}>{c.name}</span>
                   <button aria-label={`Remove ${c.name}`} onClick={() => deleteCategory(c.id)}
                     style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 4 }}>
                     <Trash2 size={15} />
@@ -1543,7 +1544,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
           )}
 
           <div style={{ marginTop: 6, paddingTop: 20, borderTop: `1px solid ${LINE}` }}>
-            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>Rewards</div>
+            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>Rewards</div>
             <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 12px" }}>Earn a point for each task you finish, then redeem points for these.</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {(data.rewards || []).map((r) => (
@@ -1570,7 +1571,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
           </div>
 
           <div style={{ marginTop: 6, paddingTop: 20, borderTop: `1px solid ${LINE}` }}>
-            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>Sharing</div>
+            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>Sharing</div>
             <button onClick={() => persist({ ...data, settings: { ...(data.settings || {}), shareActivity: !(data.settings && data.settings.shareActivity) } })} className="df-btn"
               style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 14, border: `1px solid ${LINE}`, background: "#fff", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
               <span style={{ flex: 1 }}>
@@ -1592,7 +1593,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
           </div>
 
           <div style={{ marginTop: 6, paddingTop: 20, borderTop: `1px solid ${LINE}` }}>
-            <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>Backup</div>
+            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>Backup</div>
             <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 12px" }}>Save this profile to a file, or restore it from a backup.</p>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <GhostBtn onClick={exportProfile} style={{ padding: "11px 16px", fontSize: 15 }}>Export JSON</GhostBtn>
@@ -1661,7 +1662,7 @@ function CalendarView({ data, nav }) {
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 6 }}>
           {["S", "M", "T", "W", "T", "F", "S"].map((w, i) => (
-            <div key={i} style={{ textAlign: "center", fontSize: 12, fontWeight: 700, color: INK_SOFT, letterSpacing: "0.04em" }}>{w}</div>
+            <div key={i} style={{ textAlign: "center", fontSize: 12, fontWeight: 600, color: INK_SOFT }}>{w}</div>
           ))}
         </div>
 
