@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Daily Flow</title>
 <style>
-  html, body { margin: 0; padding: 0; background: #E8EDE3; }
+  html, body { margin: 0; padding: 0; background: #FFFFFF; }
   #root { min-height: 100vh; }
 </style>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -55,12 +55,14 @@ const Star = svgIcon('<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21
 /* ————— Daily Flow app ————— */
 
 
-/* ————— Design tokens ————— */
-const BASE_BG = "#E8EDE3";     // pale eucalyptus
-const INK = "#243329";         // deep pine ink
-const INK_SOFT = "#5A6A5E";
-const CARD = "#FBFCF7";
-const LINE = "#CBD5C6";
+/* ————— Design tokens (minimal fintech) ————— */
+const BASE_BG = "#FFFFFF";     // page stays white
+const INK = "#111820";         // primary text
+const INK_SOFT = "#6B7580";    // secondary text
+const CARD = "#F7F9FA";        // sections / cards
+const LINE = "#E4E8EC";        // hairline borders
+const BRAND = "#0A3D91";       // single brand color for primary actions
+const BRAND_SOFT = "#0A3D9114"; // faint brand tint for selected states
 
 const CAT_COLORS = [
   { color: "#A14E3A", tint: "#A14E3A" }, // madder
@@ -110,7 +112,7 @@ const GLOBAL_CSS = `
 .df-btn { transition: transform 120ms ease, opacity 120ms ease, background 120ms ease; }
 .df-btn:active { transform: scale(.97); }
 button:focus-visible, input:focus-visible { outline: 2px solid ${INK}; outline-offset: 2px; }
-input::placeholder { color: #9AA79C; }
+input::placeholder { color: #9BA3AB; }
 @media (prefers-reduced-motion: reduce) {
   .df-card-in, .df-pop, .df-veil, .df-pulse { animation: none !important; }
   .df-fade-bg, .df-btn { transition: none !important; }
@@ -419,10 +421,10 @@ function TextInput(props) {
   );
 }
 
-function PrimaryBtn({ onClick, children, color = INK, disabled, style }) {
+function PrimaryBtn({ onClick, children, color = BRAND, disabled, style }) {
   return (
     <button onClick={onClick} disabled={disabled} className="df-btn"
-      style={{ padding: "14px 22px", borderRadius: 14, border: "none", background: disabled ? "#B9C2B6" : color, color: "#FAFBF6", fontSize: 17, fontWeight: 700, cursor: disabled ? "default" : "pointer", fontFamily: "inherit", ...style }}>
+      style={{ padding: "14px 22px", borderRadius: 12, border: "none", background: disabled ? "#C7CED4" : color, color: "#FFFFFF", fontSize: 17, fontWeight: 700, cursor: disabled ? "default" : "pointer", fontFamily: "inherit", ...style }}>
       {children}
     </button>
   );
@@ -905,7 +907,6 @@ function TodayView({ data, persist, nav, profileId, token }) {
     timer.current = setTimeout(() => { setCelebrate(false); record(list, "done", null, spentMap); }, 620);
   };
 
-  const bgTint = cat ? cat.color : INK;
   const streak = currentStreak(data);
   const points = pointsBalance(data);
 
@@ -918,7 +919,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
   };
 
   return (
-    <div className="df-fade-bg" style={{ minHeight: "100vh", background: `linear-gradient(175deg, ${bgTint}26 0%, ${BASE_BG} 46%)`, display: "flex", flexDirection: "column" }}>
+    <div style={{ minHeight: "100vh", background: BASE_BG, display: "flex", flexDirection: "column" }}>
       {/* header */}
       <div style={{ maxWidth: 520, width: "100%", margin: "0 auto", padding: "18px 20px 0", display: "flex", alignItems: "center", gap: 8, boxSizing: "border-box" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -983,8 +984,8 @@ function TodayView({ data, persist, nav, profileId, token }) {
                   const on = !!subChecks[s.id];
                   return (
                     <button key={s.id} onClick={() => setSubChecks((c) => ({ ...c, [s.id]: !c[s.id] }))} className="df-btn"
-                      style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, border: `1px solid ${on ? cat.color : LINE}`, background: on ? cat.color + "14" : "#fff", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
-                      <span style={{ width: 22, height: 22, borderRadius: 7, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${on ? cat.color : "#C3CCBE"}`, background: on ? cat.color : "transparent" }}>
+                      style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, border: `1px solid ${on ? BRAND : LINE}`, background: on ? BRAND_SOFT : CARD, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                      <span style={{ width: 22, height: 22, borderRadius: 7, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${on ? BRAND : "#C7CED4"}`, background: on ? BRAND : "transparent" }}>
                         {on && <Check size={14} color="#FAFBF6" strokeWidth={3} />}
                       </span>
                       <span style={{ fontSize: 15.5, fontWeight: 600, color: INK, textDecoration: on ? "line-through" : "none", opacity: on ? 0.6 : 1 }}>{s.name}</span>
@@ -997,7 +998,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
             {current.eta > 0 && timerStart != null && (
               <div style={{ marginTop: 30 }}>
                 <div className={remainingSec <= 0 ? "df-display df-pulse" : "df-display"}
-                  style={{ fontSize: "clamp(52px, 17vw, 92px)", fontWeight: 500, lineHeight: 1, letterSpacing: "0.01em", color: remainingSec <= 0 ? cat.color : INK }}>
+                  style={{ fontSize: "clamp(52px, 17vw, 92px)", fontWeight: 500, lineHeight: 1, letterSpacing: "0.01em", color: remainingSec <= 0 ? BRAND : INK }}>
                   {fmtClock(remainingSec)}
                 </div>
                 <div style={{ fontSize: 13.5, color: INK_SOFT, marginTop: 8, fontWeight: 600 }}>
@@ -1013,7 +1014,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
             {!skipping ? (
               <>
                 <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 40 }}>
-                  <PrimaryBtn onClick={markDone} color={subs.length > 0 && allSubsChecked ? cat.color : INK} style={{ minWidth: 150, fontSize: 18, padding: "16px 26px", borderRadius: 18 }}>
+                  <PrimaryBtn onClick={markDone} color={BRAND} style={{ minWidth: 150, fontSize: 18, padding: "16px 26px", borderRadius: 18 }}>
                     <Check size={19} style={{ verticalAlign: "-4px", marginRight: 8 }} />Done
                   </PrimaryBtn>
                   <GhostBtn onClick={() => setSkipping(true)} style={{ minWidth: 110, padding: "15px 22px", borderRadius: 18 }}>Skip</GhostBtn>
@@ -1056,7 +1057,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
           </div>
         ) : (
           <div className="df-card-in" style={{ textAlign: "center" }}>
-            <div className="df-pop" style={{ width: 76, height: 76, borderRadius: 99, background: INK, color: "#FAFBF6", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
+            <div className="df-pop" style={{ width: 76, height: 76, borderRadius: 99, background: BRAND, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
               <Check size={36} strokeWidth={2.5} />
             </div>
             <div className="df-display" style={{ fontSize: 36, fontWeight: 500 }}>Day complete</div>
@@ -1091,7 +1092,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
       {/* done celebration overlay */}
       {celebrate && (
         <div className="df-veil" style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: BASE_BG + "AA", pointerEvents: "none", zIndex: 40 }}>
-          <div className="df-pop" style={{ width: 92, height: 92, borderRadius: 99, background: cat ? cat.color : INK, color: "#FAFBF6", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 12px 40px rgba(0,0,0,0.18)" }}>
+          <div className="df-pop" style={{ width: 92, height: 92, borderRadius: 99, background: BRAND, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 12px 40px rgba(0,0,0,0.18)" }}>
             <Check size={44} strokeWidth={2.5} />
           </div>
         </div>
@@ -1100,7 +1101,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
       {/* overview sheet */}
       {showOverview && (
         <div className="df-veil" onClick={() => setShowOverview(false)}
-          style={{ position: "fixed", inset: 0, background: "rgba(30,42,34,0.35)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          style={{ position: "fixed", inset: 0, background: "rgba(17,24,32,0.4)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div onClick={(e) => e.stopPropagation()} className="df-card-in"
             style={{ background: CARD, borderRadius: "22px 22px 0 0", width: "100%", maxWidth: 520, maxHeight: "72vh", overflowY: "auto", padding: "20px 20px 30px", boxSizing: "border-box" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
@@ -1137,7 +1138,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
       {/* rewards sheet */}
       {showRewards && (
         <div className="df-veil" onClick={() => setShowRewards(false)}
-          style={{ position: "fixed", inset: 0, background: "rgba(30,42,34,0.35)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          style={{ position: "fixed", inset: 0, background: "rgba(17,24,32,0.4)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
           <div onClick={(e) => e.stopPropagation()} className="df-card-in"
             style={{ background: CARD, borderRadius: "22px 22px 0 0", width: "100%", maxWidth: 520, maxHeight: "72vh", overflowY: "auto", padding: "20px 20px 30px", boxSizing: "border-box" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
@@ -1579,7 +1580,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
               {(() => {
                 const on = !!(data.settings && data.settings.shareActivity);
                 return (
-                  <span style={{ width: 46, height: 27, borderRadius: 99, flexShrink: 0, background: on ? "#3F7D6A" : "#C3CCBE", position: "relative", transition: "background 200ms ease" }}>
+                  <span style={{ width: 46, height: 27, borderRadius: 99, flexShrink: 0, background: on ? BRAND : "#C7CED4", position: "relative", transition: "background 200ms ease" }}>
                     <span style={{ position: "absolute", top: 3, left: on ? 22 : 3, width: 21, height: 21, borderRadius: 99, background: "#fff", transition: "left 200ms ease" }} />
                   </span>
                 );
@@ -1719,7 +1720,7 @@ function DayDetailSheet({ data, dateStr, onClose }) {
 
   return (
     <div className="df-veil" onClick={onClose}
-      style={{ position: "fixed", inset: 0, background: "rgba(30,42,34,0.35)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      style={{ position: "fixed", inset: 0, background: "rgba(17,24,32,0.4)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
       <div onClick={(e) => e.stopPropagation()} className="df-card-in"
         style={{ background: CARD, borderRadius: "22px 22px 0 0", width: "100%", maxWidth: 520, maxHeight: "72vh", overflowY: "auto", padding: "20px 20px 30px", boxSizing: "border-box" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
