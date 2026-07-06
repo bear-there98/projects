@@ -99,6 +99,44 @@ const PRIORITY_QUADRANTS = [
   { key: "neither", label: "Trim?", sub: "neither", color: "#6E5F9E" },
 ];
 
+// Built-in bodyweight exercise library — no equipment, grouped by body part.
+// Each entry: { name, bodyPart, defaultReps, note (one-line form cue) }.
+const EXERCISE_LIBRARY = [
+  // ————— Legs —————
+  { name: "Squats", bodyPart: "Legs", defaultReps: "3×12", note: "Sit back through your heels, knees tracking over toes." },
+  { name: "Lunges", bodyPart: "Legs", defaultReps: "3×10 each", note: "Step long; drop the back knee straight down." },
+  { name: "Glute bridges", bodyPart: "Legs", defaultReps: "3×15", note: "Squeeze glutes at the top, ribs down." },
+  { name: "Calf raises", bodyPart: "Legs", defaultReps: "3×20", note: "Rise all the way onto the balls of your feet, pause up top." },
+  { name: "Wall sit", bodyPart: "Legs", defaultReps: "3×30s", note: "Thighs parallel, back flat against the wall." },
+  // ————— Chest & Arms —————
+  { name: "Push-ups", bodyPart: "Chest & Arms", defaultReps: "3×10", note: "Body in one line; elbows about 45° from your sides." },
+  { name: "Incline push-ups on a chair", bodyPart: "Chest & Arms", defaultReps: "3×12", note: "Hands on a sturdy chair — easier angle, same form." },
+  { name: "Tricep dips on a chair", bodyPart: "Chest & Arms", defaultReps: "3×10", note: "Hands by hips on the seat, lower until elbows hit ~90°." },
+  { name: "Pike push-ups", bodyPart: "Chest & Arms", defaultReps: "3×8", note: "Hips high in an upside-down V; crown of head toward the floor." },
+  // ————— Core —————
+  { name: "Plank", bodyPart: "Core", defaultReps: "3×30s", note: "Straight line head to heels; brace your abs, don't sag." },
+  { name: "Side plank", bodyPart: "Core", defaultReps: "3×20s each", note: "Stack hips and shoulders; lift them toward the ceiling." },
+  { name: "Dead bug", bodyPart: "Core", defaultReps: "3×10 each", note: "Lower back pressed down; extend opposite arm and leg slowly." },
+  { name: "Bicycle crunches", bodyPart: "Core", defaultReps: "3×20", note: "Rotate from the ribs, not the neck; slow and controlled." },
+  { name: "Leg raises", bodyPart: "Core", defaultReps: "3×12", note: "Keep the low back glued down; lower legs only as far as you can." },
+  { name: "Bird dog", bodyPart: "Core", defaultReps: "3×10 each", note: "Extend opposite arm and leg, hips level, no wobble." },
+  // ————— Back —————
+  { name: "Superman hold", bodyPart: "Back", defaultReps: "3×20s", note: "Lift arms, chest, and legs; squeeze your glutes and back." },
+  { name: "Reverse snow angels", bodyPart: "Back", defaultReps: "3×12", note: "Face down, arms sweep from hips to overhead, thumbs up." },
+  { name: "Doorway rows (if available)", bodyPart: "Back", defaultReps: "3×10", note: "Grip a doorframe, lean back, pull your chest to your hands." },
+  { name: "Good mornings", bodyPart: "Back", defaultReps: "3×12", note: "Hinge at the hips with a flat back; feel it in the hamstrings." },
+  // ————— Full body —————
+  { name: "Burpees", bodyPart: "Full body", defaultReps: "3×8", note: "Chest to floor, then explode up into a jump." },
+  { name: "Mountain climbers", bodyPart: "Full body", defaultReps: "3×30s", note: "Hips low and steady; drive the knees quickly toward your chest." },
+  { name: "Jumping jacks", bodyPart: "Full body", defaultReps: "3×30s", note: "Land soft through the knees; full range with the arms." },
+  { name: "Bear crawl", bodyPart: "Full body", defaultReps: "3×20s", note: "Knees hovering an inch off the floor; move opposite hand and foot." },
+  // ————— Mobility —————
+  { name: "Cat-cow", bodyPart: "Mobility", defaultReps: "3×8", note: "Flow with your breath — arch on inhale, round on exhale." },
+  { name: "Hip circles", bodyPart: "Mobility", defaultReps: "2×10 each", note: "Big slow circles from the hips; keep the core gently braced." },
+  { name: "World's greatest stretch", bodyPart: "Mobility", defaultReps: "2×5 each", note: "Deep lunge, drop the elbow inside, then rotate open to the sky." },
+  { name: "Neck rolls", bodyPart: "Mobility", defaultReps: "2×5 each", note: "Slow half-circles; never force the range, keep shoulders relaxed." },
+];
+
 const GLOBAL_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 .df-root { font-family: 'Inter', system-ui, sans-serif; color: ${INK}; font-size: 15px; font-weight: 400; letter-spacing: 0; }
