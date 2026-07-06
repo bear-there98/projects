@@ -51,6 +51,7 @@ const ArrowRight = svgIcon('<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>');
 const Pencil = svgIcon('<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>');
 const Calendar = svgIcon('<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>');
 const Star = svgIcon('<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>');
+const MoreHorizontal = svgIcon('<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>');
 
 /* ————— Daily Flow app ————— */
 
@@ -86,8 +87,13 @@ const DEFAULT_CATEGORIES = [
 const SKIP_CHIPS = ["No time", "Not feeling it", "Forgot"];
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
 
-// Monopoly-style tokens — a fixed set; each can be claimed by only one profile.
-const TOKENS = ["🐢", "🦊", "🦉", "🐙", "🦄", "🐝", "🐳", "🦁", "🐧", "🦋", "🚀", "🎩"];
+// A fixed set of identity tokens, rendered as colored letter circles.
+// Each token can be claimed by only one profile (its id is stored on the profile).
+const TOKENS = ["A", "B", "C", "D", "E", "F", "G", "H"].map((label, i) => ({
+  id: label,
+  label,
+  color: CAT_COLORS[i % CAT_COLORS.length].color,
+}));
 
 // Eisenhower priority (all optional). Unset ranks with "neither" so that when
 // nothing is prioritized the queue keeps its original category order.
@@ -110,7 +116,7 @@ const EXERCISE_LIBRARY = [
   { name: "Wall sit", bodyPart: "Legs", defaultReps: "3×30s", note: "Thighs parallel, back flat against the wall." },
   // ————— Chest & Arms —————
   { name: "Push-ups", bodyPart: "Chest & Arms", defaultReps: "3×10", note: "Body in one line; elbows about 45° from your sides." },
-  { name: "Incline push-ups on a chair", bodyPart: "Chest & Arms", defaultReps: "3×12", note: "Hands on a sturdy chair — easier angle, same form." },
+  { name: "Incline push-ups on a chair", bodyPart: "Chest & Arms", defaultReps: "3×12", note: "Hands on a sturdy chair, easier angle, same form." },
   { name: "Tricep dips on a chair", bodyPart: "Chest & Arms", defaultReps: "3×10", note: "Hands by hips on the seat, lower until elbows hit ~90°." },
   { name: "Pike push-ups", bodyPart: "Chest & Arms", defaultReps: "3×8", note: "Hips high in an upside-down V; crown of head toward the floor." },
   // ————— Core —————
@@ -131,7 +137,7 @@ const EXERCISE_LIBRARY = [
   { name: "Jumping jacks", bodyPart: "Full body", defaultReps: "3×30s", note: "Land soft through the knees; full range with the arms." },
   { name: "Bear crawl", bodyPart: "Full body", defaultReps: "3×20s", note: "Knees hovering an inch off the floor; move opposite hand and foot." },
   // ————— Mobility —————
-  { name: "Cat-cow", bodyPart: "Mobility", defaultReps: "3×8", note: "Flow with your breath — arch on inhale, round on exhale." },
+  { name: "Cat-cow", bodyPart: "Mobility", defaultReps: "3×8", note: "Flow with your breath, arch on inhale, round on exhale." },
   { name: "Hip circles", bodyPart: "Mobility", defaultReps: "2×10 each", note: "Big slow circles from the hips; keep the core gently braced." },
   { name: "World's greatest stretch", bodyPart: "Mobility", defaultReps: "2×5 each", note: "Deep lunge, drop the elbow inside, then rotate open to the sky." },
   { name: "Neck rolls", bodyPart: "Mobility", defaultReps: "2×5 each", note: "Slow half-circles; never force the range, keep shoulders relaxed." },
@@ -523,11 +529,11 @@ function Sheet({ onClose, children, maxHeight = "80vh", label }) {
 
 /* ————— "Why this works" micro-explanations ————— */
 const WHY = {
-  "one-task": { title: "One thing at a time", text: "You see a single next step, not a wall of to-dos. Fewer choices means less decision fatigue — so beginning feels light." },
-  "skip-reasons": { title: "Skips are data, not guilt", text: "Naming why you skipped builds gentle pattern awareness. Over time you notice what actually gets in the way — no shame required." },
+  "one-task": { title: "One thing at a time", text: "You see a single next step, not a wall of to-dos. Fewer choices means less decision fatigue, so beginning feels light." },
+  "skip-reasons": { title: "Skips are data, not guilt", text: "Naming why you skipped builds gentle pattern awareness. Over time you notice what actually gets in the way, no shame required." },
   "rotation": { title: "Variety you can keep up", text: "Letting tasks take turns keeps a routine feeling fresh instead of stale, which makes it far easier to sustain." },
   "pairing": { title: "Bundle a treat with the task", text: "Pair a task with something you enjoy. Temptation bundling lends the pull of the fun thing to the one you keep putting off." },
-  "two-minute": { title: "Shrink the first step", text: "Break it into two-minute pieces. Lowering the activation energy makes starting almost effortless — and starting is the whole game." },
+  "two-minute": { title: "Shrink the first step", text: "Break it into two-minute pieces. Lowering the activation energy makes starting almost effortless, and starting is the whole game." },
 };
 
 // A small "?" that opens a warm explanation card. Auto-opens once until the
@@ -639,7 +645,7 @@ function FreqEditor({ freq, onChange }) {
             })}
           </div>
           <p style={{ fontSize: 13, color: INK_SOFT, margin: "8px 2px 0" }}>
-            Appears every day until you've done it {freq.count || 3}× this week (Mon–Sun), then rests.
+            Appears every day until you've done it {freq.count || 3}× this week (Mon-Sun), then rests.
           </p>
         </div>
       )}
@@ -661,7 +667,7 @@ function FreqEditor({ freq, onChange }) {
       )}
       {freq.type === "rotate" && (
         <p style={{ fontSize: 13, color: INK_SOFT, margin: "8px 2px 0" }}>
-          Takes turns with other rotating tasks in the same category — only one appears per day.
+          Takes turns with other rotating tasks in the same category, only one appears per day.
         </p>
       )}
     </div>
@@ -679,7 +685,7 @@ function ExerciseSheet({ library, onPick, onClose }) {
           <span className="df-display" style={{ fontSize: 21, fontWeight: 500 }}>Exercise library</span>
           <IconBtn label="Close" onClick={onClose}><X size={18} /></IconBtn>
         </div>
-        <p style={{ fontSize: 13, color: INK_SOFT, margin: "0 0 16px" }}>Bodyweight, no equipment. Pick one — you can edit it after.</p>
+        <p style={{ fontSize: 13, color: INK_SOFT, margin: "0 0 16px" }}>Bodyweight, no equipment. Pick one, you can edit it after.</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
           {groups.map((bp) => (
             <div key={bp}>
@@ -736,7 +742,7 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySee
   return (
     <div style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: R_CARD, padding: 16, display: "flex", flexDirection: "column", gap: 12, boxShadow: SHADOW }}>
       <TextInput placeholder="Task name (e.g. 10-minute stretch)" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-      <TextInput placeholder="Note or instruction — optional" value={note} onChange={(e) => setNote(e.target.value)} />
+      <TextInput placeholder="Note or instruction, optional" value={note} onChange={(e) => setNote(e.target.value)} />
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {categories.map((c) => (
           <button key={c.id} onClick={() => setCategoryId(c.id)} className="df-btn"
@@ -760,11 +766,11 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySee
             <span style={{ fontSize: 13, fontWeight: 600, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase" }}>Rotation</span>
             <Why id="rotation" seen={whySeen} onSeen={onWhySeen} />
           </div>
-          <TextInput placeholder="Rotation label — optional (e.g. Push, Pull, Legs)" value={rotationLabel} onChange={(e) => setRotationLabel(e.target.value)} />
+          <TextInput placeholder="Rotation label, optional (e.g. Push, Pull, Legs)" value={rotationLabel} onChange={(e) => setRotationLabel(e.target.value)} />
         </div>
       )}
       <div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 8 }}>Priority — optional</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 8 }}>Priority, optional</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
           {PRIORITY_QUADRANTS.map((q) => {
             const on = priority === q.key;
@@ -780,11 +786,11 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySee
         </div>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <TextInput type="number" min="1" inputMode="numeric" placeholder="Estimated minutes — optional" value={eta} onChange={(e) => setEta(e.target.value)} />
+        <TextInput type="number" min="1" inputMode="numeric" placeholder="Estimated minutes, optional" value={eta} onChange={(e) => setEta(e.target.value)} />
         <span style={{ fontSize: 14, color: INK_SOFT, fontWeight: 600, flexShrink: 0 }}>min</span>
       </div>
       <div>
-        <div style={{ fontSize: 13, fontWeight: 600, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 8 }}>Subtasks — optional</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: 8 }}>Subtasks, optional</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {subtasks.map((s) => (
             <div key={s.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -805,7 +811,7 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySee
       {pairChoices.length > 0 && (
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase" }}>Habit stacking — optional</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: INK_SOFT, letterSpacing: "0.04em", textTransform: "uppercase" }}>Habit stacking, optional</span>
             <Why id="pairing" seen={whySeen} onSeen={onWhySeen} />
           </div>
           <select value={pairId} onChange={(e) => setPairId(e.target.value)}
@@ -815,7 +821,7 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySee
           </select>
           {pairId && (
             <div style={{ marginTop: 8 }}>
-              <TextInput placeholder="A pleasant touch — e.g. with your favorite playlist" value={pleasantNote} onChange={(e) => setPleasantNote(e.target.value)} />
+              <TextInput placeholder="A pleasant touch, e.g. with your favorite playlist" value={pleasantNote} onChange={(e) => setPleasantNote(e.target.value)} />
             </div>
           )}
           <p style={{ fontSize: 13, color: INK_SOFT, margin: "8px 2px 0" }}>
@@ -835,39 +841,53 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySee
 }
 
 /* ————— Profiles screen ————— */
+// A token drawn as a solid color circle with a single letter — no emoji.
+function TokenCircle({ color, label, size = 40 }) {
+  return (
+    <span aria-hidden="true" className="df-display"
+      style={{ width: size, height: size, borderRadius: 99, background: color, color: "#FFFFFF",
+        display: "inline-flex", alignItems: "center", justifyContent: "center",
+        fontWeight: 700, fontSize: Math.round(size * 0.42), lineHeight: 1, flexShrink: 0 }}>
+      {label}
+    </span>
+  );
+}
+
 function ProfilesView({ profiles, onOpen, onCreate }) {
   const [name, setName] = useState("");
-  const [selectedToken, setSelectedToken] = useState(null);
-  const owners = {}; // token -> profile
+  const [selectedToken, setSelectedToken] = useState(null); // token id, or null
+  const owners = {}; // token id -> profile
   profiles.forEach((p) => { if (p.token) owners[p.token] = p; });
-  const legacy = profiles.filter((p) => !p.token); // profiles created before tokens
-  const pick = (tok) => { setSelectedToken(tok); setName(""); };
+  const knownIds = new Set(TOKENS.map((t) => t.id));
+  const legacy = profiles.filter((p) => !p.token || !knownIds.has(p.token)); // pre-token or old-emoji profiles
+  const selectedTok = TOKENS.find((t) => t.id === selectedToken) || null;
+  const pick = (tokId) => { setSelectedToken(tokId); setName(""); };
   const claim = () => { if (selectedToken && name.trim()) { onCreate(name.trim(), selectedToken); setName(""); setSelectedToken(null); } };
 
   return (
     <div style={{ maxWidth: 460, margin: "0 auto", padding: "56px 20px", display: "flex", flexDirection: "column", gap: 22 }}>
       <div style={{ textAlign: "center" }}>
         <div className="df-display" style={{ fontSize: 44, fontWeight: 600 }}>Daily Flow</div>
-        <p style={{ color: INK_SOFT, fontSize: 16, marginTop: 8 }}>Pick your token to begin — or tap yours to continue.</p>
+        <p style={{ color: INK_SOFT, fontSize: 16, marginTop: 8 }}>Pick your token to begin, or tap yours to continue.</p>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
         {TOKENS.map((tok) => {
-          const owner = owners[tok];
-          const selected = selectedToken === tok;
+          const owner = owners[tok.id];
+          const selected = selectedToken === tok.id;
           return (
-            <button key={tok} className="df-btn"
-              onClick={() => (owner ? onOpen(owner.id) : pick(tok))}
-              aria-label={owner ? `Open ${owner.name}` : `Claim ${tok}`}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, aspectRatio: "1 / 1",
+            <button key={tok.id} className="df-btn"
+              onClick={() => (owner ? onOpen(owner.id) : pick(tok.id))}
+              aria-label={owner ? `Open ${owner.name}` : `Claim token ${tok.label}`}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, aspectRatio: "1 / 1",
                 borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
-                border: `1.5px solid ${selected ? INK : owner ? LINE : LINE}`,
+                border: `1.5px solid ${selected ? INK : LINE}`,
                 background: selected ? INK + "0D" : owner ? CARD : "#fff",
                 opacity: owner || selected || !selectedToken ? 1 : 0.55 }}>
-              <span style={{ fontSize: 30, lineHeight: 1 }}>{tok}</span>
+              <TokenCircle color={tok.color} label={tok.label} size={40} />
               {owner
                 ? <span style={{ fontSize: 11, fontWeight: 700, color: INK_SOFT, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 4px" }}>{owner.name}</span>
-                : <span style={{ fontSize: 10.5, fontWeight: 600, color: selected ? INK : "#9BA3AB" }}>{selected ? "picked" : "free"}</span>}
+                : <span style={{ fontSize: 10.5, fontWeight: 600, color: selected ? INK : "#9BA3AB" }}>{selected ? "Selected" : "Available"}</span>}
             </button>
           );
         })}
@@ -875,7 +895,7 @@ function ProfilesView({ profiles, onOpen, onCreate }) {
 
       {selectedToken && (
         <div className="df-card-in" style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: R_CARD, padding: 16, display: "flex", gap: 10, alignItems: "center", boxShadow: SHADOW }}>
-          <span style={{ fontSize: 30, lineHeight: 1 }}>{selectedToken}</span>
+          {selectedTok && <TokenCircle color={selectedTok.color} label={selectedTok.label} size={38} />}
           <TextInput placeholder="Your name" value={name} autoFocus
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") claim(); }} />
@@ -1024,6 +1044,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
   const [showOverview, setShowOverview] = useState(false);
   const [showRewards, setShowRewards] = useState(false);
   const [showQuick, setShowQuick] = useState(false);
+  const [showMore, setShowMore] = useState(false); // "More" nav menu
   const [quickName, setQuickName] = useState("");
   const [breakPeek, setBreakPeek] = useState(false); // "do something anyway" while on break
   const [undo, setUndo] = useState(null); // { label } for the most recent entry
@@ -1038,6 +1059,12 @@ function TodayView({ data, persist, nav, profileId, token }) {
     const iv = setInterval(() => setNowMs(Date.now()), 500);
     return () => clearInterval(iv);
   }, [timerStart]);
+  useEffect(() => {
+    if (!showMore) return;
+    const onKey = (e) => { if (e.key === "Escape") setShowMore(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [showMore]);
 
   const current = remaining.find((t) => t.id === jumpId) || remaining[0] || null;
   useEffect(() => { setSubChecks({}); setTimerStart(null); }, [current?.id]);
@@ -1179,10 +1206,27 @@ function TodayView({ data, persist, nav, profileId, token }) {
         </button>
         <IconBtn label="Add a task just for today" onClick={() => setShowQuick(true)}><Plus size={18} /></IconBtn>
         <IconBtn label="Today's tasks" onClick={() => setShowOverview(true)}><List size={18} /></IconBtn>
-        <IconBtn label="Calendar" onClick={() => nav("calendar")}><Calendar size={18} /></IconBtn>
-        <IconBtn label="Activity feed" onClick={() => nav("feed")}><Users size={18} /></IconBtn>
-        <IconBtn label="Summary" onClick={() => nav("summary")}><BarChart3 size={18} /></IconBtn>
-        <IconBtn label="Manage" onClick={() => nav("manage")}><Settings size={18} /></IconBtn>
+        <div style={{ position: "relative", flexShrink: 0 }}>
+          <button aria-label="More" title="More" aria-haspopup="menu" aria-expanded={showMore}
+            onClick={() => setShowMore((v) => !v)} className="df-btn"
+            style={{ width: 44, height: 44, borderRadius: R_PILL, border: `1px solid ${LINE}`, background: showMore ? CARD : "#FFFFFF", color: INK, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <MoreHorizontal size={18} />
+          </button>
+          {showMore && (
+            <React.Fragment>
+              <div onClick={() => setShowMore(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
+              <div role="menu" aria-label="More" className="df-card-in"
+                style={{ position: "absolute", top: 50, right: 0, zIndex: 50, background: "#FFFFFF", border: `1px solid ${LINE}`, borderRadius: 12, boxShadow: SHADOW, padding: 6, minWidth: 184, display: "flex", flexDirection: "column", gap: 2 }}>
+                {[[Calendar, "Calendar", "calendar"], [Users, "Activity feed", "feed"], [BarChart3, "Summary", "summary"], [Settings, "Manage", "manage"]].map(([Icon, label, dest]) => (
+                  <button key={dest} role="menuitem" onClick={() => { setShowMore(false); nav(dest); }} className="df-btn"
+                    style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 44, padding: "0 12px", borderRadius: 8, border: "none", background: "transparent", color: INK, fontSize: 15, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", textAlign: "left", width: "100%" }}>
+                    <Icon size={18} color={INK_SOFT} /> {label}
+                  </button>
+                ))}
+              </div>
+            </React.Fragment>
+          )}
+        </div>
       </div>
 
       {/* main card area — generous whitespace, card centered with >= 15vh above */}
@@ -1190,7 +1234,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
         {vacation && !breakPeek ? (
           <div className="df-card-in" style={{ textAlign: "center" }}>
             <div className="df-display" style={{ fontSize: 32, fontWeight: 600 }}>On break</div>
-            <p style={{ color: INK_SOFT, fontSize: 16, marginTop: 12, lineHeight: 1.5 }}>Streaks are paused. Rest as long as you like — nothing counts against you.</p>
+            <p style={{ color: INK_SOFT, fontSize: 16, marginTop: 12, lineHeight: 1.5 }}>Streaks are paused. Rest as long as you like, nothing counts against you.</p>
             <div style={{ marginTop: 22, display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
               {scheduled.length > 0 && <GhostBtn onClick={() => setBreakPeek(true)}>Do something anyway</GhostBtn>}
               <GhostBtn onClick={() => nav("manage")}>End break in settings</GhostBtn>
@@ -1261,7 +1305,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
                   {fmtClock(remainingSec)}
                 </div>
                 <div style={{ fontSize: 13.5, color: INK_SOFT, marginTop: 8, fontWeight: 600 }}>
-                  {remainingSec <= 0 ? "time's up — finish when you're ready" : `of ${current.eta} min`}
+                  {remainingSec <= 0 ? "time's up, finish when you're ready" : `of ${current.eta} min`}
                 </div>
                 <button onClick={() => setTimerStart(null)}
                   style={{ marginTop: 10, background: "none", border: "none", color: BRAND, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>
@@ -1302,9 +1346,9 @@ function TodayView({ data, persist, nav, profileId, token }) {
 
       {/* skip sheet */}
       {skipping && (
-        <Sheet onClose={() => setSkipping(false)} label="Skip — any reason?" maxHeight="72vh">
+        <Sheet onClose={() => setSkipping(false)} label="Skip, any reason?" maxHeight="72vh">
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-              <span className="df-display" style={{ fontSize: 21, fontWeight: 500, flex: 1 }}>Skip — any reason?</span>
+              <span className="df-display" style={{ fontSize: 21, fontWeight: 500, flex: 1 }}>Skip, any reason?</span>
               <Why id="skip-reasons" seen={whySeen} onSeen={markWhySeen} anchor="right" />
               <IconBtn label="Close" onClick={() => setSkipping(false)}><X size={18} /></IconBtn>
             </div>
@@ -1417,7 +1461,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
             <span className="df-display" style={{ fontSize: 21, fontWeight: 500 }}>Yesterday</span>
             <IconBtn label="Close" onClick={dismissRollover}><X size={18} /></IconBtn>
           </div>
-          <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 14px" }}>{yDone.length} done, {yUnlogged.length} not logged — mark any as done late?</p>
+          <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 14px" }}>{yDone.length} done, {yUnlogged.length} not logged, mark any as done late?</p>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {yUnlogged.map((t) => {
               const c = data.categories.find((x) => x.id === t.categoryId);
@@ -1431,7 +1475,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
             })}
           </div>
           <div style={{ marginTop: 14, textAlign: "center" }}>
-            <TextBtn onClick={dismissRollover}>That's okay — dismiss</TextBtn>
+            <TextBtn onClick={dismissRollover}>That's okay, dismiss</TextBtn>
           </div>
         </Sheet>
       )}
@@ -1779,7 +1823,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
         persist({ ...next, name: data.name });
         setIoMsg("Backup imported.");
       } catch (err) {
-        setIoMsg("Couldn't read that file — is it valid JSON?");
+        setIoMsg("Couldn't read that file, is it valid JSON?");
       }
     };
     reader.onerror = () => setIoMsg("Couldn't read that file.");
@@ -1890,7 +1934,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
               style={{ width: "100%", minHeight: 44, display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
               <span style={{ flex: 1 }}>
                 <span style={{ fontWeight: 700, fontSize: 15.5 }}>Vacation mode</span>
-                <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>Pause streaks — today's screen shows a calm break</span>
+                <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>Pause streaks, today's screen shows a calm break</span>
               </span>
               {(() => {
                 const on = !!(data.settings && data.settings.vacation);
@@ -1987,7 +2031,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
                   style={{ padding: "12px 12px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff", fontSize: 15, fontFamily: "inherit", color: INK, boxSizing: "border-box" }}>
                   {BODY_PARTS.map((bp) => <option key={bp} value={bp}>{bp}</option>)}
                 </select>
-                <TextInput placeholder="Form cue — optional" value={newExNote} onChange={(e) => setNewExNote(e.target.value)} />
+                <TextInput placeholder="Form cue, optional" value={newExNote} onChange={(e) => setNewExNote(e.target.value)} />
               </div>
               <div><PrimaryBtn disabled={!newExName.trim()} onClick={addExercise} style={{ padding: "10px 16px", fontSize: 15 }}>Add exercise</PrimaryBtn></div>
             </div>
@@ -2011,7 +2055,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
               })()}
             </button>
             <p style={{ fontSize: 12.5, color: INK_SOFT, margin: "10px 2px 0", lineHeight: 1.5 }}>
-              When on, each task you finish is posted to a feed <strong>visible to all users of this artifact</strong> — your token, the task name, its category, and the time. Skip reasons and notes are never shared. Default is off.
+              When on, each task you finish is posted to a feed <strong>visible to all users of this artifact</strong>, with your token, the task name, its category, and the time. Skip reasons and notes are never shared. Default is off.
             </p>
           </div>
 
