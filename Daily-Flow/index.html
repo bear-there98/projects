@@ -409,10 +409,10 @@ function Why({ id, seen, onSeen, anchor }) {
         style={{ width: 20, height: 20, borderRadius: 99, border: `1px solid ${LINE}`, background: "transparent", color: INK_SOFT, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", lineHeight: 1, padding: 0, flexShrink: 0 }}>?</button>
       {open && (
         <span onClick={(e) => e.stopPropagation()} className="df-card-in"
-          style={{ position: "absolute", top: 27, [anchor === "right" ? "right" : "left"]: 0, zIndex: 80, width: 244, maxWidth: "78vw", background: INK, color: "#FAFBF6", borderRadius: 12, padding: "13px 15px", boxShadow: SHADOW, textAlign: "left", fontWeight: 400 }}>
+          style={{ position: "absolute", top: 27, [anchor === "right" ? "right" : "left"]: 0, zIndex: 80, width: 244, maxWidth: "78vw", background: INK, color: "#FFFFFF", borderRadius: 12, padding: "13px 15px", boxShadow: SHADOW, textAlign: "left", fontWeight: 400 }}>
           <span style={{ display: "block", fontWeight: 700, fontSize: 14, marginBottom: 5 }}>{info.title}</span>
           <span style={{ display: "block", fontSize: 13, lineHeight: 1.55, color: "#DDE3D9" }}>{info.text}</span>
-          <button onClick={dismiss} className="df-btn" style={{ marginTop: 11, background: "rgba(255,255,255,0.16)", border: "none", color: "#FAFBF6", fontSize: 12.5, fontWeight: 700, padding: "6px 13px", borderRadius: R_PILL, cursor: "pointer", fontFamily: "inherit" }}>Got it</button>
+          <button onClick={dismiss} className="df-btn" style={{ marginTop: 11, background: "rgba(255,255,255,0.16)", border: "none", color: "#FFFFFF", fontSize: 12.5, fontWeight: 700, padding: "6px 13px", borderRadius: R_PILL, cursor: "pointer", fontFamily: "inherit" }}>Got it</button>
         </span>
       )}
     </span>
@@ -476,7 +476,7 @@ function FreqEditor({ freq, onChange }) {
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {opts.map(([v, label]) => (
           <button key={v} onClick={() => selectType(v)} className="df-btn"
-            style={{ flex: "1 1 30%", minWidth: 82, padding: "9px 4px", borderRadius: R_PILL, fontSize: 13.5, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${freq.type === v ? INK : LINE}`, background: freq.type === v ? INK : "transparent", color: freq.type === v ? "#FAFBF6" : INK }}>
+            style={{ flex: "1 1 30%", minWidth: 82, padding: "9px 4px", borderRadius: R_PILL, fontSize: 13.5, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${freq.type === v ? INK : LINE}`, background: freq.type === v ? INK : "transparent", color: freq.type === v ? "#FFFFFF" : INK }}>
             {label}
           </button>
         ))}
@@ -497,7 +497,7 @@ function FreqEditor({ freq, onChange }) {
               const on = (freq.count || 3) === n;
               return (
                 <button key={n} onClick={() => onChange({ type: "weekly", count: n })} className="df-btn"
-                  style={{ flex: 1, padding: "8px 0", borderRadius: R_PILL, fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${on ? INK : LINE}`, background: on ? INK : "transparent", color: on ? "#FAFBF6" : INK_SOFT }}>
+                  style={{ flex: 1, padding: "8px 0", borderRadius: R_PILL, fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${on ? INK : LINE}`, background: on ? INK : "transparent", color: on ? "#FFFFFF" : INK_SOFT }}>
                   {n}
                 </button>
               );
@@ -517,7 +517,7 @@ function FreqEditor({ freq, onChange }) {
                 const days = on ? freq.days.filter((d) => d !== i) : [...(freq.days || []), i].sort();
                 onChange({ ...freq, days });
               }} className="df-btn"
-                style={{ flex: 1, padding: "8px 0", borderRadius: R_PILL, fontSize: 13, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${on ? INK : LINE}`, background: on ? INK : "transparent", color: on ? "#FAFBF6" : INK_SOFT }}>
+                style={{ flex: 1, padding: "8px 0", borderRadius: R_PILL, fontSize: 13, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${on ? INK : LINE}`, background: on ? INK : "transparent", color: on ? "#FFFFFF" : INK_SOFT }}>
                 {w}
               </button>
             );
@@ -561,7 +561,7 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySee
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {categories.map((c) => (
           <button key={c.id} onClick={() => setCategoryId(c.id)} className="df-btn"
-            style={{ display: "flex", alignItems: "center", gap: 7, padding: "8px 12px", borderRadius: 99, fontSize: 14, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${categoryId === c.id ? c.color : LINE}`, background: categoryId === c.id ? c.color + "1A" : "transparent", color: categoryId === c.id ? c.color : INK_SOFT }}>
+            style={{ display: "flex", alignItems: "center", gap: 7, padding: "8px 12px", borderRadius: 99, fontSize: 14, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", border: `1px solid ${categoryId === c.id ? BRAND : LINE}`, background: categoryId === c.id ? BRAND_SOFT : "transparent", color: categoryId === c.id ? BRAND : INK_SOFT }}>
             <CatDot color={c.color} size={7} /> {c.name}
           </button>
         ))}
@@ -584,8 +584,8 @@ function TaskForm({ categories, initial, onSave, onCancel, allTasks = [], whySee
             return (
               <button key={q.key} onClick={() => setPriority(on ? "" : q.key)} className="df-btn"
                 style={{ padding: "9px 10px", borderRadius: R_PILL, fontFamily: "inherit", cursor: "pointer", textAlign: "left",
-                  border: `1px solid ${on ? q.color : LINE}`, background: on ? q.color + "1A" : "transparent" }}>
-                <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: on ? q.color : INK }}>{q.sub}</span>
+                  border: `1px solid ${on ? BRAND : LINE}`, background: on ? BRAND_SOFT : "transparent" }}>
+                <span style={{ display: "block", fontSize: 13.5, fontWeight: 700, color: on ? BRAND : INK }}>{q.sub}</span>
                 <span style={{ display: "block", fontSize: 11.5, color: INK_SOFT, marginTop: 1 }}>{q.label}</span>
               </button>
             );
@@ -680,7 +680,7 @@ function ProfilesView({ profiles, onOpen, onCreate }) {
               <span style={{ fontSize: 30, lineHeight: 1 }}>{tok}</span>
               {owner
                 ? <span style={{ fontSize: 11, fontWeight: 700, color: INK_SOFT, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 4px" }}>{owner.name}</span>
-                : <span style={{ fontSize: 10.5, fontWeight: 600, color: selected ? INK : "#9AA79C" }}>{selected ? "picked" : "free"}</span>}
+                : <span style={{ fontSize: 10.5, fontWeight: 600, color: selected ? INK : "#9BA3AB" }}>{selected ? "picked" : "free"}</span>}
             </button>
           );
         })}
@@ -701,7 +701,7 @@ function ProfilesView({ profiles, onOpen, onCreate }) {
           {legacy.map((p) => (
             <button key={p.id} onClick={() => onOpen(p.id)} className="df-btn"
               style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 12, border: `1px solid ${LINE}`, background: CARD, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
-              <span style={{ width: 34, height: 34, borderRadius: 99, background: INK, color: "#FAFBF6", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15 }}>{p.name.slice(0, 1).toUpperCase()}</span>
+              <span style={{ width: 34, height: 34, borderRadius: 99, background: INK, color: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 15 }}>{p.name.slice(0, 1).toUpperCase()}</span>
               <span style={{ fontSize: 16, fontWeight: 600, color: INK, flex: 1 }}>{p.name}</span>
               <ArrowRight size={18} color={INK_SOFT} />
             </button>
@@ -751,13 +751,13 @@ function SetupView({ profileName, onFinish }) {
         <div className="df-card-in" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {cats.map((c, i) => (
             <button key={c.id} onClick={() => setCats(cats.map((x, j) => (j === i ? { ...x, on: !x.on } : x)))} className="df-btn"
-              style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", textAlign: "left", border: `1.5px solid ${c.on ? c.color : LINE}`, background: c.on ? c.color + "14" : CARD }}>
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", textAlign: "left", border: `1.5px solid ${c.on ? BRAND : LINE}`, background: c.on ? BRAND_SOFT : "#FFFFFF" }}>
               <CatDot color={c.color} size={12} />
               <span style={{ flex: 1 }}>
-                <span style={{ fontSize: 17, fontWeight: 700, color: c.on ? c.color : INK }}>{c.name}</span>
+                <span style={{ fontSize: 17, fontWeight: 700, color: c.on ? INK : INK }}>{c.name}</span>
                 <span style={{ display: "block", fontSize: 13.5, color: INK_SOFT }}>{c.hint}</span>
               </span>
-              {c.on && <Check size={18} color={c.color} />}
+              {c.on && <Check size={18} color={BRAND} />}
             </button>
           ))}
           <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
@@ -806,24 +806,6 @@ function SetupView({ profileName, onFinish }) {
           <p style={{ fontSize: 13, color: INK_SOFT, textAlign: "center", margin: 0 }}>You can add, edit, or remove tasks any time.</p>
         </div>
       )}
-    </div>
-  );
-}
-
-/* ————— Progress dots ————— */
-function ProgressDots({ scheduled, entries, currentId }) {
-  return (
-    <div style={{ display: "flex", gap: 7, justifyContent: "center", flexWrap: "wrap", padding: "0 20px" }}>
-      {scheduled.map((t) => {
-        const e = entries.find((x) => x.taskId === t.id);
-        const isCurrent = t.id === currentId;
-        let style = { width: 9, height: 9, borderRadius: 99, transition: "all 300ms ease" };
-        if (e?.status === "done") style = { ...style, background: INK };
-        else if (e?.status === "skipped") style = { ...style, border: `1.5px solid ${INK_SOFT}`, background: "transparent", boxSizing: "border-box" };
-        else if (isCurrent) style = { ...style, width: 22, background: INK_SOFT, opacity: 0.55 };
-        else style = { ...style, background: INK, opacity: 0.16 };
-        return <span key={t.id} style={style} />;
-      })}
     </div>
   );
 }
@@ -934,14 +916,24 @@ function TodayView({ data, persist, nav, profileId, token }) {
     persist({ ...data, history });
   };
 
+  const acted = doneCount + skipCount;
+  const progress = scheduled.length ? acted / scheduled.length : 0;
+
   return (
     <div style={{ minHeight: "100vh", background: BASE_BG, display: "flex", flexDirection: "column" }}>
+      {/* top progress bar */}
+      {scheduled.length > 0 && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: 3, background: LINE, zIndex: 100 }}>
+          <div style={{ height: "100%", width: `${Math.round(progress * 100)}%`, background: BRAND, transition: "width 300ms ease" }} />
+        </div>
+      )}
       {/* header */}
       <div style={{ maxWidth: 520, width: "100%", margin: "0 auto", padding: "18px 20px 0", display: "flex", alignItems: "center", gap: 8, boxSizing: "border-box" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 600, color: INK_SOFT }}>{data.name}</div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span className="df-display" style={{ fontSize: 19, fontWeight: 500 }}>{niceDate(new Date())}</span>
+            {scheduled.length > 0 && <span style={{ fontSize: 12, color: INK_SOFT, fontWeight: 600 }}>{acted} of {scheduled.length}</span>}
             <Why id="one-task" seen={whySeen} onSeen={markWhySeen} />
           </div>
         </div>
@@ -956,8 +948,8 @@ function TodayView({ data, persist, nav, profileId, token }) {
         <IconBtn label="Manage" onClick={() => nav("manage")}><Settings size={18} /></IconBtn>
       </div>
 
-      {/* main card area */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: 520, width: "100%", margin: "0 auto", padding: "24px 20px", boxSizing: "border-box" }}>
+      {/* main card area — generous whitespace, card centered with >= 15vh above */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: 520, width: "100%", margin: "0 auto", padding: "15vh 20px 24px", boxSizing: "border-box" }}>
         {scheduled.length === 0 ? (
           <div className="df-card-in" style={{ textAlign: "center" }}>
             <div className="df-display" style={{ fontSize: 30, fontWeight: 500 }}>Nothing scheduled today</div>
@@ -1007,7 +999,7 @@ function TodayView({ data, persist, nav, profileId, token }) {
                     <button key={s.id} onClick={() => setSubChecks((c) => ({ ...c, [s.id]: !c[s.id] }))} className="df-btn"
                       style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, border: `1px solid ${on ? BRAND : LINE}`, background: on ? BRAND_SOFT : CARD, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
                       <span style={{ width: 22, height: 22, borderRadius: 7, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", border: `2px solid ${on ? BRAND : "#C7CED4"}`, background: on ? BRAND : "transparent" }}>
-                        {on && <Check size={14} color="#FAFBF6" strokeWidth={3} />}
+                        {on && <Check size={14} color="#FFFFFF" strokeWidth={3} />}
                       </span>
                       <span style={{ fontSize: 15.5, fontWeight: 600, color: INK, textDecoration: on ? "line-through" : "none", opacity: on ? 0.6 : 1 }}>{s.name}</span>
                     </button>
@@ -1032,47 +1024,17 @@ function TodayView({ data, persist, nav, profileId, token }) {
               </div>
             )}
 
-            {!skipping ? (
-              <>
-                <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 40 }}>
-                  <PrimaryBtn onClick={markDone} color={BRAND} style={{ minWidth: 150, fontSize: 18, padding: "16px 26px", borderRadius: R_PILL }}>
-                    <Check size={19} style={{ verticalAlign: "-4px", marginRight: 8 }} />Done
-                  </PrimaryBtn>
-                  <GhostBtn onClick={() => setSkipping(true)} style={{ minWidth: 110, padding: "15px 22px", borderRadius: R_PILL }}>Skip</GhostBtn>
-                </div>
-                {current.eta > 0 && timerStart == null && (
-                  <div style={{ marginTop: 16 }}>
-                    <GhostBtn onClick={() => { setTimerStart(Date.now()); setNowMs(Date.now()); }} style={{ padding: "11px 20px", fontSize: 15 }}>
-                      Start {current.eta}-min timer
-                    </GhostBtn>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="df-card-in" style={{ marginTop: 30, background: CARD, border: `1px solid ${LINE}`, borderRadius: R_CARD, padding: 18, textAlign: "left", boxShadow: SHADOW }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700 }}>Skipping — any reason? <span style={{ fontWeight: 500, color: INK_SOFT }}>(optional)</span></span>
-                  <Why id="skip-reasons" seen={whySeen} onSeen={markWhySeen} anchor="right" />
-                </div>
-                <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 10 }}>
-                  {SKIP_CHIPS.map((c) => (
-                    <button key={c} onClick={() => record(pairTasks, "skipped", c)} className="df-btn"
-                      style={{ padding: "8px 14px", borderRadius: 99, border: `1px solid ${LINE}`, background: "#fff", fontSize: 14, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", color: INK }}>
-                      {c}
-                    </button>
-                  ))}
-                </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <TextInput placeholder="Other reason…" value={skipText} onChange={(e) => setSkipText(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter" && skipText.trim()) record(pairTasks, "skipped", skipText.trim()); }} />
-                  {skipText.trim() && (
-                    <PrimaryBtn onClick={() => record(pairTasks, "skipped", skipText.trim())} style={{ padding: "10px 16px", fontSize: 15 }}>Save</PrimaryBtn>
-                  )}
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12 }}>
-                  <button onClick={() => setSkipping(false)} style={{ background: "none", border: "none", color: BRAND, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>Cancel</button>
-                  <button onClick={() => record(pairTasks, "skipped")} style={{ background: "none", border: "none", color: BRAND, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>Skip without reason</button>
-                </div>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", marginTop: 40 }}>
+              <PrimaryBtn onClick={markDone} color={BRAND} style={{ minWidth: 150, fontSize: 18, padding: "16px 26px", borderRadius: R_PILL }}>
+                <Check size={19} style={{ verticalAlign: "-4px", marginRight: 8 }} />Done
+              </PrimaryBtn>
+              <GhostBtn onClick={() => setSkipping(true)} style={{ minWidth: 110, padding: "15px 22px", borderRadius: R_PILL }}>Skip</GhostBtn>
+            </div>
+            {current.eta > 0 && timerStart == null && (
+              <div style={{ marginTop: 16 }}>
+                <GhostBtn onClick={() => { setTimerStart(Date.now()); setNowMs(Date.now()); }} style={{ padding: "11px 20px", fontSize: 15 }}>
+                  Start {current.eta}-min timer
+                </GhostBtn>
               </div>
             )}
           </div>
@@ -1092,21 +1054,36 @@ function TodayView({ data, persist, nav, profileId, token }) {
         )}
       </div>
 
-      {/* progress */}
-      {scheduled.length > 0 && (
-        <div style={{ paddingBottom: 26 }}>
-          <ProgressDots scheduled={scheduled} entries={entries} currentId={current?.id} />
-          <div style={{ textAlign: "center", fontSize: 13, color: INK_SOFT, marginTop: 8, fontWeight: 600 }}>
-            {doneCount + skipCount} of {scheduled.length} · {remaining.length} to go
+      {/* skip sheet */}
+      {skipping && (
+        <div className="df-veil" onClick={() => setSkipping(false)}
+          style={{ position: "fixed", inset: 0, background: "rgba(17,24,32,0.4)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+          <div onClick={(e) => e.stopPropagation()} className="df-card-in"
+            style={{ background: CARD, borderRadius: "12px 12px 0 0", width: "100%", maxWidth: 520, padding: "20px 20px 30px", boxSizing: "border-box", boxShadow: SHADOW }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <span className="df-display" style={{ fontSize: 21, fontWeight: 500, flex: 1 }}>Skip — any reason?</span>
+              <Why id="skip-reasons" seen={whySeen} onSeen={markWhySeen} anchor="right" />
+              <IconBtn label="Close" onClick={() => setSkipping(false)}><X size={18} /></IconBtn>
+            </div>
+            <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 12 }}>
+              {SKIP_CHIPS.map((c) => (
+                <button key={c} onClick={() => record(pairTasks, "skipped", c)} className="df-btn"
+                  style={{ padding: "9px 15px", borderRadius: R_PILL, border: `1px solid ${LINE}`, background: "#FFFFFF", fontSize: 14, fontWeight: 600, fontFamily: "inherit", cursor: "pointer", color: INK }}>
+                  {c}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <TextInput placeholder="Other reason…" value={skipText} onChange={(e) => setSkipText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && skipText.trim()) record(pairTasks, "skipped", skipText.trim()); }} />
+              {skipText.trim() && (
+                <PrimaryBtn onClick={() => record(pairTasks, "skipped", skipText.trim())} style={{ padding: "10px 16px", fontSize: 15 }}>Save</PrimaryBtn>
+              )}
+            </div>
+            <div style={{ marginTop: 14, textAlign: "center" }}>
+              <TextBtn onClick={() => record(pairTasks, "skipped")}>Skip without a reason</TextBtn>
+            </div>
           </div>
-          {(() => {
-            const etaLeft = remaining.reduce((sum, t) => sum + (t.eta > 0 ? t.eta : 0), 0);
-            return etaLeft > 0 ? (
-              <div style={{ textAlign: "center", fontSize: 12.5, color: INK_SOFT, marginTop: 3, fontWeight: 600, opacity: 0.8 }}>
-                ~{etaLeft} min estimated left
-              </div>
-            ) : null;
-          })()}
         </div>
       )}
 
@@ -1186,10 +1163,10 @@ function TodayView({ data, persist, nav, profileId, token }) {
       {/* undo toast */}
       {undo && (
         <div className="df-card-in" role="status"
-          style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 60, display: "flex", alignItems: "center", gap: 14, maxWidth: "calc(100% - 32px)", background: INK, color: "#FAFBF6", padding: "12px 14px 12px 18px", borderRadius: 12, boxShadow: SHADOW }}>
+          style={{ position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)", zIndex: 60, display: "flex", alignItems: "center", gap: 14, maxWidth: "calc(100% - 32px)", background: INK, color: "#FFFFFF", padding: "12px 14px 12px 18px", borderRadius: 12, boxShadow: SHADOW }}>
           <span style={{ fontSize: 14.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{undo.label}</span>
           <button onClick={undoLast} className="df-btn"
-            style={{ flexShrink: 0, background: "rgba(255,255,255,0.16)", border: "none", color: "#FAFBF6", fontSize: 14.5, fontWeight: 700, padding: "8px 15px", borderRadius: R_PILL, cursor: "pointer", fontFamily: "inherit" }}>
+            style={{ flexShrink: 0, background: "rgba(255,255,255,0.16)", border: "none", color: "#FFFFFF", fontSize: 14.5, fontWeight: 700, padding: "8px 15px", borderRadius: R_PILL, cursor: "pointer", fontFamily: "inherit" }}>
             Undo
           </button>
         </div>
@@ -1259,7 +1236,7 @@ function SummaryView({ data, nav }) {
   const hasPriorities = Object.values(matrix).some((x) => x.s > 0);
 
   const Section = ({ title, children }) => (
-    <div style={{ background: CARD, border: `1px solid ${LINE}`, borderRadius: R_CARD, padding: 18, boxShadow: SHADOW }}>
+    <div style={{ background: "#FFFFFF", border: `1px solid ${LINE}`, borderRadius: R_CARD, padding: 18, boxShadow: SHADOW }}>
       <div style={{ fontSize: 13, letterSpacing: "0.12em", textTransform: "uppercase", fontWeight: 600, color: INK_SOFT, marginBottom: 12 }}>{title}</div>
       {children}
     </div>
@@ -1274,7 +1251,7 @@ function SummaryView({ data, nav }) {
           <div style={{ display: "flex", gap: 5, background: CARD, border: `1px solid ${LINE}`, borderRadius: 12, padding: 4 }}>
             {[[7, "Week"], [30, "Month"]].map(([v, l]) => (
               <button key={v} onClick={() => setRange(v)} className="df-btn"
-                style={{ padding: "6px 12px", borderRadius: R_PILL, border: "none", fontSize: 13.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", background: range === v ? INK : "transparent", color: range === v ? "#FAFBF6" : INK_SOFT }}>
+                style={{ padding: "6px 12px", borderRadius: R_PILL, border: "none", fontSize: 13.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", background: range === v ? BRAND : "transparent", color: range === v ? "#FFFFFF" : INK_SOFT }}>
                 {l}
               </button>
             ))}
@@ -1293,7 +1270,7 @@ function SummaryView({ data, nav }) {
                 return (
                   <div key={d.key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 5 }}>
                     <div style={{ width: "100%", height: 56, background: INK + "14", borderRadius: 6, display: "flex", alignItems: "flex-end", overflow: "hidden" }}>
-                      {p != null && <div style={{ width: "100%", height: `${Math.max(p * 100, 4)}%`, background: p === 1 ? INK : INK_SOFT, borderRadius: 6, transition: "height 400ms ease" }} />}
+                      {p != null && <div style={{ width: "100%", height: `${Math.max(p * 100, 4)}%`, background: BRAND, opacity: 0.35 + p * 0.65, borderRadius: 6, transition: "height 400ms ease" }} />}
                     </div>
                     {range === 7 && <span style={{ fontSize: 11.5, fontWeight: 700, color: INK_SOFT }}>{"SMTWTFS"[d.date.getDay()]}</span>}
                   </div>
@@ -1309,7 +1286,7 @@ function SummaryView({ data, nav }) {
             </div>
             <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
               {data.categories.map((c) => (
-                <span key={c.id} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 12px", borderRadius: 99, background: c.color + "16", color: c.color, fontSize: 13.5, fontWeight: 700 }}>
+                <span key={c.id} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 12px", borderRadius: 99, background: "#FFFFFF", border: `1px solid ${LINE}`, color: INK, fontSize: 13.5, fontWeight: 700 }}>
                   <CatDot color={c.color} size={7} /> {c.name} · {currentStreak(data, c.id)}
                 </span>
               ))}
@@ -1326,7 +1303,7 @@ function SummaryView({ data, nav }) {
                   <div key={reason} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ flex: 1, fontSize: 15.5, fontWeight: 600 }}>{reason}</span>
                     <div style={{ width: 110, height: 8, background: INK + "14", borderRadius: 99 }}>
-                      <div style={{ width: `${Math.min((n / skipCounts[0][1]) * 100, 100)}%`, height: "100%", background: INK_SOFT, borderRadius: 99 }} />
+                      <div style={{ width: `${Math.min((n / skipCounts[0][1]) * 100, 100)}%`, height: "100%", background: BRAND, opacity: 0.4 + 0.6 * (n / skipCounts[0][1]), borderRadius: 99 }} />
                     </div>
                     <span style={{ fontSize: 14, fontWeight: 700, color: INK_SOFT, width: 26, textAlign: "right" }}>{n}×</span>
                   </div>
@@ -1350,7 +1327,7 @@ function SummaryView({ data, nav }) {
                         <span style={{ fontSize: 13.5, fontWeight: 700, color: INK_SOFT }}>done {done}/{sched} days</span>
                       </div>
                       <div style={{ height: 7, background: INK + "12", borderRadius: 99 }}>
-                        <div style={{ width: `${sched ? (done / sched) * 100 : 0}%`, height: "100%", background: c?.color || INK, borderRadius: 99, transition: "width 400ms ease" }} />
+                        <div style={{ width: `${sched ? (done / sched) * 100 : 0}%`, height: "100%", background: BRAND, opacity: sched ? 0.4 + 0.6 * (done / sched) : 0.4, borderRadius: 99, transition: "width 400ms ease" }} />
                       </div>
                     </div>
                   );
@@ -1366,8 +1343,8 @@ function SummaryView({ data, nav }) {
                   const { s, d } = matrix[q.key];
                   const pct = s ? Math.round((d / s) * 100) : null;
                   return (
-                    <div key={q.key} style={{ borderRadius: 12, border: `1px solid ${q.color}44`, background: q.color + "12", padding: "13px 14px" }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: q.color }}>{q.sub}</div>
+                    <div key={q.key} style={{ borderRadius: 12, border: `1px solid ${LINE}`, background: "#FFFFFF", padding: "13px 14px" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: INK }}>{q.sub}</div>
                       <div style={{ fontSize: 11.5, color: INK_SOFT, marginBottom: 8 }}>{q.label}</div>
                       {s === 0 ? (
                         <div style={{ fontSize: 13.5, color: INK_SOFT }}>none scheduled</div>
@@ -1511,7 +1488,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
               <div key={c.id}>
                 <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 9 }}>
                   <CatDot color={c.color} size={10} />
-                  <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: c.color, flex: 1 }}>{c.name}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, flex: 1 }}>{c.name}</span>
                   <button aria-label={`Remove ${c.name}`} onClick={() => deleteCategory(c.id)}
                     style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 4 }}>
                     <Trash2 size={15} />
