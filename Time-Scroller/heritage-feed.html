@@ -551,6 +551,38 @@
       font-style: normal;
     }
 
+    .comment--quiz {
+      background: rgba(160, 74, 47, 0.1);
+      border: 1px solid rgba(160, 74, 47, 0.3);
+    }
+
+    .comment--quiz .comment__author {
+      color: var(--accent);
+    }
+
+    .quiz__choices {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .quiz__choice {
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--accent);
+      background: #fff;
+      border: 1px solid rgba(160, 74, 47, 0.4);
+      border-radius: 8px;
+      padding: 8px 22px;
+      cursor: pointer;
+    }
+
+    .quiz__choice:hover {
+      background: var(--accent);
+      color: #fff;
+    }
+
     .post__composer {
       margin-top: 12px;
       display: flex;
@@ -712,6 +744,8 @@
           savedToNotebook: "Saved ✓",
           addComment: "Add a comment…",
           send: "Send",
+          answerTrue: "True",
+          answerFalse: "False",
           chooseLanguage: "Choose your language",
           chooseCulture: "Choose a heritage to explore",
           start: "Start",
@@ -747,6 +781,8 @@
           savedToNotebook: "",
           addComment: "",
           send: "",
+          answerTrue: "",
+          answerFalse: "",
           chooseLanguage: "",
           chooseCulture: "",
           start: "",
@@ -891,7 +927,15 @@
           initials: "MK",
           body: "The [żniwa|harvest|zhnee-vah] is late this year. Lorem ipsum " +
             "dolor sit amet, and still no [deszcz|rain|deshch] over the fields.",
-          image: null
+          image: null,
+          quiz_trigger: true,
+          quiz: {
+            question: "\"Żniwa\" means the harvest. True or false",
+            correct_answer: true,
+            follow_up: "Aye, true. The żniwa is the reaping — the whole village " +
+              "bends its back for it, from the first swing of the scythe to the " +
+              "last sheaf carried in."
+          }
         },
         {
           id: "p2",
@@ -911,7 +955,16 @@
           initials: "AL",
           body: "Duis aute irure dolor. The children asked me today what " +
             "[wolność|freedom|vol-noshch] means, and I had no simple answer.",
-          image: null
+          image: null,
+          quiz_trigger: true,
+          quiz: {
+            question: "In 1795, Poland still appeared as a country on the map " +
+              "of Europe. True or false",
+            correct_answer: false,
+            follow_up: "False, my child. By 1795 the partitions were complete, " +
+              "and our name was struck from the maps entirely. We kept it alive " +
+              "in prayer and in the kitchen when we could not keep it on paper."
+          }
         }
       ];
 
@@ -1436,6 +1489,7 @@
 
       var feedObserver = null;   // IntersectionObserver for read detection
       var readTimers = {};       // postId -> pending 2s dwell timer
+      var quizTimers = {};       // postId -> pending 5s quiz-tag timer
       var feedProgressEl = null; // live progress indicator element
 
       function renderFeed() {
@@ -1448,6 +1502,7 @@
           feedObserver = null;
         }
         readTimers = {};
+        quizTimers = {};
 
         // Find the timeline entry matching the selected year, for the label.
         var years = TIMELINE[state.culture] || [];
@@ -1459,7 +1514,7 @@
         // Ensure a progress record exists for this year.
         var key = yearKey(state.culture, state.year);
         if (!state.progress[key]) {
-          state.progress[key] = { read: {}, quizzesPassed: 0 };
+          state.progress[key] = { read: {}, quizzes: {}, quizzesPassed: 0 };
         }
 
         var posts = postsForYear(state.culture, state.year);
@@ -1526,10 +1581,27 @@
         return POSTS;
       }
 
+      // Quizzes for a year come from posts flagged quiz_trigger (inline),
+      // plus any authored in the QUIZZES structure (none yet).
       function quizzesForYear(culture, year) {
+        var inline = postsForYear(culture, year).filter(function (p) {
+          return p.quiz_trigger && p.quiz;
+        });
         var byCulture = QUIZZES[culture];
-        if (!byCulture) return [];
-        return byCulture[year] || [];
+        var authored = (byCulture && byCulture[year]) || [];
+        return inline.concat(authored);
+      }
+
+      function findPost(id) {
+        for (var i = 0; i < POSTS.length; i++) {
+          if (POSTS[i].id === id) return POSTS[i];
+        }
+        return null;
+      }
+
+      function quizAnswered(postId) {
+        var rec = state.progress[yearKey(state.culture, state.year)];
+        return !!(rec && rec.quizzes && rec.quizzes[postId]);
       }
 
       function updateProgressIndicator() {
@@ -1543,16 +1615,31 @@
       function onFeedIntersect(entries) {
         entries.forEach(function (e) {
           var id = e.target.getAttribute("data-post-id");
+          var post = findPost(id);
           if (e.isIntersecting) {
+            // Reading: in view for 2s.
             if (!readTimers[id]) {
               readTimers[id] = setTimeout(function () {
                 markPostRead(id, e.target);
               }, 2000);
             }
-          } else if (readTimers[id]) {
-            // Scrolled away before the dwell completed — cancel.
-            clearTimeout(readTimers[id]);
-            delete readTimers[id];
+            // Quiz tag-in: a quiz post in view for 5s.
+            if (post && post.quiz_trigger && post.quiz &&
+                !quizAnswered(id) && !quizTimers[id]) {
+              quizTimers[id] = setTimeout(function () {
+                triggerQuiz(post, e.target);
+              }, 5000);
+            }
+          } else {
+            // Scrolled away before a dwell completed — cancel both.
+            if (readTimers[id]) {
+              clearTimeout(readTimers[id]);
+              delete readTimers[id];
+            }
+            if (quizTimers[id]) {
+              clearTimeout(quizTimers[id]);
+              delete quizTimers[id];
+            }
           }
         });
       }
@@ -1560,7 +1647,7 @@
       function markPostRead(postId, el) {
         var key = yearKey(state.culture, state.year);
         var rec = state.progress[key];
-        if (!rec) rec = state.progress[key] = { read: {}, quizzesPassed: 0 };
+        if (!rec) rec = state.progress[key] = { read: {}, quizzes: {}, quizzesPassed: 0 };
         if (rec.read[postId]) return;
 
         rec.read[postId] = true;
@@ -1568,7 +1655,11 @@
           clearTimeout(readTimers[postId]);
           delete readTimers[postId];
         }
-        if (feedObserver && el) feedObserver.unobserve(el);
+        // Keep observing quiz posts until their quiz has been answered, so
+        // the 5s tag-in can still fire (or cancel on scroll-away).
+        var post = findPost(postId);
+        var pendingQuiz = post && post.quiz_trigger && post.quiz && !quizAnswered(postId);
+        if (feedObserver && el && !pendingQuiz) feedObserver.unobserve(el);
 
         updateProgressIndicator();
         checkYearComplete();
@@ -1650,6 +1741,86 @@
 
         overlay.appendChild(inner);
         document.body.appendChild(overlay);
+      }
+
+      // ---- Tag-in quiz ----
+
+      // A character tags the user into the thread with a true/false question.
+      function triggerQuiz(post, cardEl) {
+        if (quizAnswered(post.id)) return;
+        if (cardEl.getAttribute("data-quiz-shown") === "1") return;
+        cardEl.setAttribute("data-quiz-shown", "1");
+
+        var commentsEl = cardEl.querySelector(".post__comments");
+        if (!commentsEl) return;
+
+        var ch = getCharacter(post.character_id);
+        var authorName = ch ? ch.name : post.name;
+
+        var prompt = document.createElement("div");
+        prompt.className = "comment comment--quiz";
+
+        var author = document.createElement("span");
+        author.className = "comment__author";
+        author.textContent = authorName;
+        prompt.appendChild(author);
+
+        prompt.appendChild(document.createTextNode(
+          "@" + state.displayName + " — " + post.quiz.question + "?"
+        ));
+
+        var choices = document.createElement("div");
+        choices.className = "quiz__choices";
+        [
+          { label: t("answerTrue"), val: true },
+          { label: t("answerFalse"), val: false }
+        ].forEach(function (opt) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "quiz__choice";
+          b.textContent = opt.label;
+          b.addEventListener("click", function () {
+            answerQuiz(post, opt.val, commentsEl, prompt, authorName);
+          });
+          choices.appendChild(b);
+        });
+        prompt.appendChild(choices);
+
+        commentsEl.appendChild(prompt);
+      }
+
+      // Record the user's answer, then the character responds in-character
+      // with the correct answer and a line of context.
+      function answerQuiz(post, answer, commentsEl, promptEl, authorName) {
+        var key = yearKey(state.culture, state.year);
+        var rec = state.progress[key];
+        if (!rec) rec = state.progress[key] = { read: {}, quizzes: {}, quizzesPassed: 0 };
+        if (!rec.quizzes) rec.quizzes = {};
+        if (rec.quizzes[post.id]) return; // already answered
+
+        var correct = answer === post.quiz.correct_answer;
+        rec.quizzes[post.id] = { answered: true, correct: correct };
+        if (correct) rec.quizzesPassed = (rec.quizzesPassed || 0) + 1;
+
+        // Freeze the choices.
+        var choices = promptEl.querySelector(".quiz__choices");
+        if (choices) choices.remove();
+
+        // Show the user's chosen answer.
+        var userComment = {
+          author: state.displayName,
+          text: answer ? t("answerTrue") : t("answerFalse"),
+          type: "user"
+        };
+        addComment(post.id, userComment);
+        commentsEl.appendChild(buildComment(userComment));
+
+        // Character's in-character follow-up (correct answer + context).
+        var follow = { author: authorName, text: post.quiz.follow_up, type: "character" };
+        addComment(post.id, follow);
+        commentsEl.appendChild(buildComment(follow));
+
+        checkYearComplete();
       }
 
       // Build one post card.
