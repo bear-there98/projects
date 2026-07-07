@@ -546,6 +546,94 @@
         ]
       };
 
+      // Recurring cast keyed by culture code. Names/roles are culture-
+      // specific; Polish is defined now, other cultures added later.
+      // personality is an author-facing note to keep each voice consistent.
+      var CHARACTERS = {
+        pl: [
+          {
+            id: "marek_kowalczyk",
+            name: "Marek Kowalczyk",
+            role: "farmer",
+            avatar: "",
+            personality: "Rooted, weather-obsessed, quietly loves his land.",
+            posting_frequency: "high"
+          },
+          {
+            id: "ludwik_zielinski",
+            name: "Ludwik Zieliński",
+            role: "merchant",
+            avatar: "",
+            personality: "Traveler, gossip, always has news from elsewhere.",
+            posting_frequency: "high"
+          },
+          {
+            id: "zofia_nowak",
+            name: "Zofia Nowak",
+            role: "painter of icons and portraits",
+            avatar: "",
+            personality: "Observant, fragmentary posts, sees beauty.",
+            posting_frequency: "medium"
+          },
+          {
+            id: "janek_wisniewski",
+            name: "Janek Wiśniewski",
+            role: "migrant",
+            avatar: "",
+            personality: "Leaves for America mid-timeline, posts from the road and abroad.",
+            posting_frequency: "medium"
+          },
+          {
+            id: "halina_dabrowska",
+            name: "Halina Dąbrowska",
+            role: "cook, keeper of recipes",
+            avatar: "",
+            personality: "Warm, generous, seasonal, remembers her mother.",
+            posting_frequency: "high"
+          },
+          {
+            id: "wojtek_baran",
+            name: "Wojtek Baran",
+            role: "village quirky one",
+            avatar: "",
+            personality: "Superstitions, ghost stories, half-jokes.",
+            posting_frequency: "medium"
+          },
+          {
+            id: "antoni_lewandowski",
+            name: "Ojciec Antoni Lewandowski",
+            role: "parish priest",
+            avatar: "",
+            personality: "Gentle, keeper of the calendar of feasts.",
+            posting_frequency: "medium"
+          },
+          {
+            id: "kasia_kowalczyk",
+            name: "Kasia Kowalczyk",
+            role: "Marek's daughter",
+            avatar: "",
+            personality: "Young curious voice: questions, small observations.",
+            posting_frequency: "high"
+          },
+          {
+            id: "tomasz_mazur",
+            name: "Stary Tomasz Mazur",
+            role: "elder",
+            avatar: "",
+            personality: "Rare heavy posts, memory of past uprisings.",
+            posting_frequency: "low"
+          },
+          {
+            id: "agnieszka_wilk",
+            name: "Agnieszka Wilk",
+            role: "folk healer / herbalist",
+            avatar: "",
+            personality: "Herbs, cures, quiet defiance of the priest; her descendants become nurses and eventually a pharmacist across the timeline.",
+            posting_frequency: "medium"
+          }
+        ]
+      };
+
       // Feed posts. Placeholder content for now so the layout is visible.
       // Each post: character identity, body text, an optional image slot,
       // and heritage-language words to surface inline.
