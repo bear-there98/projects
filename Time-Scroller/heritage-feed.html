@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Heritage Feed</title>
+  <title>Time Scroller</title>
   <style>
     :root {
       --bg: #faf6ef;
@@ -176,7 +176,7 @@
       // they will be filled in a later batch for authenticity.
       var UI_STRINGS = {
         en: {
-          appTitle: "Heritage Feed",
+          appTitle: "Time Scroller",
           tagline: "Scroll through a culture, one moment at a time.",
           intro: "Step into a culture through the people who lived it.",
           iSpeak: "I speak",
@@ -285,7 +285,7 @@
         // App title placeholder — replaced later.
         var title = document.createElement("h1");
         title.className = "landing__title";
-        title.textContent = "APP NAME";
+        title.textContent = t("appTitle");
         wrap.appendChild(title);
 
         // Intro copy.
