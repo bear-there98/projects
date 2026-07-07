@@ -45,6 +45,102 @@
     .view.active {
       display: block;
     }
+
+    /* ---------- Landing ---------- */
+    .landing {
+      padding: 48px 24px 40px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .landing__title {
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      line-height: 1.15;
+    }
+
+    .landing__intro {
+      color: var(--muted);
+      margin-top: 12px;
+      font-size: 18px;
+    }
+
+    .field {
+      margin-top: 28px;
+    }
+
+    .field__label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .field__select {
+      width: 100%;
+      font-family: inherit;
+      font-size: 17px;
+      color: var(--text);
+      background: #fff;
+      border: 1px solid rgba(26, 35, 50, 0.18);
+      border-radius: 10px;
+      padding: 13px 14px;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%236b6b6b' stroke-width='1.6' stroke-linecap='round'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+    }
+
+    .field__select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(160, 74, 47, 0.15);
+    }
+
+    .btn-begin {
+      margin-top: 36px;
+      width: 100%;
+      font-family: inherit;
+      font-size: 18px;
+      font-weight: 600;
+      color: #fff;
+      background: var(--accent);
+      border: none;
+      border-radius: 10px;
+      padding: 15px 20px;
+      cursor: pointer;
+      transition: background 0.15s ease, opacity 0.15s ease;
+    }
+
+    .btn-begin:hover:not(:disabled) {
+      background: #8a3f28;
+    }
+
+    .btn-begin:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .landing__message {
+      margin-top: 18px;
+      font-size: 16px;
+      color: var(--accent);
+      background: rgba(160, 74, 47, 0.08);
+      border-radius: 10px;
+      padding: 12px 14px;
+      text-align: center;
+    }
+
+    .landing__message[hidden] {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -82,6 +178,12 @@
         en: {
           appTitle: "Heritage Feed",
           tagline: "Scroll through a culture, one moment at a time.",
+          intro: "Step into a culture through the people who lived it.",
+          iSpeak: "I speak",
+          iWantToExplore: "I want to explore",
+          selectPlaceholder: "Select…",
+          begin: "Begin",
+          comingSoonMessage: "This journey is coming soon. For now, try English → Polish.",
           chooseLanguage: "Choose your language",
           chooseCulture: "Choose a heritage to explore",
           start: "Start",
@@ -99,6 +201,12 @@
         be: {
           appTitle: "",
           tagline: "",
+          intro: "",
+          iSpeak: "",
+          iWantToExplore: "",
+          selectPlaceholder: "",
+          begin: "",
+          comingSoonMessage: "",
           chooseLanguage: "",
           chooseCulture: "",
           start: "",
@@ -127,6 +235,25 @@
       };
 
       // ----------------------------------------------------------------
+      // STATE
+      // ----------------------------------------------------------------
+
+      // The chosen journey. uiLang drives which UI_STRINGS set we read;
+      // it defaults to English while the user is still on the landing screen.
+      var state = {
+        uiLang: "en",
+        language: null,
+        culture: null
+      };
+
+      // Look up a UI string for the current interface language, falling
+      // back to English when a translation is still empty.
+      function t(key) {
+        var set = UI_STRINGS[state.uiLang] || UI_STRINGS.en;
+        return set[key] || UI_STRINGS.en[key] || "";
+      }
+
+      // ----------------------------------------------------------------
       // VIEW ROUTING
       // ----------------------------------------------------------------
 
@@ -144,10 +271,115 @@
         });
       }
 
+      // ----------------------------------------------------------------
+      // LANDING VIEW
+      // ----------------------------------------------------------------
+
+      function renderLanding() {
+        var root = document.getElementById("view-landing");
+        root.innerHTML = "";
+
+        var wrap = document.createElement("div");
+        wrap.className = "landing";
+
+        // App title placeholder — replaced later.
+        var title = document.createElement("h1");
+        title.className = "landing__title";
+        title.textContent = "APP NAME";
+        wrap.appendChild(title);
+
+        // Intro copy.
+        var intro = document.createElement("p");
+        intro.className = "landing__intro";
+        intro.textContent = t("intro");
+        wrap.appendChild(intro);
+
+        // "I speak" — language dropdown.
+        var langSelect = buildSelect(t("iSpeak"), LANGUAGES);
+        wrap.appendChild(langSelect.field);
+
+        // "I want to explore" — culture dropdown.
+        var cultureSelect = buildSelect(t("iWantToExplore"), CULTURES);
+        wrap.appendChild(cultureSelect.field);
+
+        // Begin button — disabled until both dropdowns have a value.
+        var begin = document.createElement("button");
+        begin.className = "btn-begin";
+        begin.type = "button";
+        begin.textContent = t("begin");
+        begin.disabled = true;
+        wrap.appendChild(begin);
+
+        // Soft inline message (hidden until needed).
+        var message = document.createElement("p");
+        message.className = "landing__message";
+        message.hidden = true;
+        wrap.appendChild(message);
+
+        function syncBeginState() {
+          message.hidden = true;
+          begin.disabled = !(langSelect.select.value && cultureSelect.select.value);
+        }
+
+        langSelect.select.addEventListener("change", syncBeginState);
+        cultureSelect.select.addEventListener("change", syncBeginState);
+
+        begin.addEventListener("click", function () {
+          var lang = langSelect.select.value;
+          var culture = cultureSelect.select.value;
+          if (!lang || !culture) return;
+
+          if (CONTENT_AVAILABILITY[lang + "_" + culture]) {
+            state.language = lang;
+            state.culture = culture;
+            showView("view-timeline");
+          } else {
+            message.textContent = t("comingSoonMessage");
+            message.hidden = false;
+          }
+        });
+
+        root.appendChild(wrap);
+      }
+
+      // Build a labeled <select> with a disabled placeholder option.
+      // Returns { field, select } so callers can wire change events.
+      function buildSelect(labelText, options) {
+        var field = document.createElement("div");
+        field.className = "field";
+
+        var label = document.createElement("label");
+        label.className = "field__label";
+        label.textContent = labelText;
+
+        var select = document.createElement("select");
+        select.className = "field__select";
+
+        var placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = t("selectPlaceholder");
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        select.appendChild(placeholder);
+
+        options.forEach(function (opt) {
+          var o = document.createElement("option");
+          o.value = opt.code;
+          o.textContent = opt.label;
+          select.appendChild(o);
+        });
+
+        label.setAttribute("for", "");
+        field.appendChild(label);
+        field.appendChild(select);
+        return { field: field, select: select };
+      }
+
       // Expose for later wiring.
       window.showView = showView;
 
-      // Landing is shown by default.
+      // Initial render — landing is shown by default.
+      renderLanding();
       showView("view-landing");
     })();
   </script>
