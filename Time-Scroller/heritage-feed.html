@@ -58,6 +58,78 @@
     (function () {
       "use strict";
 
+      // ----------------------------------------------------------------
+      // DATA — drives the whole app.
+      // ----------------------------------------------------------------
+
+      // Interface languages the user can read the app in.
+      var LANGUAGES = [
+        { code: "en", label: "English" },
+        { code: "be", label: "Беларуская" }
+      ];
+
+      // Heritage cultures the user can explore.
+      var CULTURES = [
+        { code: "pl", label: "Polish" },
+        { code: "it", label: "Italian" },
+        { code: "es", label: "Spanish" }
+      ];
+
+      // Every user-facing UI string, keyed by interface-language code.
+      // English is populated now; Belarusian keys are present but empty —
+      // they will be filled in a later batch for authenticity.
+      var UI_STRINGS = {
+        en: {
+          appTitle: "Heritage Feed",
+          tagline: "Scroll through a culture, one moment at a time.",
+          chooseLanguage: "Choose your language",
+          chooseCulture: "Choose a heritage to explore",
+          start: "Start",
+          continue: "Continue",
+          back: "Back",
+          comingSoon: "Coming soon",
+          timelineTitle: "Timeline",
+          feedTitle: "Feed",
+          viewTimeline: "View timeline",
+          viewFeed: "View feed",
+          settings: "Settings",
+          language: "Language",
+          culture: "Culture"
+        },
+        be: {
+          appTitle: "",
+          tagline: "",
+          chooseLanguage: "",
+          chooseCulture: "",
+          start: "",
+          continue: "",
+          back: "",
+          comingSoon: "",
+          timelineTitle: "",
+          feedTitle: "",
+          viewTimeline: "",
+          viewFeed: "",
+          settings: "",
+          language: "",
+          culture: ""
+        }
+      };
+
+      // Which "languageCode_cultureCode" pairings actually have content.
+      // Only en_pl is ready; the rest are coming soon.
+      var CONTENT_AVAILABILITY = {
+        en_pl: true,
+        en_it: false,
+        en_es: false,
+        be_pl: false,
+        be_it: false,
+        be_es: false
+      };
+
+      // ----------------------------------------------------------------
+      // VIEW ROUTING
+      // ----------------------------------------------------------------
+
       var views = ["view-landing", "view-timeline", "view-feed"];
 
       function showView(id) {
