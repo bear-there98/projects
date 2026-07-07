@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Heritage Feed</title>
+  <style>
+    :root {
+      --bg: #faf6ef;
+      --text: #1a2332;
+      --accent: #a04a2f;
+      --muted: #6b6b6b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      background: var(--bg);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 17px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app {
+      max-width: 600px;
+      margin: 0 auto;
+      width: 100%;
+      min-height: 100vh;
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div id="view-landing" class="view active"></div>
+    <div id="view-timeline" class="view"></div>
+    <div id="view-feed" class="view"></div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var views = ["view-landing", "view-timeline", "view-feed"];
+
+      function showView(id) {
+        views.forEach(function (viewId) {
+          var el = document.getElementById(viewId);
+          if (!el) return;
+          if (viewId === id) {
+            el.classList.add("active");
+          } else {
+            el.classList.remove("active");
+          }
+        });
+      }
+
+      // Expose for later wiring.
+      window.showView = showView;
+
+      // Landing is shown by default.
+      showView("view-landing");
+    })();
+  </script>
+</body>
+</html>
