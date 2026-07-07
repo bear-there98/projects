@@ -276,6 +276,154 @@
     .dot__tooltip[hidden] {
       display: none;
     }
+
+    /* ---------- Feed ---------- */
+    .feed__bar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--bg);
+      border-bottom: 1px solid rgba(26, 35, 50, 0.1);
+    }
+
+    .feed__back {
+      background: none;
+      border: none;
+      font-size: 22px;
+      line-height: 1;
+      color: var(--text);
+      cursor: pointer;
+      padding: 4px 6px;
+    }
+
+    .feed__back:hover {
+      color: var(--accent);
+    }
+
+    .feed__meta {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .feed__era {
+      font-size: 16px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .feed__progress {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .feed__list {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .post {
+      background: #fff;
+      border: 1px solid rgba(26, 35, 50, 0.08);
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(26, 35, 50, 0.04);
+    }
+
+    .post__head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .post__avatar {
+      flex: 0 0 auto;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(160, 74, 47, 0.12);
+      color: var(--accent);
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .post__ident {
+      min-width: 0;
+    }
+
+    .post__name {
+      font-weight: 700;
+    }
+
+    .post__role {
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    .post__body {
+      margin-top: 12px;
+    }
+
+    /* Optional image slot — empty for now. */
+    .post__image {
+      margin-top: 12px;
+    }
+
+    .post__image:empty {
+      display: none;
+    }
+
+    /* Slot for tappable heritage-language words. */
+    .post__heritage {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .post__heritage:empty {
+      display: none;
+    }
+
+    .heritage-word {
+      font-style: italic;
+      color: var(--accent);
+      border-bottom: 1px dashed rgba(160, 74, 47, 0.5);
+      cursor: pointer;
+    }
+
+    .post__actions {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(26, 35, 50, 0.08);
+      display: flex;
+      gap: 22px;
+    }
+
+    .post__action {
+      background: none;
+      border: none;
+      font-size: 18px;
+      line-height: 1;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 2px;
+    }
+
+    .post__action:hover {
+      color: var(--accent);
+    }
   </style>
 </head>
 <body>
@@ -321,6 +469,10 @@
           comingSoonMessage: "This journey is coming soon. For now, try English → Polish.",
           chooseWhereToBegin: "Choose where to begin",
           lockedTooltip: "Complete the previous year to unlock",
+          postsRead: "posts read",
+          like: "Like",
+          save: "Save",
+          comment: "Comment",
           chooseLanguage: "Choose your language",
           chooseCulture: "Choose a heritage to explore",
           start: "Start",
@@ -346,6 +498,10 @@
           comingSoonMessage: "",
           chooseWhereToBegin: "",
           lockedTooltip: "",
+          postsRead: "",
+          like: "",
+          save: "",
+          comment: "",
           chooseLanguage: "",
           chooseCulture: "",
           start: "",
@@ -389,6 +545,42 @@
           { year: "present", label: "Now", era: "Present Day" }
         ]
       };
+
+      // Feed posts. Placeholder content for now so the layout is visible.
+      // Each post: character identity, body text, an optional image slot,
+      // and heritage-language words to surface inline.
+      var POSTS = [
+        {
+          id: "p1",
+          name: "Marek Kowalczyk",
+          role: "farmer",
+          initials: "MK",
+          body: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. " +
+            "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+          image: null,
+          heritageWords: ["dom", "ziemia"]
+        },
+        {
+          id: "p2",
+          name: "Zofia Wiśniewska",
+          role: "seamstress",
+          initials: "ZW",
+          body: "Ut enim ad minim veniam, quis nostrud exercitation ullamco " +
+            "laboris nisi ut aliquip ex ea commodo consequat.",
+          image: null,
+          heritageWords: ["igła", "nić"]
+        },
+        {
+          id: "p3",
+          name: "Jan Nowak",
+          role: "schoolteacher",
+          initials: "JN",
+          body: "Duis aute irure dolor in reprehenderit in voluptate velit " +
+            "esse cillum dolore eu fugiat nulla pariatur.",
+          image: null,
+          heritageWords: ["szkoła", "wolność"]
+        }
+      ];
 
       // ----------------------------------------------------------------
       // STATE
@@ -580,6 +772,7 @@
         if (unlocked) {
           dot.addEventListener("click", function () {
             state.year = entry.year;
+            renderFeed();
             showView("view-feed");
           });
         } else {
@@ -613,6 +806,134 @@
           hideAllTooltips();
         }
       });
+
+      // ----------------------------------------------------------------
+      // FEED VIEW
+      // ----------------------------------------------------------------
+
+      function renderFeed() {
+        var root = document.getElementById("view-feed");
+        root.innerHTML = "";
+
+        // Find the timeline entry matching the selected year, for the label.
+        var years = TIMELINE[state.culture] || [];
+        var entry = null;
+        years.forEach(function (y) {
+          if (y.year === state.year) entry = y;
+        });
+
+        // ---- Sticky top bar ----
+        var bar = document.createElement("div");
+        bar.className = "feed__bar";
+
+        var back = document.createElement("button");
+        back.className = "feed__back";
+        back.type = "button";
+        back.setAttribute("aria-label", t("back"));
+        back.textContent = "←";
+        back.addEventListener("click", function () {
+          showView("view-timeline");
+        });
+        bar.appendChild(back);
+
+        var meta = document.createElement("div");
+        meta.className = "feed__meta";
+
+        var era = document.createElement("div");
+        era.className = "feed__era";
+        era.textContent = entry ? entry.label + " — " + entry.era : "";
+        meta.appendChild(era);
+
+        var progress = document.createElement("div");
+        progress.className = "feed__progress";
+        progress.textContent = "0 / " + POSTS.length + " " + t("postsRead");
+        meta.appendChild(progress);
+
+        bar.appendChild(meta);
+        root.appendChild(bar);
+
+        // ---- Vertical scrolling feed ----
+        var list = document.createElement("div");
+        list.className = "feed__list";
+
+        POSTS.forEach(function (post) {
+          list.appendChild(buildPost(post));
+        });
+
+        root.appendChild(list);
+      }
+
+      // Build one post card.
+      function buildPost(post) {
+        var card = document.createElement("article");
+        card.className = "post";
+
+        // Head: avatar + name + role.
+        var head = document.createElement("div");
+        head.className = "post__head";
+
+        var avatar = document.createElement("div");
+        avatar.className = "post__avatar";
+        avatar.textContent = post.initials || "";
+        head.appendChild(avatar);
+
+        var ident = document.createElement("div");
+        ident.className = "post__ident";
+
+        var name = document.createElement("span");
+        name.className = "post__name";
+        name.textContent = post.name;
+        ident.appendChild(name);
+
+        var role = document.createElement("span");
+        role.className = "post__role";
+        role.textContent = " · " + post.role;
+        name.appendChild(role);
+
+        head.appendChild(ident);
+        card.appendChild(head);
+
+        // Body.
+        var body = document.createElement("p");
+        body.className = "post__body";
+        body.textContent = post.body;
+        card.appendChild(body);
+
+        // Optional image slot — left empty for now.
+        var image = document.createElement("div");
+        image.className = "post__image";
+        card.appendChild(image);
+
+        // Heritage-language words slot — styled, not yet interactive.
+        var heritage = document.createElement("div");
+        heritage.className = "post__heritage";
+        (post.heritageWords || []).forEach(function (word) {
+          var span = document.createElement("span");
+          span.className = "heritage-word";
+          span.textContent = word;
+          heritage.appendChild(span);
+        });
+        card.appendChild(heritage);
+
+        // Actions: like, comment, save (icons only).
+        var actions = document.createElement("div");
+        actions.className = "post__actions";
+        [
+          { icon: "♡", key: "like" },
+          { icon: "💬", key: "comment" },
+          { icon: "🔖", key: "save" }
+        ].forEach(function (a) {
+          var btn = document.createElement("button");
+          btn.className = "post__action";
+          btn.type = "button";
+          btn.setAttribute("aria-label", t(a.key));
+          btn.textContent = a.icon;
+          actions.appendChild(btn);
+        });
+        card.appendChild(actions);
+
+        return card;
+      }
 
       // Build a labeled <select> with a disabled placeholder option.
       // Returns { field, select } so callers can wire change events.
