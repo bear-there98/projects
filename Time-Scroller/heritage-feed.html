@@ -594,6 +594,69 @@
     .post__composer button:hover {
       background: #8a3f28;
     }
+
+    /* ---------- Year complete ---------- */
+    .year-complete {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px;
+      overflow-y: auto;
+      animation: fade-in 0.35s ease;
+    }
+
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .year-complete__inner {
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .year-complete__kicker {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--accent);
+    }
+
+    .year-complete__year {
+      font-size: 28px;
+      font-weight: 700;
+      margin-top: 10px;
+    }
+
+    .year-complete__text {
+      font-size: 18px;
+      line-height: 1.7;
+      margin-top: 20px;
+      color: var(--text);
+    }
+
+    .year-complete__btn {
+      margin-top: 32px;
+      font-family: inherit;
+      font-size: 17px;
+      font-weight: 600;
+      color: #fff;
+      background: var(--accent);
+      border: none;
+      border-radius: 10px;
+      padding: 14px 28px;
+      cursor: pointer;
+    }
+
+    .year-complete__btn:hover {
+      background: #8a3f28;
+    }
   </style>
 </head>
 <body>
@@ -640,6 +703,8 @@
           chooseWhereToBegin: "Choose where to begin",
           lockedTooltip: "Complete the previous year to unlock",
           postsRead: "posts read",
+          yearComplete: "Year complete",
+          continueJourney: "Continue the journey",
           like: "Like",
           save: "Save",
           comment: "Comment",
@@ -673,6 +738,8 @@
           chooseWhereToBegin: "",
           lockedTooltip: "",
           postsRead: "",
+          yearComplete: "",
+          continueJourney: "",
           like: "",
           save: "",
           comment: "",
@@ -1067,6 +1134,59 @@
         ]
       };
 
+      // Narrative payoff shown when a year is completed, per culture + year.
+      var CLIMAXES = {
+        pl: {
+          1795: "The maps are redrawn in distant capitals, and the word " +
+            "\"Poland\" quietly vanishes from them. In the village the same " +
+            "fields wait under a different flag, and the language is spoken " +
+            "now in lower voices. Marek buries a small iron cross beneath the " +
+            "old oak — \"so the land remembers,\" he says.",
+          1830: "For a winter, hope wears a uniform. Word of the rising in " +
+            "Warsaw reaches even here, and young men slip away down the frozen " +
+            "roads. By spring most have returned changed, or not at all, and " +
+            "the snow melts over things no one will name aloud.",
+          1863: "The forest fills with men who were farmers a week ago. The " +
+            "uprising burns bright and brief; then come the reprisals, the " +
+            "hangings, the long grey lines walking east to Siberia. Stary " +
+            "Tomasz watches them go and says nothing for three days.",
+          1918: "The impossible word returns to the maps: Poland, again, out " +
+            "of thin air and a hundred years of stubborn memory. Bells ring " +
+            "that no one under forty has heard rung this way. Ojciec Antoni " +
+            "weeps openly at the altar and does not apologize for it.",
+          1939: "The sky fills with a sound the old men recognize and the " +
+            "young cannot believe. In a matter of days the world tips over; " +
+            "the merchant's roads close, the borders bleed, and the village " +
+            "learns a new vocabulary of fear. Janek's last letter home is " +
+            "postmarked from a place no one can find on the map.",
+          1945: "The guns fall silent over a country that is half rubble and " +
+            "wholly exhausted. There is bread again, and a new order that " +
+            "arrives with its own certainties. Halina cooks for the living " +
+            "and sets one plate aside, out of habit, for those who will not " +
+            "come to the table.",
+          1968: "The slogans change but the watching does not. A restlessness " +
+            "moves through the young — questions asked too loudly, friends who " +
+            "leave and do not write. Kasia's granddaughter learns which words " +
+            "are safe at school and which belong only to the kitchen.",
+          1989: "It ends not with a shot but with a table, and men who were " +
+            "enemies signing their names in the same room. Overnight the " +
+            "impossible becomes ordinary. The village stands a little " +
+            "straighter, unsure yet what to do with a future suddenly its own.",
+          2004: "The old borders open like a door left unlocked for years. The " +
+            "young pack lightly and scatter west — London, Dublin, the road " +
+            "Ludwik would have loved. They send money home, and photographs, " +
+            "and a homesickness that no distance quite cures.",
+          present: "The feed is live now, and the village lives half in the " +
+            "soil and half on the screen. Agnieszka's descendant fills " +
+            "prescriptions in a bright pharmacy; someone still leaves bread at " +
+            "the treeline. The land remembers, as Marek asked it to."
+        }
+      };
+
+      // Quizzes per culture + year. None authored yet, so "all quizzes
+      // passed" is trivially satisfied. Wired now so completion logic is ready.
+      var QUIZZES = {};
+
       // ----------------------------------------------------------------
       // STATE
       // ----------------------------------------------------------------
@@ -1081,7 +1201,14 @@
         displayName: "you",
         liked: {},
         saved: {},
-        comments: {}
+        comments: {},
+        // Per-year progress keyed by "culture_year":
+        //   { read: { postId: true }, quizzesPassed: 0 }
+        progress: {},
+        // Completed years keyed by "culture_year" (guards the climax moment).
+        completed: {},
+        // Unlocked years keyed by culture: { year: true }.
+        unlockedYears: {}
       };
 
       // Look up a UI string for the current interface language, falling
@@ -1218,9 +1345,16 @@
 
         var years = TIMELINE[state.culture] || [];
 
-        years.forEach(function (entry, index) {
-          // For now only the first year is unlocked.
-          var unlocked = index === 0;
+        // Ensure the first year of a culture is always unlocked.
+        if (!state.unlockedYears[state.culture]) {
+          state.unlockedYears[state.culture] = {};
+        }
+        if (years.length) {
+          state.unlockedYears[state.culture][years[0].year] = true;
+        }
+
+        years.forEach(function (entry) {
+          var unlocked = !!state.unlockedYears[state.culture][entry.year];
           track.appendChild(buildDot(entry, unlocked));
         });
 
@@ -1300,9 +1434,20 @@
       // FEED VIEW
       // ----------------------------------------------------------------
 
+      var feedObserver = null;   // IntersectionObserver for read detection
+      var readTimers = {};       // postId -> pending 2s dwell timer
+      var feedProgressEl = null; // live progress indicator element
+
       function renderFeed() {
         var root = document.getElementById("view-feed");
         root.innerHTML = "";
+
+        // Tear down any observer/timers from a previous feed.
+        if (feedObserver) {
+          feedObserver.disconnect();
+          feedObserver = null;
+        }
+        readTimers = {};
 
         // Find the timeline entry matching the selected year, for the label.
         var years = TIMELINE[state.culture] || [];
@@ -1310,6 +1455,14 @@
         years.forEach(function (y) {
           if (y.year === state.year) entry = y;
         });
+
+        // Ensure a progress record exists for this year.
+        var key = yearKey(state.culture, state.year);
+        if (!state.progress[key]) {
+          state.progress[key] = { read: {}, quizzesPassed: 0 };
+        }
+
+        var posts = postsForYear(state.culture, state.year);
 
         // ---- Sticky top bar ----
         var bar = document.createElement("div");
@@ -1333,10 +1486,10 @@
         era.textContent = entry ? entry.label + " — " + entry.era : "";
         meta.appendChild(era);
 
-        var progress = document.createElement("div");
-        progress.className = "feed__progress";
-        progress.textContent = "0 / " + POSTS.length + " " + t("postsRead");
-        meta.appendChild(progress);
+        feedProgressEl = document.createElement("div");
+        feedProgressEl.className = "feed__progress";
+        meta.appendChild(feedProgressEl);
+        updateProgressIndicator();
 
         bar.appendChild(meta);
         root.appendChild(bar);
@@ -1345,11 +1498,158 @@
         var list = document.createElement("div");
         list.className = "feed__list";
 
-        POSTS.forEach(function (post) {
-          list.appendChild(buildPost(post));
+        // Reading = a post held in view for at least 2 seconds.
+        feedObserver = new IntersectionObserver(onFeedIntersect, {
+          threshold: 0.6
+        });
+
+        posts.forEach(function (post) {
+          var card = buildPost(post);
+          card.setAttribute("data-post-id", post.id);
+          list.appendChild(card);
+          // Only watch posts not already marked read.
+          if (!state.progress[key].read[post.id]) {
+            feedObserver.observe(card);
+          }
         });
 
         root.appendChild(list);
+      }
+
+      // ---- Progress helpers ----
+      function yearKey(culture, year) {
+        return culture + "_" + year;
+      }
+
+      // POSTS is flat for now, so every post belongs to the active year.
+      function postsForYear(culture, year) {
+        return POSTS;
+      }
+
+      function quizzesForYear(culture, year) {
+        var byCulture = QUIZZES[culture];
+        if (!byCulture) return [];
+        return byCulture[year] || [];
+      }
+
+      function updateProgressIndicator() {
+        if (!feedProgressEl) return;
+        var rec = state.progress[yearKey(state.culture, state.year)] || { read: {} };
+        var total = postsForYear(state.culture, state.year).length;
+        var read = Object.keys(rec.read).length;
+        feedProgressEl.textContent = read + " / " + total + " " + t("postsRead");
+      }
+
+      function onFeedIntersect(entries) {
+        entries.forEach(function (e) {
+          var id = e.target.getAttribute("data-post-id");
+          if (e.isIntersecting) {
+            if (!readTimers[id]) {
+              readTimers[id] = setTimeout(function () {
+                markPostRead(id, e.target);
+              }, 2000);
+            }
+          } else if (readTimers[id]) {
+            // Scrolled away before the dwell completed — cancel.
+            clearTimeout(readTimers[id]);
+            delete readTimers[id];
+          }
+        });
+      }
+
+      function markPostRead(postId, el) {
+        var key = yearKey(state.culture, state.year);
+        var rec = state.progress[key];
+        if (!rec) rec = state.progress[key] = { read: {}, quizzesPassed: 0 };
+        if (rec.read[postId]) return;
+
+        rec.read[postId] = true;
+        if (readTimers[postId]) {
+          clearTimeout(readTimers[postId]);
+          delete readTimers[postId];
+        }
+        if (feedObserver && el) feedObserver.unobserve(el);
+
+        updateProgressIndicator();
+        checkYearComplete();
+      }
+
+      // A year is complete when >=80% of its posts are read AND all its
+      // quizzes are passed. (No quizzes yet => trivially satisfied.)
+      function checkYearComplete() {
+        var culture = state.culture;
+        var year = state.year;
+        var key = yearKey(culture, year);
+        if (state.completed[key]) return;
+
+        var rec = state.progress[key] || { read: {}, quizzesPassed: 0 };
+        var total = postsForYear(culture, year).length;
+        if (total === 0) return;
+
+        var read = Object.keys(rec.read).length;
+        var quizTotal = quizzesForYear(culture, year).length;
+        var quizzesDone = rec.quizzesPassed >= quizTotal;
+
+        if (read / total >= 0.8 && quizzesDone) {
+          state.completed[key] = true;
+          unlockNextYear(culture, year);
+          showYearComplete(culture, year);
+        }
+      }
+
+      function unlockNextYear(culture, year) {
+        var years = TIMELINE[culture] || [];
+        for (var i = 0; i < years.length; i++) {
+          if (years[i].year === year && i + 1 < years.length) {
+            if (!state.unlockedYears[culture]) state.unlockedYears[culture] = {};
+            state.unlockedYears[culture][years[i + 1].year] = true;
+            return;
+          }
+        }
+      }
+
+      // Full-screen narrative payoff for a completed year.
+      function showYearComplete(culture, year) {
+        var entry = null;
+        (TIMELINE[culture] || []).forEach(function (y) {
+          if (y.year === year) entry = y;
+        });
+        var text = (CLIMAXES[culture] && CLIMAXES[culture][year]) || "";
+
+        var overlay = document.createElement("div");
+        overlay.className = "year-complete";
+
+        var inner = document.createElement("div");
+        inner.className = "year-complete__inner";
+
+        var kicker = document.createElement("div");
+        kicker.className = "year-complete__kicker";
+        kicker.textContent = t("yearComplete");
+        inner.appendChild(kicker);
+
+        var heading = document.createElement("h2");
+        heading.className = "year-complete__year";
+        heading.textContent = entry ? entry.label + " — " + entry.era : "";
+        inner.appendChild(heading);
+
+        var para = document.createElement("p");
+        para.className = "year-complete__text";
+        para.textContent = text;
+        inner.appendChild(para);
+
+        var btn = document.createElement("button");
+        btn.className = "year-complete__btn";
+        btn.type = "button";
+        btn.textContent = t("continueJourney");
+        btn.addEventListener("click", function () {
+          overlay.remove();
+          renderTimeline();
+          showView("view-timeline");
+        });
+        inner.appendChild(btn);
+
+        overlay.appendChild(inner);
+        document.body.appendChild(overlay);
       }
 
       // Build one post card.
