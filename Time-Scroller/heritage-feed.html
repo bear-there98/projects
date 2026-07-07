@@ -486,15 +486,113 @@
     .post__action {
       background: none;
       border: none;
-      font-size: 18px;
-      line-height: 1;
       color: var(--muted);
       cursor: pointer;
       padding: 2px;
+      display: flex;
+      align-items: center;
+    }
+
+    .post__action svg {
+      width: 22px;
+      height: 22px;
+      display: block;
     }
 
     .post__action:hover {
       color: var(--accent);
+    }
+
+    .post__action.is-active {
+      color: var(--accent);
+    }
+
+    /* ---------- Comments ---------- */
+    .post__comments {
+      margin-top: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .post__comments:empty {
+      display: none;
+    }
+
+    .comment {
+      font-size: 15px;
+      line-height: 1.5;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(26, 35, 50, 0.04);
+    }
+
+    .comment__author {
+      font-weight: 700;
+      margin-right: 6px;
+    }
+
+    .comment--character {
+      background: rgba(160, 74, 47, 0.07);
+    }
+
+    .comment--character .comment__author {
+      color: var(--accent);
+    }
+
+    .comment--narrator {
+      background: none;
+      font-style: italic;
+      color: var(--muted);
+      padding: 4px 12px;
+    }
+
+    .comment--narrator .comment__author {
+      font-style: normal;
+    }
+
+    .post__composer {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .post__composer[hidden] {
+      display: none;
+    }
+
+    .post__composer input {
+      flex: 1;
+      min-width: 0;
+      font-family: inherit;
+      font-size: 15px;
+      color: var(--text);
+      background: #fff;
+      border: 1px solid rgba(26, 35, 50, 0.18);
+      border-radius: 20px;
+      padding: 9px 14px;
+    }
+
+    .post__composer input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .post__composer button {
+      flex: 0 0 auto;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      color: #fff;
+      background: var(--accent);
+      border: none;
+      border-radius: 20px;
+      padding: 9px 16px;
+      cursor: pointer;
+    }
+
+    .post__composer button:hover {
+      background: #8a3f28;
     }
   </style>
 </head>
@@ -547,6 +645,8 @@
           comment: "Comment",
           saveToNotebook: "Save to my notebook",
           savedToNotebook: "Saved ✓",
+          addComment: "Add a comment…",
+          send: "Send",
           chooseLanguage: "Choose your language",
           chooseCulture: "Choose a heritage to explore",
           start: "Start",
@@ -578,6 +678,8 @@
           comment: "",
           saveToNotebook: "",
           savedToNotebook: "",
+          addComment: "",
+          send: "",
           chooseLanguage: "",
           chooseCulture: "",
           start: "",
@@ -716,6 +818,7 @@
       var POSTS = [
         {
           id: "p1",
+          character_id: "marek_kowalczyk",
           name: "Marek Kowalczyk",
           role: "farmer",
           initials: "MK",
@@ -725,23 +828,244 @@
         },
         {
           id: "p2",
-          name: "Zofia Wiśniewska",
-          role: "seamstress",
-          initials: "ZW",
-          body: "Ut enim ad minim veniam. My hands remember every " +
-            "[igła|needle|eeg-wah] and every thread I have ever pulled.",
+          character_id: "halina_dabrowska",
+          name: "Halina Dąbrowska",
+          role: "cook, keeper of recipes",
+          initials: "HD",
+          body: "Ut enim ad minim veniam. Today I make [pierogi|dumplings|pyeh-roh-gee] " +
+            "the way my mother did, by memory alone.",
           image: null
         },
         {
           id: "p3",
-          name: "Jan Nowak",
-          role: "schoolteacher",
-          initials: "JN",
+          character_id: "antoni_lewandowski",
+          name: "Ojciec Antoni Lewandowski",
+          role: "parish priest",
+          initials: "AL",
           body: "Duis aute irure dolor. The children asked me today what " +
             "[wolność|freedom|vol-noshch] means, and I had no simple answer.",
           image: null
         }
       ];
+
+      // In-character responses to user comments, keyed by character id.
+      // Keyword match (substring, case-insensitive) picks a bucket; if none
+      // match, a random fallback line is used. 2-3 buckets each for testing.
+      var REPLIES = {
+        marek_kowalczyk: {
+          keywords: {
+            harvest: [
+              "If the rains hold off, we bring it in by the feast of the Assumption.",
+              "A late harvest is still a harvest. God is not in a hurry."
+            ],
+            weather: [
+              "The sky has been the color of old tin for a week now.",
+              "My knees know the weather before the priest rings the bell."
+            ],
+            land: [
+              "This soil has fed four generations of us. It knows my name.",
+              "You do not own land. You borrow it from your children."
+            ]
+          },
+          fallback: [
+            "Hm. A field does not answer back so quickly, but I hear you.",
+            "Well said. Now, back to the plough."
+          ]
+        },
+        ludwik_zielinski: {
+          keywords: {
+            news: [
+              "You have not heard? They are saying quite different things in Kraków.",
+              "News travels with me, friend. Buy a bolt of cloth and I will tell you more."
+            ],
+            price: [
+              "Everything costs double what it did last spring. Blame the roads.",
+              "For you? A fair price. For the tax man? A different number entirely."
+            ],
+            travel: [
+              "I have slept in six towns this month and my own bed in none.",
+              "The road is long, but it is where the interesting people are."
+            ]
+          },
+          fallback: [
+            "Interesting. I shall carry that thought to the next market.",
+            "Ah, everyone has an opinion. I merely collect them."
+          ]
+        },
+        zofia_nowak: {
+          keywords: {
+            beauty: [
+              "There is beauty even here, if you hold still long enough to see it.",
+              "I painted that same light once. It would not sit still for me."
+            ],
+            color: [
+              "The reds this autumn are impossible to mix. I keep failing them.",
+              "Color is memory. That rust is the barn of my childhood."
+            ],
+            paint: [
+              "A portrait keeps a face longer than the person keeps it themselves.",
+              "I work in fragments. The whole never arrives all at once."
+            ]
+          },
+          fallback: [
+            "I will keep that. It may end up in a corner of some painting.",
+            "Mm. You see things too. Not everyone does."
+          ]
+        },
+        janek_wisniewski: {
+          keywords: {
+            america: [
+              "They say in America the streets are not gold, but the bread is white.",
+              "My cousin writes from Chicago. He signs his letters 'John' now."
+            ],
+            home: [
+              "Home is smaller in my memory each year, and dearer.",
+              "I carry a handful of this soil in a cloth. Do not tell the customs men."
+            ],
+            road: [
+              "Another station, another language I half understand.",
+              "The ship smelled of coal and every hope in the hold."
+            ]
+          },
+          fallback: [
+            "I read your words twice on the train. Thank you for them.",
+            "From wherever I am next, I will remember you said that."
+          ]
+        },
+        halina_dabrowska: {
+          keywords: {
+            food: [
+              "Sit, sit. There is always a plate for one more.",
+              "You cannot rush a good broth, and you cannot rush good company."
+            ],
+            recipe: [
+              "The recipe is in my hands, not on paper. My mother's hands before that.",
+              "A pinch of this, a memory of that. That is the whole secret."
+            ],
+            mother: [
+              "My mother made this on the coldest days. I still hear her humming.",
+              "Everything I know good, I learned at her elbow."
+            ]
+          },
+          fallback: [
+            "Bless you for saying so. Now eat something.",
+            "You have a kind way with words. Have you eaten today?"
+          ]
+        },
+        wojtek_baran: {
+          keywords: {
+            ghost: [
+              "Oh, you laugh now. Walk past the old mill after dark and we shall see.",
+              "My grandmother saw one. She was never wrong about the important things."
+            ],
+            luck: [
+              "Do not point at the moon or your ear will fall off. Everyone knows this.",
+              "Spilled salt? Over the left shoulder, quick, before it notices."
+            ],
+            forest: [
+              "There are paths in that forest that are not there in the morning.",
+              "Leave a little bread at the treeline. It is only polite."
+            ]
+          },
+          fallback: [
+            "Heh. You say that now. Knock on wood, just to be safe.",
+            "Strange thing to say. I like it. I like strange things."
+          ]
+        },
+        antoni_lewandowski: {
+          keywords: {
+            faith: [
+              "Doubt is not the enemy of faith, my child. Indifference is.",
+              "Bring it to the altar. Even the smallest worry belongs there."
+            ],
+            feast: [
+              "Ah, but Thursday is the feast of Saint Stanisław. Do not forget.",
+              "The calendar of saints is the truest calendar we keep."
+            ],
+            sin: [
+              "We are all of us mending the same torn cloth. Come to confession.",
+              "Judge gently. The one you judge may be carrying more than you know."
+            ]
+          },
+          fallback: [
+            "I shall keep you in my prayers this evening. Go in peace.",
+            "A thoughtful word. The Lord listens to those, I believe."
+          ]
+        },
+        kasia_kowalczyk: {
+          keywords: {
+            why: [
+              "But WHY, though? Nobody ever really answers that part.",
+              "Tata says 'because that is how it is.' That is not an answer!"
+            ],
+            school: [
+              "The teacher rapped my knuckles for asking too many questions. Worth it.",
+              "I can write my whole name now. And a few words I am not supposed to."
+            ],
+            play: [
+              "We played by the river until the light went orange. Do not tell Mama.",
+              "I found a frog. I named him. Then he left. Very rude."
+            ]
+          },
+          fallback: [
+            "Oh! I did not think of that. Now I have three new questions.",
+            "That is interesting. Grown-ups never say interesting things like that."
+          ]
+        },
+        tomasz_mazur: {
+          keywords: {
+            uprising: [
+              "I was young in '63. I buried friends younger still. Do not speak of it lightly.",
+              "We rose because we could not kneel. Many did not come home."
+            ],
+            memory: [
+              "I remember what they want us to forget. That is an old man's only weapon.",
+              "The past is not gone. It sits with me at the table each evening."
+            ],
+            war: [
+              "War takes the strong first and leaves the old to remember them.",
+              "I have seen the eagle raised and torn down more than once. I am tired."
+            ]
+          },
+          fallback: [
+            "Hm. You are young. Come back when the words have cost you something.",
+            "...Yes. Perhaps. I have said enough for one day."
+          ]
+        },
+        agnieszka_wilk: {
+          keywords: {
+            herb: [
+              "Nettle for the blood, chamomile for the nerves. The field is a pharmacy.",
+              "Gather the yarrow before the dew lifts, or it loses its heart."
+            ],
+            sick: [
+              "Bring the child to me before you bring the fever to the priest.",
+              "Warm compress, bitter tea, and sleep. Medicine is mostly patience."
+            ],
+            priest: [
+              "Father Antoni calls it superstition. His own mother sent for me twice.",
+              "Let him have his incense. I will have my roots. Both have their uses."
+            ]
+          },
+          fallback: [
+            "I will remember that. Knowledge keeps better than most cures.",
+            "Sensible. There is more healer in you than you think."
+          ]
+        }
+      };
+
+      // A dry, sarcastic bot that occasionally chimes into comment threads.
+      var NARRATOR = {
+        name: "The Narrator",
+        replies: [
+          "History does not record whether anyone actually replied to this.",
+          "A profound exchange, surely destined for the schoolbooks.",
+          "And thus another timeless debate was settled in the comments.",
+          "Future historians will weep at the depth of this thread.",
+          "Noted, filed, and immediately forgotten by the ages.",
+          "Truly, this is why the empires fell."
+        ]
+      };
 
       // ----------------------------------------------------------------
       // STATE
@@ -753,7 +1077,11 @@
         uiLang: "en",
         language: null,
         culture: null,
-        year: null
+        year: null,
+        displayName: "you",
+        liked: {},
+        saved: {},
+        comments: {}
       };
 
       // Look up a UI string for the current interface language, falling
@@ -1065,24 +1393,190 @@
         image.className = "post__image";
         card.appendChild(image);
 
-        // Actions: like, comment, save (icons only).
+        // Actions: like, comment, save.
         var actions = document.createElement("div");
         actions.className = "post__actions";
-        [
-          { icon: "♡", key: "like" },
-          { icon: "💬", key: "comment" },
-          { icon: "🔖", key: "save" }
-        ].forEach(function (a) {
-          var btn = document.createElement("button");
-          btn.className = "post__action";
-          btn.type = "button";
-          btn.setAttribute("aria-label", t(a.key));
-          btn.textContent = a.icon;
-          actions.appendChild(btn);
+
+        var likeBtn = makeActionButton("like");
+        updateActionIcon(likeBtn, "like", !!state.liked[post.id]);
+        likeBtn.addEventListener("click", function () {
+          state.liked[post.id] = !state.liked[post.id];
+          updateActionIcon(likeBtn, "like", !!state.liked[post.id]);
         });
+        actions.appendChild(likeBtn);
+
+        var commentBtn = makeActionButton("comment");
+        updateActionIcon(commentBtn, "comment", false);
+        actions.appendChild(commentBtn);
+
+        var saveBtn = makeActionButton("save");
+        updateActionIcon(saveBtn, "save", !!state.saved[post.id]);
+        saveBtn.addEventListener("click", function () {
+          state.saved[post.id] = !state.saved[post.id];
+          updateActionIcon(saveBtn, "save", !!state.saved[post.id]);
+        });
+        actions.appendChild(saveBtn);
+
         card.appendChild(actions);
 
+        // Existing comment thread.
+        var comments = document.createElement("div");
+        comments.className = "post__comments";
+        (state.comments[post.id] || []).forEach(function (c) {
+          comments.appendChild(buildComment(c));
+        });
+        card.appendChild(comments);
+
+        // Comment composer, revealed by the comment action.
+        var composer = document.createElement("form");
+        composer.className = "post__composer";
+        composer.hidden = true;
+
+        var input = document.createElement("input");
+        input.type = "text";
+        input.setAttribute("maxlength", "140");
+        input.placeholder = t("addComment");
+        composer.appendChild(input);
+
+        var send = document.createElement("button");
+        send.type = "submit";
+        send.textContent = t("send");
+        composer.appendChild(send);
+
+        composer.addEventListener("submit", function (e) {
+          e.preventDefault();
+          var text = input.value.trim();
+          if (!text) return;
+          input.value = "";
+          submitComment(post, text, comments);
+        });
+        card.appendChild(composer);
+
+        commentBtn.addEventListener("click", function () {
+          composer.hidden = !composer.hidden;
+          if (!composer.hidden) input.focus();
+        });
+
         return card;
+      }
+
+      // ---- Post action icons ----
+      function iconSvg(type, filled) {
+        var fill = filled ? "currentColor" : "none";
+        if (type === "like") {
+          return '<svg viewBox="0 0 24 24" fill="' + fill + '" stroke="currentColor" ' +
+            'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 ' +
+            '3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 ' +
+            '6.86-8.55 11.54L12 21.35z"/></svg>';
+        }
+        if (type === "save") {
+          return '<svg viewBox="0 0 24 24" fill="' + fill + '" stroke="currentColor" ' +
+            'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>';
+        }
+        // comment — never filled
+        return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+          'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+          '<path d="M21 11.5a8.5 8.5 0 0 1-12.5 7.5L3 21l2-5.5A8.5 8.5 0 1 1 21 11.5z"/></svg>';
+      }
+
+      function makeActionButton(key) {
+        var btn = document.createElement("button");
+        btn.className = "post__action";
+        btn.type = "button";
+        btn.setAttribute("aria-label", t(key));
+        return btn;
+      }
+
+      function updateActionIcon(btn, type, active) {
+        btn.innerHTML = iconSvg(type, active);
+        if (active) {
+          btn.classList.add("is-active");
+        } else {
+          btn.classList.remove("is-active");
+        }
+      }
+
+      // ---- Comments ----
+      function addComment(postId, comment) {
+        if (!state.comments[postId]) state.comments[postId] = [];
+        state.comments[postId].push(comment);
+      }
+
+      function buildComment(c) {
+        var el = document.createElement("div");
+        el.className = "comment comment--" + c.type;
+
+        var author = document.createElement("span");
+        author.className = "comment__author";
+        author.textContent = c.author;
+        el.appendChild(author);
+
+        el.appendChild(document.createTextNode(c.text));
+        return el;
+      }
+
+      // Handle a submitted user comment: store it, then generate an
+      // in-character reply and (sometimes) a narrator quip.
+      function submitComment(post, text, commentsEl) {
+        var userComment = { author: state.displayName, text: text, type: "user" };
+        addComment(post.id, userComment);
+        commentsEl.appendChild(buildComment(userComment));
+
+        var reply = getCharacterReply(post.character_id, text);
+        if (reply) {
+          var ch = getCharacter(post.character_id);
+          var charComment = {
+            author: ch ? ch.name : post.name,
+            text: reply,
+            type: "character"
+          };
+          addComment(post.id, charComment);
+          commentsEl.appendChild(buildComment(charComment));
+        }
+
+        // ~20% chance the narrator drops a dry line.
+        if (Math.random() < 0.2) {
+          var narratorComment = {
+            author: NARRATOR.name,
+            text: pickRandom(NARRATOR.replies),
+            type: "narrator"
+          };
+          addComment(post.id, narratorComment);
+          commentsEl.appendChild(buildComment(narratorComment));
+        }
+      }
+
+      // Keyword-match the comment against a character's REPLIES; fall back
+      // to a generic in-character line when nothing matches.
+      function getCharacterReply(charId, text) {
+        var entry = REPLIES[charId];
+        if (!entry) return null;
+
+        var lower = text.toLowerCase();
+        var keys = Object.keys(entry.keywords || {});
+        for (var i = 0; i < keys.length; i++) {
+          if (lower.indexOf(keys[i].toLowerCase()) !== -1) {
+            return pickRandom(entry.keywords[keys[i]]);
+          }
+        }
+        if (entry.fallback && entry.fallback.length) {
+          return pickRandom(entry.fallback);
+        }
+        return null;
+      }
+
+      function getCharacter(charId) {
+        var list = CHARACTERS[state.culture] || [];
+        for (var i = 0; i < list.length; i++) {
+          if (list[i].id === charId) return list[i];
+        }
+        return null;
+      }
+
+      function pickRandom(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
       }
 
       // Parse a post body for [word|translation|pronunciation] markers and
