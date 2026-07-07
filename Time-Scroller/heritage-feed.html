@@ -141,6 +141,141 @@
     .landing__message[hidden] {
       display: none;
     }
+
+    /* ---------- Shared ---------- */
+    .back-link {
+      display: inline-block;
+      background: none;
+      border: none;
+      font-family: inherit;
+      font-size: 15px;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 4px 0;
+    }
+
+    .back-link:hover {
+      color: var(--accent);
+    }
+
+    .back-link::before {
+      content: "← ";
+    }
+
+    /* ---------- Timeline ---------- */
+    .timeline {
+      padding: 24px 0 40px;
+    }
+
+    .timeline__head {
+      padding: 0 24px;
+    }
+
+    .timeline__title {
+      font-size: 26px;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+
+    .timeline__track {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 32px 24px 20px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+
+    .dot-wrap {
+      flex: 0 0 auto;
+      width: 84px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+    }
+
+    .dot {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      border: 2px solid var(--accent);
+      background: #fff;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.12s ease;
+    }
+
+    .dot-wrap--unlocked .dot:hover {
+      background: var(--accent);
+      color: #fff;
+      transform: scale(1.06);
+    }
+
+    .dot-wrap--locked .dot {
+      border-color: rgba(107, 107, 107, 0.4);
+      color: rgba(107, 107, 107, 0.75);
+      background: rgba(107, 107, 107, 0.06);
+      cursor: pointer;
+    }
+
+    .dot__year {
+      margin-top: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .dot-wrap--locked .dot__year {
+      color: var(--muted);
+    }
+
+    .dot__era {
+      margin-top: 2px;
+      font-size: 12px;
+      line-height: 1.3;
+      color: var(--muted);
+    }
+
+    .dot__lock {
+      font-size: 12px;
+    }
+
+    .dot__tooltip {
+      position: absolute;
+      bottom: calc(100% - 2px);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 150px;
+      background: var(--text);
+      color: #fff;
+      font-size: 12px;
+      line-height: 1.35;
+      border-radius: 8px;
+      padding: 8px 10px;
+      z-index: 5;
+      box-shadow: 0 4px 14px rgba(26, 35, 50, 0.25);
+    }
+
+    .dot__tooltip::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: var(--text);
+    }
+
+    .dot__tooltip[hidden] {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -184,6 +319,8 @@
           selectPlaceholder: "Select…",
           begin: "Begin",
           comingSoonMessage: "This journey is coming soon. For now, try English → Polish.",
+          chooseWhereToBegin: "Choose where to begin",
+          lockedTooltip: "Complete the previous year to unlock",
           chooseLanguage: "Choose your language",
           chooseCulture: "Choose a heritage to explore",
           start: "Start",
@@ -207,6 +344,8 @@
           selectPlaceholder: "",
           begin: "",
           comingSoonMessage: "",
+          chooseWhereToBegin: "",
+          lockedTooltip: "",
           chooseLanguage: "",
           chooseCulture: "",
           start: "",
@@ -234,6 +373,23 @@
         be_es: false
       };
 
+      // Timeline entries keyed by culture code. Each entry is a pivotal
+      // year with a short era name. "present" is a special open-ended point.
+      var TIMELINE = {
+        pl: [
+          { year: 1795, label: "1795", era: "Third Partition" },
+          { year: 1830, label: "1830", era: "November Uprising" },
+          { year: 1863, label: "1863", era: "January Uprising" },
+          { year: 1918, label: "1918", era: "Independence" },
+          { year: 1939, label: "1939", era: "Invasion" },
+          { year: 1945, label: "1945", era: "Aftermath" },
+          { year: 1968, label: "1968", era: "March Unrest" },
+          { year: 1989, label: "1989", era: "Round Table" },
+          { year: 2004, label: "2004", era: "Into Europe" },
+          { year: "present", label: "Now", era: "Present Day" }
+        ]
+      };
+
       // ----------------------------------------------------------------
       // STATE
       // ----------------------------------------------------------------
@@ -243,7 +399,8 @@
       var state = {
         uiLang: "en",
         language: null,
-        culture: null
+        culture: null,
+        year: null
       };
 
       // Look up a UI string for the current interface language, falling
@@ -332,6 +489,7 @@
           if (CONTENT_AVAILABILITY[lang + "_" + culture]) {
             state.language = lang;
             state.culture = culture;
+            renderTimeline();
             showView("view-timeline");
           } else {
             message.textContent = t("comingSoonMessage");
@@ -341,6 +499,120 @@
 
         root.appendChild(wrap);
       }
+
+      // ----------------------------------------------------------------
+      // TIMELINE VIEW
+      // ----------------------------------------------------------------
+
+      function renderTimeline() {
+        var root = document.getElementById("view-timeline");
+        root.innerHTML = "";
+
+        var wrap = document.createElement("div");
+        wrap.className = "timeline";
+
+        var head = document.createElement("div");
+        head.className = "timeline__head";
+
+        // Back link to landing.
+        var back = document.createElement("button");
+        back.className = "back-link";
+        back.type = "button";
+        back.textContent = t("back");
+        back.addEventListener("click", function () {
+          showView("view-landing");
+        });
+        head.appendChild(back);
+
+        var title = document.createElement("h2");
+        title.className = "timeline__title";
+        title.textContent = t("chooseWhereToBegin");
+        head.appendChild(title);
+
+        wrap.appendChild(head);
+
+        // Horizontal scrollable row of year dots.
+        var track = document.createElement("div");
+        track.className = "timeline__track";
+
+        var years = TIMELINE[state.culture] || [];
+
+        years.forEach(function (entry, index) {
+          // For now only the first year is unlocked.
+          var unlocked = index === 0;
+          track.appendChild(buildDot(entry, unlocked));
+        });
+
+        wrap.appendChild(track);
+        root.appendChild(wrap);
+      }
+
+      // Build one timeline dot (year circle + labels + lock/tooltip).
+      function buildDot(entry, unlocked) {
+        var dotWrap = document.createElement("div");
+        dotWrap.className =
+          "dot-wrap " + (unlocked ? "dot-wrap--unlocked" : "dot-wrap--locked");
+
+        var dot = document.createElement("button");
+        dot.className = "dot";
+        dot.type = "button";
+
+        if (unlocked) {
+          dot.textContent = entry.label;
+        } else {
+          var lock = document.createElement("span");
+          lock.className = "dot__lock";
+          lock.textContent = "🔒";
+          dot.appendChild(lock);
+        }
+        dotWrap.appendChild(dot);
+
+        var year = document.createElement("div");
+        year.className = "dot__year";
+        year.textContent = entry.label;
+        dotWrap.appendChild(year);
+
+        var era = document.createElement("div");
+        era.className = "dot__era";
+        era.textContent = entry.era;
+        dotWrap.appendChild(era);
+
+        if (unlocked) {
+          dot.addEventListener("click", function () {
+            state.year = entry.year;
+            showView("view-feed");
+          });
+        } else {
+          // Locked years reveal a small tooltip on click.
+          var tip = document.createElement("div");
+          tip.className = "dot__tooltip";
+          tip.textContent = t("lockedTooltip");
+          tip.hidden = true;
+          dotWrap.appendChild(tip);
+
+          dot.addEventListener("click", function () {
+            hideAllTooltips();
+            tip.hidden = false;
+          });
+        }
+
+        return dotWrap;
+      }
+
+      // Hide every open timeline tooltip.
+      function hideAllTooltips() {
+        var tips = document.querySelectorAll(".dot__tooltip");
+        Array.prototype.forEach.call(tips, function (tip) {
+          tip.hidden = true;
+        });
+      }
+
+      // Dismiss tooltips when tapping elsewhere.
+      document.addEventListener("click", function (e) {
+        if (!e.target.closest || !e.target.closest(".dot-wrap--locked")) {
+          hideAllTooltips();
+        }
+      });
 
       // Build a labeled <select> with a disabled placeholder option.
       // Returns { field, select } so callers can wire change events.
