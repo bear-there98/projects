@@ -2031,8 +2031,35 @@ function SummaryView({ data, nav }) {
 }
 
 /* ————— Manage ————— */
+// Accordion pill-nav sections, in order. Tasks opens by default.
+const MANAGE_SECTIONS = [
+  ["tasks", "Tasks"],
+  ["categories", "Categories"],
+  ["rewards", "Rewards"],
+  ["exercises", "Exercise library"],
+  ["household", "Household"],
+  ["preferences", "Preferences"],
+  ["sharing", "Sharing"],
+  ["backup", "Backup"],
+];
+// Module-level so it keeps a stable identity across ManageView re-renders
+// (otherwise inputs inside an open section would lose focus on each keystroke).
+function AccSection({ id, title, openId, onToggle, children }) {
+  const open = openId === id;
+  return (
+    <div style={{ border: `1px solid ${LINE}`, borderRadius: R_CARD, background: "#FFFFFF", boxShadow: open ? SHADOW : "none" }}>
+      <button onClick={() => onToggle(open ? null : id)} aria-expanded={open} className="df-btn"
+        style={{ width: "100%", minHeight: 52, display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+        <span style={{ flex: 1, fontSize: 15.5, fontWeight: 700, color: INK }}>{title}</span>
+        <ChevronLeft size={18} color={INK_SOFT} style={{ transform: open ? "rotate(270deg)" : "rotate(180deg)", transition: "transform 200ms ease" }} />
+      </button>
+      {open && <div style={{ padding: "0 16px 18px" }}>{children}</div>}
+    </div>
+  );
+}
 function ManageView({ data, persist, nav, onSwitchProfile }) {
   const [editingId, setEditingId] = useState(null);
+  const [openSection, setOpenSection] = useState("tasks");
   const [addingCat, setAddingCat] = useState(false);
   const [newCat, setNewCat] = useState("");
   const [addingTask, setAddingTask] = useState(false);
@@ -2174,10 +2201,29 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
     persist({ ...data, categories: data.categories.filter((c) => c.id !== id), tasks: data.tasks.filter((t) => t.categoryId !== id) });
   };
 
+  const householdCat = data.categories.find((c) => c.name === "Household");
+  const householdTasks = householdCat ? data.tasks.filter((t) => t.categoryId === householdCat.id) : [];
+
+  // One task line: shows the inline editor when it's the task being edited.
+  const taskRow = (t) => editingId === t.id ? (
+    <TaskForm key={t.id} categories={data.categories} allTasks={data.tasks} initial={t} onSave={saveTask} onCancel={() => setEditingId(null)} whySeen={whySeen} onWhySeen={markWhySeen} library={library} mondayStart={weekStartsMonday(data)} />
+  ) : (
+    <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12, background: CARD, border: `1px solid ${LINE}` }}>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ fontWeight: 700, fontSize: 15.5 }}>{t.name}</span>
+        <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>{freqLabel(t.freq)}{t.note ? ` · ${t.note}` : ""}{(() => { const p = pairPartner(data, t, data.tasks); return p ? ` · paired with ${p.name}` : ""; })()}</span>
+      </span>
+      <button aria-label="Edit task" onClick={() => setEditingId(t.id)} style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 5 }}><Pencil size={15} /></button>
+      <button aria-label="Delete task" onClick={() => deleteTask(t.id)} style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 5 }}><Trash2 size={15} /></button>
+    </div>
+  );
+
+  const acc = { openId: openSection, onToggle: setOpenSection };
+
   return (
     <div style={{ minHeight: "100vh", background: BASE_BG }}>
       <div style={{ maxWidth: 520, margin: "0 auto", padding: "18px 20px 60px", boxSizing: "border-box" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
           <IconBtn label="Back to today" onClick={() => nav("today")}><ChevronLeft size={18} /></IconBtn>
           <div className="df-display" style={{ fontSize: 26, fontWeight: 500, flex: 1 }}>Manage</div>
           <GhostBtn onClick={onSwitchProfile} style={{ padding: "9px 14px", fontSize: 14 }}>
@@ -2185,95 +2231,76 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
           </GhostBtn>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          {data.categories.map((c) => {
-            const tasks = data.tasks.filter((t) => t.categoryId === c.id);
-            return (
-              <div key={c.id}>
-                <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 9 }}>
-                  <CatDot color={c.color} size={10} />
-                  <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, flex: 1 }}>{c.name}</span>
-                  <button aria-label={`Remove ${c.name}`} onClick={() => deleteCategory(c.id)}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 4 }}>
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {tasks.length === 0 && <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 2px 2px" }}>No tasks yet.</p>}
-                  {tasks.map((t) => editingId === t.id ? (
-                    <TaskForm key={t.id} categories={data.categories} allTasks={data.tasks} initial={t} onSave={saveTask} onCancel={() => setEditingId(null)} whySeen={whySeen} onWhySeen={markWhySeen} library={library} mondayStart={weekStartsMonday(data)} />
-                  ) : (
-                    <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 12, background: CARD, border: `1px solid ${LINE}` }}>
-                      <span style={{ flex: 1 }}>
-                        <span style={{ fontWeight: 700, fontSize: 15.5 }}>{t.name}</span>
-                        <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>{freqLabel(t.freq)}{t.note ? ` · ${t.note}` : ""}{(() => { const p = pairPartner(data, t, data.tasks); return p ? ` · paired with ${p.name}` : ""; })()}</span>
-                      </span>
-                      <button aria-label="Edit task" onClick={() => setEditingId(t.id)} style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 5 }}><Pencil size={15} /></button>
-                      <button aria-label="Delete task" onClick={() => deleteTask(t.id)} style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 5 }}><Trash2 size={15} /></button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-
-          {addingTask ? (
-            <TaskForm categories={data.categories} allTasks={data.tasks} onSave={saveTask} onCancel={() => setAddingTask(false)} whySeen={whySeen} onWhySeen={markWhySeen} library={library} mondayStart={weekStartsMonday(data)} />
-          ) : (
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <GhostBtn onClick={() => setAddingTask(true)}><Plus size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />Add task</GhostBtn>
-              <GhostBtn onClick={addWorkoutSplit}>Add home workout split</GhostBtn>
-              <GhostBtn onClick={addHouseholdBasics}>Add household basics</GhostBtn>
-            </div>
-          )}
-
-          {addingCat ? (
-            <div style={{ display: "flex", gap: 8 }}>
-              <TextInput placeholder="Category name" value={newCat} autoFocus onChange={(e) => setNewCat(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addCategory()} />
-              <PrimaryBtn disabled={!newCat.trim()} onClick={addCategory} style={{ padding: "10px 16px", fontSize: 15 }}>Add</PrimaryBtn>
-            </div>
-          ) : (
-            <button onClick={() => setAddingCat(true)} style={{ background: "none", border: "none", color: BRAND, fontSize: 14.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: 4, textAlign: "center" }}>
-              + Add a category
-            </button>
-          )}
-
-          <div style={{ marginTop: 6, paddingTop: 20, borderTop: `1px solid ${LINE}` }}>
-            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 12 }}>Preferences</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-              <span style={{ flex: 1, fontSize: 15.5, fontWeight: 700 }}>Week starts on</span>
-              <div style={{ display: "flex", gap: 5, background: CARD, border: `1px solid ${LINE}`, borderRadius: R_PILL, padding: 4 }}>
-                {[["mon", "Monday"], ["sun", "Sunday"]].map(([v, l]) => {
-                  const on = (data.settings?.weekStart || "mon") === v;
-                  return (
-                    <button key={v} onClick={() => setSetting({ weekStart: v })} className="df-btn"
-                      style={{ padding: "8px 14px", minHeight: 36, borderRadius: R_PILL, border: "none", fontSize: 13.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", background: on ? BRAND : "transparent", color: on ? "#FFFFFF" : INK_SOFT }}>
-                      {l}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-            <button onClick={toggleVacation} aria-pressed={!!(data.settings && data.settings.vacation)} className="df-btn"
-              style={{ width: "100%", minHeight: 44, display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
-              <span style={{ flex: 1 }}>
-                <span style={{ fontWeight: 700, fontSize: 15.5 }}>Vacation mode</span>
-                <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>Pause streaks, today's screen shows a calm break</span>
-              </span>
-              {(() => {
-                const on = !!(data.settings && data.settings.vacation);
-                return (
-                  <span style={{ width: 46, height: 27, borderRadius: 99, flexShrink: 0, background: on ? BRAND : "#C7CED4", position: "relative", transition: "background 200ms ease" }}>
-                    <span style={{ position: "absolute", top: 3, left: on ? 22 : 3, width: 21, height: 21, borderRadius: 99, background: "#fff", transition: "left 200ms ease" }} />
-                  </span>
-                );
-              })()}
-            </button>
+        {/* sticky pill nav */}
+        <div style={{ position: "sticky", top: 0, zIndex: 30, background: BASE_BG, margin: "0 -20px 14px", padding: "6px 0", borderBottom: `1px solid ${LINE}` }}>
+          <div style={{ display: "flex", gap: 6, overflowX: "auto", padding: "0 20px", WebkitOverflowScrolling: "touch" }}>
+            {MANAGE_SECTIONS.map(([id, label]) => (
+              <button key={id} onClick={() => setOpenSection(id)} className="df-btn"
+                style={{ whiteSpace: "nowrap", flexShrink: 0, minHeight: 40, padding: "8px 14px", borderRadius: R_PILL, border: `1px solid ${openSection === id ? BRAND : LINE}`, background: openSection === id ? BRAND : "#FFFFFF", color: openSection === id ? "#FFFFFF" : INK_SOFT, fontSize: 13.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
+                {label}
+              </button>
+            ))}
           </div>
+        </div>
 
-          <div style={{ marginTop: 6, paddingTop: 20, borderTop: `1px solid ${LINE}` }}>
-            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>Rewards</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <AccSection id="tasks" title="Tasks" {...acc}>
+            {data.categories.map((c) => {
+              const tasks = data.tasks.filter((t) => t.categoryId === c.id);
+              return (
+                <div key={c.id} style={{ marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 9 }}>
+                    <CatDot color={c.color} size={10} />
+                    <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, flex: 1 }}>{c.name}</span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {tasks.length === 0 && <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 2px 2px" }}>No tasks yet.</p>}
+                    {tasks.map(taskRow)}
+                  </div>
+                </div>
+              );
+            })}
+            {addingTask ? (
+              <TaskForm categories={data.categories} allTasks={data.tasks} onSave={saveTask} onCancel={() => setAddingTask(false)} whySeen={whySeen} onWhySeen={markWhySeen} library={library} mondayStart={weekStartsMonday(data)} />
+            ) : (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <GhostBtn onClick={() => setAddingTask(true)}><Plus size={16} style={{ verticalAlign: "-3px", marginRight: 6 }} />Add task</GhostBtn>
+                <GhostBtn onClick={addWorkoutSplit}>Add home workout split</GhostBtn>
+                <GhostBtn onClick={addHouseholdBasics}>Add household basics</GhostBtn>
+              </div>
+            )}
+          </AccSection>
+
+          <AccSection id="categories" title="Categories" {...acc}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {data.categories.map((c) => {
+                const n = data.tasks.filter((t) => t.categoryId === c.id).length;
+                return (
+                  <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, background: CARD, border: `1px solid ${LINE}` }}>
+                    <CatDot color={c.color} size={12} />
+                    <span style={{ flex: 1, fontSize: 15.5, fontWeight: 700 }}>{c.name}</span>
+                    <span style={{ fontSize: 13, color: INK_SOFT }}>{n} task{n === 1 ? "" : "s"}</span>
+                    <button aria-label={`Remove ${c.name}`} onClick={() => deleteCategory(c.id)} style={{ background: "none", border: "none", cursor: "pointer", color: INK_SOFT, padding: 5 }}><Trash2 size={15} /></button>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ marginTop: 10 }}>
+              {addingCat ? (
+                <div style={{ display: "flex", gap: 8 }}>
+                  <TextInput placeholder="Category name" value={newCat} autoFocus onChange={(e) => setNewCat(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && addCategory()} />
+                  <PrimaryBtn disabled={!newCat.trim()} onClick={addCategory} style={{ padding: "10px 16px", fontSize: 15 }}>Add</PrimaryBtn>
+                </div>
+              ) : (
+                <button onClick={() => setAddingCat(true)} style={{ background: "none", border: "none", color: BRAND, fontSize: 14.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: 4, textAlign: "left" }}>
+                  + Add a category
+                </button>
+              )}
+            </div>
+          </AccSection>
+
+          <AccSection id="rewards" title="Rewards" {...acc}>
             <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 12px" }}>Earn a point for each task you finish, then redeem points for these.</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {(data.rewards || []).map((r) => (
@@ -2297,10 +2324,9 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
                 <PrimaryBtn disabled={!newRewardName.trim() || !(Number(newRewardCost) > 0)} onClick={addReward} style={{ padding: "10px 16px", fontSize: 15 }}>Add</PrimaryBtn>
               </div>
             </div>
-          </div>
+          </AccSection>
 
-          <div style={{ marginTop: 6, paddingTop: 20, borderTop: `1px solid ${LINE}` }}>
-            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>Exercise library</div>
+          <AccSection id="exercises" title="Exercise library" {...acc}>
             <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 12px" }}>Edit reps and cues, add your own, or reset any built-in exercise to its default.</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {[...BODY_PARTS.filter((bp) => library.some((e) => e.bodyPart === bp)), ...[...new Set(library.map((e) => e.bodyPart))].filter((bp) => !BODY_PARTS.includes(bp))].map((bp) => (
@@ -2360,10 +2386,57 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
               </div>
               <div><PrimaryBtn disabled={!newExName.trim()} onClick={addExercise} style={{ padding: "10px 16px", fontSize: 15 }}>Add exercise</PrimaryBtn></div>
             </div>
-          </div>
+          </AccSection>
 
-          <div style={{ marginTop: 6, paddingTop: 20, borderTop: `1px solid ${LINE}` }}>
-            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>Sharing</div>
+          <AccSection id="household" title="Household" {...acc}>
+            <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 12px" }}>Preset weekly chores you can drop in, then edit to fit your home.</p>
+            <div style={{ marginBottom: 14 }}>
+              <GhostBtn onClick={addHouseholdBasics}>Add household basics</GhostBtn>
+            </div>
+            {householdCat ? (
+              householdTasks.length ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{householdTasks.map(taskRow)}</div>
+              ) : (
+                <p style={{ fontSize: 14, color: INK_SOFT, margin: 0 }}>No household tasks yet. Add the basics above, or add one in the Tasks section.</p>
+              )
+            ) : (
+              <p style={{ fontSize: 14, color: INK_SOFT, margin: 0 }}>No Household area yet. "Add household basics" will create one for you.</p>
+            )}
+          </AccSection>
+
+          <AccSection id="preferences" title="Preferences" {...acc}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+              <span style={{ flex: 1, fontSize: 15.5, fontWeight: 700 }}>Week starts on</span>
+              <div style={{ display: "flex", gap: 5, background: CARD, border: `1px solid ${LINE}`, borderRadius: R_PILL, padding: 4 }}>
+                {[["mon", "Monday"], ["sun", "Sunday"]].map(([v, l]) => {
+                  const on = (data.settings?.weekStart || "mon") === v;
+                  return (
+                    <button key={v} onClick={() => setSetting({ weekStart: v })} className="df-btn"
+                      style={{ padding: "8px 14px", minHeight: 36, borderRadius: R_PILL, border: "none", fontSize: 13.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", background: on ? BRAND : "transparent", color: on ? "#FFFFFF" : INK_SOFT }}>
+                      {l}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <button onClick={toggleVacation} aria-pressed={!!(data.settings && data.settings.vacation)} className="df-btn"
+              style={{ width: "100%", minHeight: 44, display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+              <span style={{ flex: 1 }}>
+                <span style={{ fontWeight: 700, fontSize: 15.5 }}>Vacation mode</span>
+                <span style={{ display: "block", fontSize: 13, color: INK_SOFT }}>Pause streaks, today's screen shows a calm break</span>
+              </span>
+              {(() => {
+                const on = !!(data.settings && data.settings.vacation);
+                return (
+                  <span style={{ width: 46, height: 27, borderRadius: 99, flexShrink: 0, background: on ? BRAND : "#C7CED4", position: "relative", transition: "background 200ms ease" }}>
+                    <span style={{ position: "absolute", top: 3, left: on ? 22 : 3, width: 21, height: 21, borderRadius: 99, background: "#fff", transition: "left 200ms ease" }} />
+                  </span>
+                );
+              })()}
+            </button>
+          </AccSection>
+
+          <AccSection id="sharing" title="Sharing" {...acc}>
             <button onClick={() => persist({ ...data, settings: { ...(data.settings || {}), shareActivity: !(data.settings && data.settings.shareActivity) } })} className="df-btn"
               style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
               <span style={{ flex: 1 }}>
@@ -2382,10 +2455,9 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
             <p style={{ fontSize: 12.5, color: INK_SOFT, margin: "10px 2px 0", lineHeight: 1.5 }}>
               When on, each task you finish is posted to a feed <strong>visible to all users of this artifact</strong>, with your token, the task name, its category, and the time. Skip reasons and notes are never shared. Default is off.
             </p>
-          </div>
+          </AccSection>
 
-          <div style={{ marginTop: 6, paddingTop: 20, borderTop: `1px solid ${LINE}` }}>
-            <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 8 }}>Backup</div>
+          <AccSection id="backup" title="Backup" {...acc}>
             <p style={{ fontSize: 14, color: INK_SOFT, margin: "0 0 12px" }}>Save this profile to a file, or restore it from a backup.</p>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <GhostBtn onClick={exportProfile} style={{ padding: "11px 16px", fontSize: 15 }}>Export JSON</GhostBtn>
@@ -2393,7 +2465,7 @@ function ManageView({ data, persist, nav, onSwitchProfile }) {
               <input ref={fileRef} type="file" accept="application/json,.json" onChange={importProfile} style={{ display: "none" }} />
             </div>
             {ioMsg && <p style={{ fontSize: 13.5, color: INK_SOFT, margin: "10px 2px 0" }}>{ioMsg}</p>}
-          </div>
+          </AccSection>
         </div>
       </div>
     </div>
@@ -2420,7 +2492,7 @@ function DayDot({ kind }) {
   return <span style={{ width: 9, height: 9, borderRadius: 99, background: CAL_COLORS[kind] || LINE }} />;
 }
 
-function CalendarView({ data, nav }) {
+function CalendarView({ data, persist, nav }) {
   const [monthOffset, setMonthOffset] = useState(0);
   const [selected, setSelected] = useState(null);
   const today = todayKey();
@@ -2491,14 +2563,29 @@ function CalendarView({ data, nav }) {
       </div>
 
       {selected && (
-        <DayDetailSheet data={data} dateStr={selected} onClose={() => setSelected(null)} />
+        <DayDetailSheet data={data} persist={persist} dateStr={selected} onClose={() => setSelected(null)} />
       )}
     </div>
   );
 }
 
-// Read-only recap of a single day: what was scheduled and how it went.
-function DayDetailSheet({ data, dateStr, onClose }) {
+// Most-recently-completed task per id across history (name kept for removed tasks).
+function recentCompletedNames(data) {
+  const seen = new Map(); // taskId -> { name, at }
+  const h = (data && data.history) || {};
+  for (const k in h) for (const e of h[k]) {
+    if (!e || e.status !== "done" || !e.taskId) continue;
+    const name = e.name || ((data.tasks.find((t) => t.id === e.taskId) || {}).name);
+    if (!name) continue;
+    const prev = seen.get(e.taskId);
+    if (!prev || (e.at || 0) > prev.at) seen.set(e.taskId, { name, at: e.at || 0 });
+  }
+  return [...seen.entries()].map(([taskId, v]) => ({ taskId, name: v.name, at: v.at })).sort((a, b) => b.at - a.at);
+}
+
+// Editable recap of a single day: log/undo each task, or add something you did.
+function DayDetailSheet({ data, persist, dateStr, onClose }) {
+  const [query, setQuery] = useState("");
   const sched = scheduledTasks(data, dateStr);
   const entries = entriesFor(data, dateStr);
   const schedIds = new Set(sched.map((t) => t.id));
@@ -2508,20 +2595,45 @@ function DayDetailSheet({ data, dateStr, onClose }) {
     if (!e.taskId) return; // skip non-task entries (e.g. reward redemptions)
     if (!schedIds.has(e.taskId)) {
       const task = data.tasks.find((t) => t.id === e.taskId);
-      rows.push({ task: task || { id: e.taskId, name: "(removed task)", categoryId: null }, entry: e });
+      rows.push({ task: task || { id: e.taskId, name: e.name || "(removed task)", categoryId: null }, entry: e });
     }
   });
   const d = new Date(dateStr + "T12:00:00");
   const heading = d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  const isPast = dateStr < todayKey();
+
+  const patchHistory = (nextEntries) => {
+    const history = { ...(data.history || {}) };
+    if (nextEntries.length) history[dateStr] = nextEntries; else delete history[dateStr];
+    persist({ ...data, history });
+  };
+  const addEntry = (taskId, name, status) => {
+    const e = { taskId, status, at: Date.now(), ...(name ? { name } : {}), ...(status === "done" && isPast ? { late: true } : {}) };
+    patchHistory([...entriesFor(data, dateStr), e]);
+  };
+  const removeEntry = (entry) => patchHistory(entriesFor(data, dateStr).filter((x) => x !== entry));
+
+  // "Add something you did": current tasks + recently completed (incl. removed),
+  // minus anything already shown as a row for this day.
+  const rowIds = new Set(rows.map((r) => r.task.id));
+  const candidates = [];
+  const seenIds = new Set();
+  data.tasks.forEach((t) => { if (!rowIds.has(t.id)) { candidates.push({ taskId: t.id, name: t.name, categoryId: t.categoryId }); seenIds.add(t.id); } });
+  recentCompletedNames(data).forEach((r) => {
+    if (rowIds.has(r.taskId) || seenIds.has(r.taskId)) return;
+    candidates.push({ taskId: r.taskId, name: r.name, categoryId: null }); seenIds.add(r.taskId);
+  });
+  const q = query.trim().toLowerCase();
+  const matches = candidates.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 40);
 
   return (
-    <Sheet onClose={onClose} label={heading} maxHeight="72vh">
+    <Sheet onClose={onClose} label={heading} maxHeight="82vh">
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <span className="df-display" style={{ fontSize: 21, fontWeight: 500 }}>{heading}</span>
           <IconBtn label="Close" onClick={onClose}><X size={18} /></IconBtn>
         </div>
         {rows.length === 0 ? (
-          <p style={{ fontSize: 15, color: INK_SOFT, margin: "4px 2px" }}>Nothing was scheduled this day.</p>
+          <p style={{ fontSize: 15, color: INK_SOFT, margin: "4px 2px 0" }}>Nothing was scheduled this day.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {rows.map(({ task, entry }, i) => {
@@ -2531,18 +2643,54 @@ function DayDetailSheet({ data, dateStr, onClose }) {
               const label = done ? (entry.late ? "Done (late)" : "Done") : skipped ? `Skipped${entry.reason ? ` · ${entry.reason}` : ""}` : "Not done";
               const color = done ? CAL_COLORS.all : skipped ? CAL_COLORS.skips : INK_SOFT;
               return (
-                <div key={task.id + "-" + i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff" }}>
+                <div key={task.id + "-" + i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff" }}>
                   <CatDot color={(c && c.color) || INK_SOFT} />
-                  <span style={{ flex: 1 }}>
-                    <span style={{ fontWeight: 700, fontSize: 15.5, textDecoration: done ? "none" : skipped ? "none" : "none" }}>{task.name}</span>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ fontWeight: 700, fontSize: 15.5 }}>{task.name}</span>
                     <span style={{ display: "block", fontSize: 13, color, fontWeight: 600 }}>{label}</span>
                   </span>
-                  {done && <Check size={16} color={CAL_COLORS.all} />}
+                  {entry ? (
+                    <button onClick={() => removeEntry(entry)} className="df-btn"
+                      style={{ flexShrink: 0, minHeight: 36, padding: "7px 14px", borderRadius: R_PILL, border: `1px solid ${LINE}`, background: "#fff", color: INK, fontSize: 13.5, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
+                      Undo
+                    </button>
+                  ) : (
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      <button onClick={() => addEntry(task.id, task.name, "done")} className="df-btn"
+                        style={{ minHeight: 36, padding: "7px 12px", borderRadius: R_PILL, border: "none", background: BRAND, color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: "inherit", cursor: "pointer", whiteSpace: "nowrap" }}>
+                        {isPast ? "Done (late)" : "Done"}
+                      </button>
+                      <button onClick={() => addEntry(task.id, task.name, "skipped")} className="df-btn"
+                        style={{ minHeight: 36, padding: "7px 12px", borderRadius: R_PILL, border: `1px solid ${LINE}`, background: "#fff", color: INK_SOFT, fontSize: 13, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}>
+                        Skip
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         )}
+
+        <div style={{ marginTop: 18, paddingTop: 16, borderTop: `1px solid ${LINE}` }}>
+          <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: INK_SOFT, marginBottom: 10 }}>Add something you did</div>
+          <TextInput placeholder="Search your tasks…" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10, maxHeight: 240, overflowY: "auto" }}>
+            {matches.length === 0 ? (
+              <p style={{ fontSize: 14, color: INK_SOFT, margin: "2px 2px" }}>{candidates.length ? "No matches." : "Everything is already listed above."}</p>
+            ) : matches.map((cand) => {
+              const c = cand.categoryId && data.categories.find((x) => x.id === cand.categoryId);
+              return (
+                <button key={cand.taskId} onClick={() => { addEntry(cand.taskId, cand.name, "done"); setQuery(""); }} className="df-btn"
+                  style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 44, padding: "10px 14px", borderRadius: 12, border: `1px solid ${LINE}`, background: "#fff", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                  <CatDot color={(c && c.color) || INK_SOFT} />
+                  <span style={{ flex: 1, fontSize: 15, fontWeight: 600 }}>{cand.name}</span>
+                  <Plus size={16} color={BRAND} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
     </Sheet>
   );
 }
@@ -2654,7 +2802,7 @@ function DailyFlow() {
       {view === "profiles" && <ProfilesView profiles={profiles} onOpen={openProfile} onCreate={createProfile} />}
       {view === "setup" && pendingProfile && <SetupView profileName={pendingProfile.name} onFinish={finishSetup} />}
       {view === "today" && data && <TodayView data={data} persist={persist} nav={setView} profileId={activeId} token={activeToken} />}
-      {view === "calendar" && data && <CalendarView data={data} nav={setView} />}
+      {view === "calendar" && data && <CalendarView data={data} persist={persist} nav={setView} />}
       {view === "feed" && data && <FeedView nav={setView} />}
       {view === "summary" && data && <SummaryView data={data} nav={setView} />}
       {view === "manage" && data && <ManageView data={data} persist={persist} nav={setView} onSwitchProfile={switchProfile} />}
