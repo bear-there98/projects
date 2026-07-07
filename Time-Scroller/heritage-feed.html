@@ -399,8 +399,80 @@
     .heritage-word {
       font-style: italic;
       color: var(--accent);
-      border-bottom: 1px dashed rgba(160, 74, 47, 0.5);
+      border-bottom: 1px dotted rgba(160, 74, 47, 0.7);
       cursor: pointer;
+    }
+
+    .heritage-word:hover {
+      background: rgba(160, 74, 47, 0.08);
+    }
+
+    /* ---------- Word bottom sheet ---------- */
+    .sheet-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(26, 35, 50, 0.35);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .sheet {
+      width: 100%;
+      max-width: 600px;
+      background: #fff;
+      border-radius: 18px 18px 0 0;
+      padding: 26px 24px 32px;
+      box-shadow: 0 -6px 24px rgba(26, 35, 50, 0.22);
+      animation: sheet-up 0.2s ease;
+    }
+
+    @keyframes sheet-up {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .sheet__word {
+      font-size: 30px;
+      font-weight: 700;
+      font-style: italic;
+      color: var(--accent);
+      line-height: 1.2;
+    }
+
+    .sheet__translation {
+      font-size: 19px;
+      margin-top: 8px;
+    }
+
+    .sheet__pron {
+      font-size: 15px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .sheet__save {
+      margin-top: 22px;
+      width: 100%;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--accent);
+      background: rgba(160, 74, 47, 0.08);
+      border: 1px solid rgba(160, 74, 47, 0.35);
+      border-radius: 10px;
+      padding: 13px 18px;
+      cursor: pointer;
+    }
+
+    .sheet__save:hover {
+      background: rgba(160, 74, 47, 0.14);
+    }
+
+    .sheet__save:disabled {
+      cursor: default;
+      opacity: 0.75;
     }
 
     .post__actions {
@@ -473,6 +545,8 @@
           like: "Like",
           save: "Save",
           comment: "Comment",
+          saveToNotebook: "Save to my notebook",
+          savedToNotebook: "Saved ✓",
           chooseLanguage: "Choose your language",
           chooseCulture: "Choose a heritage to explore",
           start: "Start",
@@ -502,6 +576,8 @@
           like: "",
           save: "",
           comment: "",
+          saveToNotebook: "",
+          savedToNotebook: "",
           chooseLanguage: "",
           chooseCulture: "",
           start: "",
@@ -643,30 +719,27 @@
           name: "Marek Kowalczyk",
           role: "farmer",
           initials: "MK",
-          body: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. " +
-            "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-          image: null,
-          heritageWords: ["dom", "ziemia"]
+          body: "The [żniwa|harvest|zhnee-vah] is late this year. Lorem ipsum " +
+            "dolor sit amet, and still no [deszcz|rain|deshch] over the fields.",
+          image: null
         },
         {
           id: "p2",
           name: "Zofia Wiśniewska",
           role: "seamstress",
           initials: "ZW",
-          body: "Ut enim ad minim veniam, quis nostrud exercitation ullamco " +
-            "laboris nisi ut aliquip ex ea commodo consequat.",
-          image: null,
-          heritageWords: ["igła", "nić"]
+          body: "Ut enim ad minim veniam. My hands remember every " +
+            "[igła|needle|eeg-wah] and every thread I have ever pulled.",
+          image: null
         },
         {
           id: "p3",
           name: "Jan Nowak",
           role: "schoolteacher",
           initials: "JN",
-          body: "Duis aute irure dolor in reprehenderit in voluptate velit " +
-            "esse cillum dolore eu fugiat nulla pariatur.",
-          image: null,
-          heritageWords: ["szkoła", "wolność"]
+          body: "Duis aute irure dolor. The children asked me today what " +
+            "[wolność|freedom|vol-noshch] means, and I had no simple answer.",
+          image: null
         }
       ];
 
@@ -981,27 +1054,16 @@
         head.appendChild(ident);
         card.appendChild(head);
 
-        // Body.
+        // Body — parsed for inline heritage-word markers.
         var body = document.createElement("p");
         body.className = "post__body";
-        body.textContent = post.body;
+        renderBody(post.body, body);
         card.appendChild(body);
 
         // Optional image slot — left empty for now.
         var image = document.createElement("div");
         image.className = "post__image";
         card.appendChild(image);
-
-        // Heritage-language words slot — styled, not yet interactive.
-        var heritage = document.createElement("div");
-        heritage.className = "post__heritage";
-        (post.heritageWords || []).forEach(function (word) {
-          var span = document.createElement("span");
-          span.className = "heritage-word";
-          span.textContent = word;
-          heritage.appendChild(span);
-        });
-        card.appendChild(heritage);
 
         // Actions: like, comment, save (icons only).
         var actions = document.createElement("div");
@@ -1021,6 +1083,103 @@
         card.appendChild(actions);
 
         return card;
+      }
+
+      // Parse a post body for [word|translation|pronunciation] markers and
+      // render plain text as text, markers as clickable heritage words.
+      var HERITAGE_MARKER = /\[([^\]|]+)\|([^\]|]+)\|([^\]]+)\]/g;
+
+      function renderBody(text, container) {
+        HERITAGE_MARKER.lastIndex = 0;
+        var lastIndex = 0;
+        var match;
+
+        while ((match = HERITAGE_MARKER.exec(text)) !== null) {
+          // Plain text before this marker.
+          if (match.index > lastIndex) {
+            container.appendChild(
+              document.createTextNode(text.slice(lastIndex, match.index))
+            );
+          }
+
+          var word = match[1];
+          var translation = match[2];
+          var pronunciation = match[3];
+
+          var span = document.createElement("span");
+          span.className = "heritage-word";
+          span.textContent = word;
+          span.addEventListener("click", function (w, tr, pr) {
+            return function (e) {
+              e.stopPropagation();
+              openWordSheet(w, tr, pr);
+            };
+          }(word, translation, pronunciation));
+          container.appendChild(span);
+
+          lastIndex = HERITAGE_MARKER.lastIndex;
+        }
+
+        // Trailing plain text.
+        if (lastIndex < text.length) {
+          container.appendChild(document.createTextNode(text.slice(lastIndex)));
+        }
+      }
+
+      // ---- Word bottom sheet ----
+      var activeSheet = null;
+
+      function closeWordSheet() {
+        if (activeSheet) {
+          activeSheet.remove();
+          activeSheet = null;
+        }
+      }
+
+      function openWordSheet(word, translation, pronunciation) {
+        closeWordSheet();
+
+        var backdrop = document.createElement("div");
+        backdrop.className = "sheet-backdrop";
+        // Outside click (on the backdrop) closes the sheet.
+        backdrop.addEventListener("click", closeWordSheet);
+
+        var sheet = document.createElement("div");
+        sheet.className = "sheet";
+        // Clicks inside the sheet must not close it.
+        sheet.addEventListener("click", function (e) {
+          e.stopPropagation();
+        });
+
+        var wordEl = document.createElement("div");
+        wordEl.className = "sheet__word";
+        wordEl.textContent = word;
+        sheet.appendChild(wordEl);
+
+        var transEl = document.createElement("div");
+        transEl.className = "sheet__translation";
+        transEl.textContent = translation;
+        sheet.appendChild(transEl);
+
+        var pronEl = document.createElement("div");
+        pronEl.className = "sheet__pron";
+        pronEl.textContent = pronunciation;
+        sheet.appendChild(pronEl);
+
+        var save = document.createElement("button");
+        save.className = "sheet__save";
+        save.type = "button";
+        save.textContent = t("saveToNotebook");
+        // Notebook persistence is a later feature; give light feedback for now.
+        save.addEventListener("click", function () {
+          save.textContent = t("savedToNotebook");
+          save.disabled = true;
+        });
+        sheet.appendChild(save);
+
+        backdrop.appendChild(sheet);
+        document.body.appendChild(backdrop);
+        activeSheet = backdrop;
       }
 
       // Build a labeled <select> with a disabled placeholder option.
