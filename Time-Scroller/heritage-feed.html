@@ -304,6 +304,27 @@
       color: var(--accent);
     }
 
+    .feed__profile {
+      flex: 0 0 auto;
+      background: none;
+      border: none;
+      color: var(--text);
+      cursor: pointer;
+      padding: 4px 6px;
+      display: flex;
+      align-items: center;
+    }
+
+    .feed__profile svg {
+      width: 24px;
+      height: 24px;
+      display: block;
+    }
+
+    .feed__profile:hover {
+      color: var(--accent);
+    }
+
     .feed__meta {
       flex: 1;
       min-width: 0;
@@ -689,6 +710,170 @@
     .year-complete__btn:hover {
       background: #8a3f28;
     }
+
+    /* ---------- Profile ---------- */
+    .profile {
+      padding: 20px 20px 48px;
+    }
+
+    .profile__head {
+      margin-bottom: 8px;
+    }
+
+    .profile__title {
+      font-size: 26px;
+      font-weight: 700;
+      margin-top: 6px;
+    }
+
+    .profile__section {
+      margin-top: 26px;
+    }
+
+    .profile__label {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .profile__name-input {
+      width: 100%;
+      font-family: inherit;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      background: #fff;
+      border: 1px solid rgba(26, 35, 50, 0.18);
+      border-radius: 10px;
+      padding: 11px 14px;
+    }
+
+    .profile__name-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .profile__journey {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .profile__stats {
+      margin-top: 26px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .stat {
+      background: #fff;
+      border: 1px solid rgba(26, 35, 50, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat__num {
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1.1;
+    }
+
+    .stat__label {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .profile__heading {
+      font-size: 19px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .profile__empty {
+      font-size: 15px;
+      color: var(--muted);
+    }
+
+    .nb-item {
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(26, 35, 50, 0.08);
+    }
+
+    .nb-item:last-child {
+      border-bottom: none;
+    }
+
+    .nb-item__word {
+      font-style: italic;
+      font-weight: 700;
+      color: var(--accent);
+      font-size: 17px;
+    }
+
+    .nb-item__trans {
+      font-size: 16px;
+    }
+
+    .nb-item__from {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .saved-post {
+      background: #fff;
+      border: 1px solid rgba(26, 35, 50, 0.08);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+
+    .saved-post__name {
+      font-weight: 700;
+    }
+
+    .saved-post__snip {
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .profile__change-section {
+      margin-top: 34px;
+      border-top: 1px solid rgba(26, 35, 50, 0.1);
+      padding-top: 24px;
+    }
+
+    .profile__change {
+      width: 100%;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--accent);
+      background: none;
+      border: 1px solid rgba(160, 74, 47, 0.5);
+      border-radius: 10px;
+      padding: 13px 18px;
+      cursor: pointer;
+    }
+
+    .profile__change:hover {
+      background: rgba(160, 74, 47, 0.08);
+    }
+
+    .profile__warn {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 10px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -696,6 +881,7 @@
     <div id="view-landing" class="view active"></div>
     <div id="view-timeline" class="view"></div>
     <div id="view-feed" class="view"></div>
+    <div id="view-profile" class="view"></div>
   </div>
 
   <script>
@@ -737,6 +923,21 @@
           postsRead: "posts read",
           yearComplete: "Year complete",
           continueJourney: "Continue the journey",
+          profile: "Profile",
+          displayNameLabel: "Display name",
+          journeyLabel: "Your journey",
+          speaksExplores: "{lang} exploring {culture}",
+          yearsUnlocked: "Years unlocked",
+          postsReadStat: "Posts read",
+          quizzesPassedStat: "Quizzes passed",
+          wordsSavedStat: "Words saved",
+          myNotebook: "My Notebook",
+          notebookEmpty: "No words saved yet. Tap an underlined word in the feed to save it.",
+          fromPost: "from {name}",
+          savedPosts: "Saved Posts",
+          savedPostsEmpty: "No saved posts yet. Tap the bookmark on a post to save it.",
+          changeJourney: "Change journey",
+          changeJourneyWarning: "Your progress in this journey is preserved. You'll start a new parallel journey.",
           like: "Like",
           save: "Save",
           comment: "Comment",
@@ -774,6 +975,21 @@
           postsRead: "",
           yearComplete: "",
           continueJourney: "",
+          profile: "",
+          displayNameLabel: "",
+          journeyLabel: "",
+          speaksExplores: "",
+          yearsUnlocked: "",
+          postsReadStat: "",
+          quizzesPassedStat: "",
+          wordsSavedStat: "",
+          myNotebook: "",
+          notebookEmpty: "",
+          fromPost: "",
+          savedPosts: "",
+          savedPostsEmpty: "",
+          changeJourney: "",
+          changeJourneyWarning: "",
           like: "",
           save: "",
           comment: "",
@@ -1255,6 +1471,8 @@
         liked: {},
         saved: {},
         comments: {},
+        // Saved heritage words: { word, translation, pronunciation, postId, postName, culture }
+        notebook: [],
         // Per-year progress keyed by "culture_year":
         //   { read: { postId: true }, quizzesPassed: 0 }
         progress: {},
@@ -1271,11 +1489,34 @@
         return set[key] || UI_STRINGS.en[key] || "";
       }
 
+      // Like t(), but substitutes {placeholder} tokens from params.
+      function tf(key, params) {
+        var s = t(key);
+        Object.keys(params || {}).forEach(function (k) {
+          s = s.replace("{" + k + "}", params[k]);
+        });
+        return s;
+      }
+
+      function languageLabel(code) {
+        for (var i = 0; i < LANGUAGES.length; i++) {
+          if (LANGUAGES[i].code === code) return LANGUAGES[i].label;
+        }
+        return code || "";
+      }
+
+      function cultureLabel(code) {
+        for (var i = 0; i < CULTURES.length; i++) {
+          if (CULTURES[i].code === code) return CULTURES[i].label;
+        }
+        return code || "";
+      }
+
       // ----------------------------------------------------------------
       // VIEW ROUTING
       // ----------------------------------------------------------------
 
-      var views = ["view-landing", "view-timeline", "view-feed"];
+      var views = ["view-landing", "view-timeline", "view-feed", "view-profile"];
 
       function showView(id) {
         views.forEach(function (viewId) {
@@ -1547,6 +1788,23 @@
         updateProgressIndicator();
 
         bar.appendChild(meta);
+
+        // Profile icon (top corner).
+        var profileBtn = document.createElement("button");
+        profileBtn.className = "feed__profile";
+        profileBtn.type = "button";
+        profileBtn.setAttribute("aria-label", t("profile"));
+        profileBtn.innerHTML =
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+          'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+          '<circle cx="12" cy="8" r="4"/>' +
+          '<path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg>';
+        profileBtn.addEventListener("click", function () {
+          renderProfile();
+          showView("view-profile");
+        });
+        bar.appendChild(profileBtn);
+
         root.appendChild(bar);
 
         // ---- Vertical scrolling feed ----
@@ -1823,6 +2081,222 @@
         checkYearComplete();
       }
 
+      // ----------------------------------------------------------------
+      // PROFILE VIEW
+      // ----------------------------------------------------------------
+
+      // Aggregate progress for the current culture's journey.
+      function journeyStats() {
+        var prefix = state.culture + "_";
+        var postsRead = 0;
+        var quizzesPassed = 0;
+        Object.keys(state.progress).forEach(function (k) {
+          if (k.indexOf(prefix) === 0) {
+            var rec = state.progress[k];
+            postsRead += Object.keys(rec.read || {}).length;
+            quizzesPassed += rec.quizzesPassed || 0;
+          }
+        });
+        return {
+          yearsUnlocked: Object.keys(state.unlockedYears[state.culture] || {}).length,
+          postsRead: postsRead,
+          quizzesPassed: quizzesPassed,
+          wordsSaved: state.notebook.length
+        };
+      }
+
+      function profileEmptyNote(text) {
+        var p = document.createElement("p");
+        p.className = "profile__empty";
+        p.textContent = text;
+        return p;
+      }
+
+      // Strip heritage markers to plain text and trim to a short snippet.
+      function plainSnippet(text) {
+        var plain = text.replace(HERITAGE_MARKER, function (m, w) { return w; });
+        HERITAGE_MARKER.lastIndex = 0;
+        return plain.length > 90 ? plain.slice(0, 90).trim() + "…" : plain;
+      }
+
+      function renderProfile() {
+        var root = document.getElementById("view-profile");
+        root.innerHTML = "";
+
+        var wrap = document.createElement("div");
+        wrap.className = "profile";
+
+        // Header with back to feed.
+        var head = document.createElement("div");
+        head.className = "profile__head";
+
+        var back = document.createElement("button");
+        back.className = "back-link";
+        back.type = "button";
+        back.textContent = t("back");
+        back.addEventListener("click", function () {
+          showView("view-feed");
+        });
+        head.appendChild(back);
+
+        var title = document.createElement("h2");
+        title.className = "profile__title";
+        title.textContent = t("profile");
+        head.appendChild(title);
+        wrap.appendChild(head);
+
+        // Display name (editable).
+        var nameSection = document.createElement("div");
+        nameSection.className = "profile__section";
+
+        var nameLabel = document.createElement("label");
+        nameLabel.className = "profile__label";
+        nameLabel.textContent = t("displayNameLabel");
+        nameSection.appendChild(nameLabel);
+
+        var nameInput = document.createElement("input");
+        nameInput.className = "profile__name-input";
+        nameInput.type = "text";
+        nameInput.value = state.displayName;
+        nameInput.setAttribute("maxlength", "24");
+        nameInput.addEventListener("input", function () {
+          var v = nameInput.value.trim();
+          state.displayName = v || "you";
+        });
+        nameSection.appendChild(nameInput);
+        wrap.appendChild(nameSection);
+
+        // Journey (native language + culture).
+        var journey = document.createElement("div");
+        journey.className = "profile__section";
+
+        var jLabel = document.createElement("div");
+        jLabel.className = "profile__label";
+        jLabel.textContent = t("journeyLabel");
+        journey.appendChild(jLabel);
+
+        var jVal = document.createElement("div");
+        jVal.className = "profile__journey";
+        jVal.textContent = tf("speaksExplores", {
+          lang: languageLabel(state.language),
+          culture: cultureLabel(state.culture)
+        });
+        journey.appendChild(jVal);
+        wrap.appendChild(journey);
+
+        // Progress summary.
+        var stats = journeyStats();
+        var grid = document.createElement("div");
+        grid.className = "profile__stats";
+        [
+          { n: stats.yearsUnlocked, label: t("yearsUnlocked") },
+          { n: stats.postsRead, label: t("postsReadStat") },
+          { n: stats.quizzesPassed, label: t("quizzesPassedStat") },
+          { n: stats.wordsSaved, label: t("wordsSavedStat") }
+        ].forEach(function (s) {
+          var cell = document.createElement("div");
+          cell.className = "stat";
+          var num = document.createElement("div");
+          num.className = "stat__num";
+          num.textContent = s.n;
+          cell.appendChild(num);
+          var lab = document.createElement("div");
+          lab.className = "stat__label";
+          lab.textContent = s.label;
+          cell.appendChild(lab);
+          grid.appendChild(cell);
+        });
+        wrap.appendChild(grid);
+
+        // My Notebook.
+        var nb = document.createElement("div");
+        nb.className = "profile__section";
+        var nbTitle = document.createElement("h3");
+        nbTitle.className = "profile__heading";
+        nbTitle.textContent = t("myNotebook");
+        nb.appendChild(nbTitle);
+
+        if (state.notebook.length === 0) {
+          nb.appendChild(profileEmptyNote(t("notebookEmpty")));
+        } else {
+          state.notebook.forEach(function (n) {
+            var item = document.createElement("div");
+            item.className = "nb-item";
+
+            var line = document.createElement("div");
+            var w = document.createElement("span");
+            w.className = "nb-item__word";
+            w.textContent = n.word;
+            line.appendChild(w);
+            var tr = document.createElement("span");
+            tr.className = "nb-item__trans";
+            tr.textContent = " — " + n.translation;
+            line.appendChild(tr);
+            item.appendChild(line);
+
+            var from = document.createElement("div");
+            from.className = "nb-item__from";
+            from.textContent = tf("fromPost", { name: n.postName });
+            item.appendChild(from);
+
+            nb.appendChild(item);
+          });
+        }
+        wrap.appendChild(nb);
+
+        // Saved Posts.
+        var sp = document.createElement("div");
+        sp.className = "profile__section";
+        var spTitle = document.createElement("h3");
+        spTitle.className = "profile__heading";
+        spTitle.textContent = t("savedPosts");
+        sp.appendChild(spTitle);
+
+        var savedIds = Object.keys(state.saved).filter(function (id) {
+          return state.saved[id];
+        });
+        if (savedIds.length === 0) {
+          sp.appendChild(profileEmptyNote(t("savedPostsEmpty")));
+        } else {
+          savedIds.forEach(function (id) {
+            var post = findPost(id);
+            if (!post) return;
+            var item = document.createElement("div");
+            item.className = "saved-post";
+            var nm = document.createElement("div");
+            nm.className = "saved-post__name";
+            nm.textContent = post.name;
+            item.appendChild(nm);
+            var snip = document.createElement("div");
+            snip.className = "saved-post__snip";
+            snip.textContent = plainSnippet(post.body);
+            item.appendChild(snip);
+            sp.appendChild(item);
+          });
+        }
+        wrap.appendChild(sp);
+
+        // Change journey.
+        var cj = document.createElement("div");
+        cj.className = "profile__section profile__change-section";
+        var cjBtn = document.createElement("button");
+        cjBtn.className = "profile__change";
+        cjBtn.type = "button";
+        cjBtn.textContent = t("changeJourney");
+        cjBtn.addEventListener("click", function () {
+          renderLanding();
+          showView("view-landing");
+        });
+        cj.appendChild(cjBtn);
+        var warn = document.createElement("p");
+        warn.className = "profile__warn";
+        warn.textContent = t("changeJourneyWarning");
+        cj.appendChild(warn);
+        wrap.appendChild(cj);
+
+        root.appendChild(wrap);
+      }
+
       // Build one post card.
       function buildPost(post) {
         var card = document.createElement("article");
@@ -1856,7 +2330,7 @@
         // Body — parsed for inline heritage-word markers.
         var body = document.createElement("p");
         body.className = "post__body";
-        renderBody(post.body, body);
+        renderBody(post.body, body, post);
         card.appendChild(body);
 
         // Optional image slot — left empty for now.
@@ -2054,7 +2528,7 @@
       // render plain text as text, markers as clickable heritage words.
       var HERITAGE_MARKER = /\[([^\]|]+)\|([^\]|]+)\|([^\]]+)\]/g;
 
-      function renderBody(text, container) {
+      function renderBody(text, container, post) {
         HERITAGE_MARKER.lastIndex = 0;
         var lastIndex = 0;
         var match;
@@ -2077,7 +2551,7 @@
           span.addEventListener("click", function (w, tr, pr) {
             return function (e) {
               e.stopPropagation();
-              openWordSheet(w, tr, pr);
+              openWordSheet(w, tr, pr, post);
             };
           }(word, translation, pronunciation));
           container.appendChild(span);
@@ -2101,8 +2575,17 @@
         }
       }
 
-      function openWordSheet(word, translation, pronunciation) {
+      function isWordSaved(word, postId) {
+        return state.notebook.some(function (n) {
+          return n.word === word && n.postId === postId;
+        });
+      }
+
+      function openWordSheet(word, translation, pronunciation, post) {
         closeWordSheet();
+
+        var postId = post ? post.id : null;
+        var postName = post ? post.name : "";
 
         var backdrop = document.createElement("div");
         backdrop.className = "sheet-backdrop";
@@ -2134,9 +2617,19 @@
         var save = document.createElement("button");
         save.className = "sheet__save";
         save.type = "button";
-        save.textContent = t("saveToNotebook");
-        // Notebook persistence is a later feature; give light feedback for now.
+        var alreadySaved = isWordSaved(word, postId);
+        save.textContent = alreadySaved ? t("savedToNotebook") : t("saveToNotebook");
+        save.disabled = alreadySaved;
         save.addEventListener("click", function () {
+          if (isWordSaved(word, postId)) return;
+          state.notebook.push({
+            word: word,
+            translation: translation,
+            pronunciation: pronunciation,
+            postId: postId,
+            postName: postName,
+            culture: state.culture
+          });
           save.textContent = t("savedToNotebook");
           save.disabled = true;
         });
