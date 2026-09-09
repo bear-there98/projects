@@ -13,7 +13,8 @@
      MIRRORCORE LAB
      One sheet of warm paper. Near black ink, hairlines, and a great
      deal of nothing. Each experiment is a plate: a quiet drawing, a
-     number, a name. The shelf is read left to right against a ruler.
+     number, a name. Behind it all, one large mark that changes as you
+     move along the shelf. The shelf is read against a ruler.
      ================================================================== */
 
   :root {
@@ -30,7 +31,7 @@
     --mono:  "DM Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
     --margin: clamp(1.5rem, 7vw, 7.5rem);
-    --plate:  clamp(258px, 26vw, 332px);
+    --plate:  clamp(252px, 26vw, 332px);
     --pad:    clamp(1.4rem, 2.6vw, 2.75rem);
   }
 
@@ -54,16 +55,49 @@
 
   :focus-visible { outline: 1px solid var(--ink); outline-offset: 7px; }
 
+  /* ---- the ambient mark ------------------------------------------
+     One large drawing sits behind the sheet, at the threshold of
+     visible. It changes with the experiment you are standing in
+     front of, slowly enough that you notice it late. */
+
+  .ambient {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .ambient svg {
+    position: absolute;
+    top: 27%;
+    right: -11vw;
+    transform: translateY(-50%);
+    width: min(74vw, 1040px);
+    height: auto;
+    color: var(--ink);
+    opacity: 0;
+    transition: opacity 1.7s ease;
+  }
+  .ambient svg.is-on { opacity: 1; }
+  .a-line {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    opacity: 0.055;
+  }
+
+  .mast, .work { position: relative; z-index: 1; }
+
   /* ---- masthead ------------------------------------------------- */
 
-  .mast {
-    padding: clamp(4.5rem, 15vh, 10rem) var(--margin) 0;
-  }
+  .mast { padding: clamp(4rem, 13vh, 8.5rem) var(--margin) 0; }
 
   .mast h1 {
     font-family: var(--serif);
     font-weight: 200;
-    font-size: clamp(1.5rem, 3.1vw, 2.5rem);
+    font-size: clamp(1.4rem, 3.1vw, 2.5rem);
     letter-spacing: 0.155em;
     text-transform: uppercase;
     line-height: 1;
@@ -72,16 +106,7 @@
 
   /* ---- section head --------------------------------------------- */
 
-  .work { padding-top: clamp(5.5rem, 20vh, 13rem); }
-
-  .work-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 2rem;
-    margin: 0 var(--margin);
-    padding-bottom: 0.85rem;
-  }
+  .work { padding-top: clamp(4.5rem, 18vh, 11.5rem); }
 
   .eyebrow {
     font-family: var(--mono);
@@ -91,26 +116,8 @@
     text-transform: uppercase;
     color: var(--ink-2);
     text-indent: 0.34em;
+    margin: 0 var(--margin) 0.85rem;
   }
-
-  .steps { display: flex; gap: 0.15rem; margin-right: -0.55rem; }
-
-  .step {
-    -webkit-appearance: none;
-    appearance: none;
-    border: 0;
-    background: none;
-    cursor: pointer;
-    font-family: var(--mono);
-    font-size: 0.9rem;
-    line-height: 1;
-    color: var(--ink);
-    opacity: 0.42;
-    padding: 0.35rem 0.55rem;
-    transition: opacity 0.4s ease;
-  }
-  .step:hover { opacity: 1; }
-  .step:disabled { opacity: 0.13; cursor: default; }
 
   /* The rule under the head runs to the right edge of the sheet; the
      ruler at the foot stops short. The two lengths make the asymmetry. */
@@ -127,16 +134,17 @@
     align-items: flex-start;
     overflow-x: auto;
     overflow-y: hidden;
-    scroll-snap-type: x proximity;
+    overscroll-behavior-x: contain;
+    /* No snapping. The shelf slides freely under the hand and the ruler
+       reads off whichever plate you have come to rest in front of. */
     scroll-padding-left: var(--margin);
-    padding: clamp(2.25rem, 5vh, 3.5rem) var(--margin) 0;
+    padding: clamp(2rem, 4.5vh, 3.25rem) var(--margin) 0;
     scrollbar-width: none;
   }
   .rail::-webkit-scrollbar { display: none; }
 
   .plate {
     flex: 0 0 var(--plate);
-    scroll-snap-align: start;
     padding-left: var(--pad);
     border-left: 1px solid var(--hair);
     display: block;
@@ -155,10 +163,17 @@
   .figure-rule {
     height: 1px;
     background: var(--rule);
-    margin-top: clamp(1.5rem, 3vh, 2.25rem);
+    margin-top: clamp(1.35rem, 2.6vh, 2.1rem);
   }
 
-  .label { padding-top: 0.95rem; }
+  /* One fixed height for every caption, so the way in always sits on
+     the same line and the hairlines all run to the same depth. */
+  .label {
+    display: flex;
+    flex-direction: column;
+    min-height: 8.4rem;
+    padding-top: 0.95rem;
+  }
 
   .idx {
     font-family: var(--mono);
@@ -174,9 +189,11 @@
     font-size: clamp(1.3rem, 1.5vw, 1.6rem);
     line-height: 1.12;
     letter-spacing: 0.005em;
-    margin-top: 0.7rem;
+    margin-top: 0.65rem;
   }
 
+  /* A status appears only when it says something. Everything without
+     one is simply running. */
   .state {
     font-family: var(--mono);
     font-weight: 300;
@@ -184,10 +201,11 @@
     letter-spacing: 0.24em;
     text-transform: uppercase;
     color: var(--ink-3);
-    margin-top: 0.8rem;
+    margin-top: 0.75rem;
   }
 
   .enter {
+    align-self: flex-start;
     display: inline-flex;
     align-items: baseline;
     gap: 0.85em;
@@ -197,10 +215,10 @@
     letter-spacing: 0.26em;
     text-transform: uppercase;
     color: var(--ink-2);
-    margin-top: clamp(1.9rem, 4vh, 2.9rem);
+    margin-top: auto;
     padding-bottom: 0.42rem;
     position: relative;
-    transition: color 0.4s ease;
+    transition: color 0.5s ease;
   }
   .enter::after {
     content: "";
@@ -211,9 +229,9 @@
     background: var(--ink);
     transform: scaleX(0);
     transform-origin: left;
-    transition: transform 0.55s cubic-bezier(0.22, 0.7, 0.2, 1);
+    transition: transform 0.6s cubic-bezier(0.22, 0.7, 0.2, 1);
   }
-  .arrow { transition: transform 0.45s cubic-bezier(0.22, 0.7, 0.2, 1); }
+  .arrow { transition: transform 0.5s cubic-bezier(0.22, 0.7, 0.2, 1); }
 
   .plate:hover .enter,
   .plate:focus-visible .enter { color: var(--ink); }
@@ -222,22 +240,21 @@
   .plate:hover .arrow,
   .plate:focus-visible .arrow { transform: translateX(0.5em); }
 
-  .is-vacant .name,
-  .is-vacant .idx { color: var(--ink-3); }
+  .is-unformed .name { color: var(--ink-3); }
 
   /* ---- ruler ----------------------------------------------------- */
 
   .scale {
     display: flex;
-    margin: clamp(2.5rem, 6vh, 4rem) var(--margin) 0;
+    margin: clamp(2.25rem, 5vh, 3.5rem) var(--margin) 0;
     border-top: 1px solid var(--rule);
-    max-width: 44rem;
+    max-width: 42rem;
   }
 
   .tick {
     flex: 1 1 0;
     position: relative;
-    padding-top: 1.5rem;
+    padding-top: 1.45rem;
     /* four minor divisions inside every unit */
     background-image: repeating-linear-gradient(to right, var(--hair) 0 1px, transparent 1px 25%);
     background-size: 100% 6px;
@@ -250,7 +267,7 @@
     width: 1px;
     height: 13px;
     background: var(--ink-3);
-    transition: height 0.4s ease, background-color 0.4s ease;
+    transition: height 0.5s ease, background-color 0.5s ease;
   }
   .tick[aria-current]::before { height: 21px; background: var(--ink); }
 
@@ -260,12 +277,10 @@
     font-size: 0.6rem;
     letter-spacing: 0.16em;
     color: var(--ink-3);
-    transition: color 0.4s ease;
+    transition: color 0.5s ease;
   }
-  .tick[aria-current] .tick-num { color: var(--ink); }
+  .tick[aria-current] .tick-num,
   .tick:hover .tick-num { color: var(--ink); }
-
-  footer { height: clamp(3.5rem, 10vh, 7rem); }
 
   /* ---- drawing ink ----------------------------------------------- */
 
@@ -286,7 +301,7 @@
   .js .figure {
     opacity: 0;
     transform: translateY(10px);
-    transition: opacity 1s ease, transform 1s cubic-bezier(0.22, 0.7, 0.2, 1);
+    transition: opacity 1.1s ease, transform 1.1s cubic-bezier(0.22, 0.7, 0.2, 1);
   }
   .js .is-seen .figure { opacity: 0.92; transform: none; }
   .js .plate:hover .figure { opacity: 1; }
@@ -297,39 +312,65 @@
   }
   .js .is-seen .f-draw {
     stroke-dashoffset: 0;
-    transition: stroke-dashoffset 1.6s cubic-bezier(0.16, 0.7, 0.24, 1) 0.2s;
+    transition: stroke-dashoffset 1.8s cubic-bezier(0.16, 0.7, 0.24, 1) 0.2s;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .js .figure { opacity: 0.92; transform: none; transition: none; }
     .js .f-draw { stroke-dashoffset: 0; transition: none; }
     .enter::after, .arrow, .tick::before { transition: none; }
+    .ambient svg { transition: opacity 0.4s ease; }
   }
 
   /* ---- narrow ---------------------------------------------------- */
 
-  @media (max-width: 640px) {
-    :root { --plate: 74vw; --pad: 1.35rem; }
-    .work { padding-top: clamp(4rem, 14vh, 8rem); }
+  @media (max-width: 700px) {
+    :root { --plate: 76vw; --pad: 1.35rem; }
+    .mast { padding-top: clamp(3rem, 9vh, 5rem); }
+    .work { padding-top: clamp(3.25rem, 12vh, 7rem); }
+    .label { min-height: 7.6rem; }
     .scale { max-width: none; }
+    /* On a narrow sheet the mark reads as a fragment off the edge, so it
+       stays atmosphere rather than a line drawn through the plate. */
+    .ambient svg { width: 132vw; right: -48vw; top: 23%; }
+    .a-line { opacity: 0.032; }
   }
 </style>
 </head>
 <body>
 <script>document.documentElement.classList.add("js");</script>
 
+  <div class="ambient" id="ambient" aria-hidden="true">
+    <svg viewBox="0 0 600 600" data-mark="0" class="is-on">
+      <path class="a-line" d="M0 300 H118 l22 -12 11 24 13 -12 H238 l17 -118 19 214 15 -96 H398 l19 -16 11 30 13 -14 H600" />
+    </svg>
+    <svg viewBox="0 0 600 600" data-mark="1">
+      <path class="a-line" d="M40 190 V410 M66 246 V354 M92 190 V410 M118 190 V410 M144 246 V354 M170 190 V410 M196 190 V410 M222 246 V354 M248 190 V410 M274 190 V410 M300 190 V410 M326 246 V354 M352 190 V410 M378 190 V410 M404 246 V354 M430 190 V410 M456 190 V410 M482 246 V354 M508 190 V410 M534 190 V410 M560 246 V354" />
+    </svg>
+    <svg viewBox="0 0 600 600" data-mark="2">
+      <path class="a-line" d="M110 476 C154 246 322 132 476 122 C462 330 300 468 110 476 Z" />
+      <path class="a-line" d="M110 476 C228 402 382 276 476 122" />
+    </svg>
+    <svg viewBox="0 0 600 600" data-mark="3">
+      <ellipse class="a-line" cx="300" cy="300" rx="284" ry="152" transform="rotate(-8 300 300)" />
+      <ellipse class="a-line" cx="300" cy="300" rx="212" ry="113" transform="rotate(-8 300 300)" />
+      <ellipse class="a-line" cx="300" cy="300" rx="142" ry="76" transform="rotate(-8 300 300)" />
+      <ellipse class="a-line" cx="300" cy="300" rx="70" ry="38" transform="rotate(-8 300 300)" />
+    </svg>
+    <svg viewBox="0 0 600 600" data-mark="4">
+      <path class="a-line" d="M20 118 H580 M20 152 H580 M20 170 H580 M20 214 H580 M20 248 H580 M20 302 H580 M20 334 H580 M20 396 H580 M20 434 H580 M20 474 H580" />
+    </svg>
+    <svg viewBox="0 0 600 600" data-mark="5">
+      <path class="a-line" d="M60 300 H540" />
+    </svg>
+  </div>
+
   <header class="mast">
     <h1>Mirrorcore Lab</h1>
   </header>
 
   <main class="work" aria-labelledby="experiments">
-    <div class="work-head">
-      <h2 class="eyebrow" id="experiments">Experiments</h2>
-      <div class="steps">
-        <button class="step" type="button" data-step="-1" aria-controls="rail" aria-label="Previous experiment">&#8592;</button>
-        <button class="step" type="button" data-step="1" aria-controls="rail" aria-label="Next experiment">&#8594;</button>
-      </div>
-    </div>
+    <h2 class="eyebrow" id="experiments">Experiments</h2>
     <div class="work-rule"></div>
 
     <div class="rail" id="rail" tabindex="0" role="group" aria-label="Experiments, scrollable">
@@ -348,7 +389,6 @@
         <div class="label">
           <p class="idx">01</p>
           <h3 class="name" id="e1-name">Bioelectric studio</h3>
-          <p class="state">Running</p>
           <span class="enter">Enter <span class="arrow" aria-hidden="true">&#8594;</span></span>
         </div>
       </a>
@@ -371,7 +411,6 @@
         <div class="label">
           <p class="idx">02</p>
           <h3 class="name" id="e2-name">Daily Flow</h3>
-          <p class="state">Running</p>
           <span class="enter">Enter <span class="arrow" aria-hidden="true">&#8594;</span></span>
         </div>
       </a>
@@ -399,7 +438,6 @@
         <div class="label">
           <p class="idx">03</p>
           <h3 class="name" id="e3-name">Local Species</h3>
-          <p class="state">Running</p>
           <span class="enter">Enter <span class="arrow" aria-hidden="true">&#8594;</span></span>
         </div>
       </a>
@@ -420,7 +458,6 @@
         <div class="label">
           <p class="idx">04</p>
           <h3 class="name" id="e4-name">Quest Omen</h3>
-          <p class="state">Running</p>
           <span class="enter">Enter <span class="arrow" aria-hidden="true">&#8594;</span></span>
         </div>
       </a>
@@ -444,7 +481,7 @@
         </div>
       </a>
 
-      <div class="plate is-vacant" id="e6" aria-labelledby="e6-name">
+      <div class="plate is-unformed" id="e6" aria-labelledby="e6-name">
         <div class="figure">
           <svg viewBox="0 0 300 180" role="img" aria-label="An empty mount marked only by its four corners">
             <path class="f-rule" d="M40 42 V30 H54 M246 30 H260 V42 M260 130 V142 H246 M54 142 H40 V130" />
@@ -453,8 +490,8 @@
         <div class="figure-rule"></div>
         <div class="label">
           <p class="idx">06</p>
-          <h3 class="name" id="e6-name">Vacant</h3>
-          <p class="state">Unaccessioned</p>
+          <h3 class="name" id="e6-name">Unformed</h3>
+          <p class="state">Coming soon</p>
         </div>
       </div>
 
@@ -470,11 +507,10 @@
     </nav>
   </main>
 
-  <footer></footer>
-
 <script>
   // Without this file the shelf still works: the plates are links inside a
-  // native scroll container and the ruler is a list of anchors.
+  // native scroll container, swipe scrolls it, and the ruler is a list of
+  // anchors. Everything below is there to make it effortless.
   (function () {
     "use strict";
 
@@ -483,7 +519,7 @@
 
     var plates = Array.prototype.slice.call(rail.querySelectorAll(".plate"));
     var ticks = Array.prototype.slice.call(document.querySelectorAll(".tick"));
-    var steps = Array.prototype.slice.call(document.querySelectorAll(".step"));
+    var marks = Array.prototype.slice.call(document.querySelectorAll(".ambient svg"));
     var calm = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     // ---- ink the drawings once, as they arrive ----
@@ -496,11 +532,21 @@
         });
       }, { threshold: 0.3 });
       plates.forEach(function (p) { seen.observe(p); });
+      // A drawing must never be left unread because an observer stayed
+      // quiet. Anything standing in the viewport is inked regardless.
+      setTimeout(function () {
+        plates.forEach(function (p) {
+          var b = p.getBoundingClientRect();
+          if (b.left < window.innerWidth && b.right > 0) p.classList.add("is-seen");
+        });
+      }, 2200);
     } else {
       plates.forEach(function (p) { p.classList.add("is-seen"); });
     }
 
-    // ---- position on the ruler ----
+    // ---- where you are ----
+    function span() { return rail.scrollWidth - rail.clientWidth; }
+
     function pitch() {
       if (plates.length < 2) return rail.clientWidth;
       var d = plates[1].offsetLeft - plates[0].offsetLeft;
@@ -509,34 +555,33 @@
 
     var held = null;
     var holdTimer;
+    var shown = -1;
 
     function indexNow() {
       if (held !== null) return held;
       // At the far end the last plate never reaches the left edge, so read
       // the end of the shelf as the last plate rather than the nearest one.
-      var max = rail.scrollWidth - rail.clientWidth;
+      var max = span();
       if (max > 2 && rail.scrollLeft >= max - 2) return plates.length - 1;
       return Math.max(0, Math.min(plates.length - 1, Math.round(rail.scrollLeft / pitch())));
     }
 
     function mark() {
       var i = indexNow();
+      if (i === shown) return;
+      shown = i;
       ticks.forEach(function (t, n) {
         if (n === i) t.setAttribute("aria-current", "true");
         else t.removeAttribute("aria-current");
       });
-      var max = rail.scrollWidth - rail.clientWidth;
-      steps.forEach(function (b) {
-        var dir = Number(b.getAttribute("data-step"));
-        b.disabled = dir < 0 ? rail.scrollLeft <= 2 : rail.scrollLeft >= max - 2;
-      });
+      marks.forEach(function (m, n) { m.classList.toggle("is-on", n === i); });
     }
 
     function goTo(i) {
       i = Math.max(0, Math.min(plates.length - 1, i));
       held = i;
       clearTimeout(holdTimer);
-      holdTimer = setTimeout(function () { held = null; mark(); }, 700);
+      holdTimer = setTimeout(function () { held = null; shown = -1; mark(); }, 700);
       rail.scrollTo({
         left: plates[i].offsetLeft - plates[0].offsetLeft,
         behavior: calm.matches ? "auto" : "smooth"
@@ -544,12 +589,29 @@
       mark();
     }
 
-    steps.forEach(function (b) {
-      b.addEventListener("click", function () {
-        goTo(indexNow() + Number(b.getAttribute("data-step")));
-      });
-    });
+    rail.addEventListener("scroll", mark, { passive: true });
+    window.addEventListener("resize", function () { shown = -1; mark(); });
+    mark();
 
+    // ---- wheel and trackpad ----
+    // A vertical wheel walks the shelf sideways. At either end the page
+    // gets the gesture back, so nothing ever feels trapped.
+    window.addEventListener("wheel", function (e) {
+      if (e.ctrlKey) return;
+      var max = span();
+      if (max < 4) return;
+      var d = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+      if (!d) return;
+      if (e.deltaMode === 1) d *= 16;
+      else if (e.deltaMode === 2) d *= rail.clientWidth;
+      if (d < 0 && rail.scrollLeft <= 0) return;
+      if (d > 0 && rail.scrollLeft >= max - 1) return;
+      held = null;
+      rail.scrollLeft += d;
+      e.preventDefault();
+    }, { passive: false });
+
+    // ---- ruler ----
     ticks.forEach(function (t) {
       t.addEventListener("click", function (e) {
         e.preventDefault();
@@ -557,15 +619,15 @@
       });
     });
 
-    rail.addEventListener("scroll", mark, { passive: true });
-    window.addEventListener("resize", mark);
-    mark();
-
-    // Arrows move the shelf one plate at a time from anywhere inside it.
-    rail.addEventListener("keydown", function (e) {
-      if (rail.scrollWidth - rail.clientWidth < 4) return;
-      if (e.key === "ArrowRight") { e.preventDefault(); goTo(indexNow() + 1); }
-      else if (e.key === "ArrowLeft") { e.preventDefault(); goTo(indexNow() - 1); }
+    // ---- keyboard ----
+    // Arrows walk the shelf from anywhere on the page.
+    document.addEventListener("keydown", function (e) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      var el = document.activeElement;
+      if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+      if (span() < 4) return;
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") { e.preventDefault(); goTo(indexNow() + 1); }
+      else if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); goTo(indexNow() - 1); }
       else if (e.key === "Home") { e.preventDefault(); goTo(0); }
       else if (e.key === "End") { e.preventDefault(); goTo(plates.length - 1); }
     });
