@@ -194,6 +194,17 @@
     border-radius: 999px;
   }
 
+  /* Footer row for cards that show a status pill next to the open link. */
+  .card-foot {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+  }
+  .card-foot .pill,
+  .card-foot .open { margin-top: 0; }
+
   @media (prefers-reduced-motion: reduce) {
     .card, .card *, .open .arrow { transition: none !important; }
   }
@@ -249,15 +260,18 @@
         <span class="open">Open project <span class="arrow">→</span></span>
       </a>
 
-      <div class="card is-soon" style="--accent:#8b93a7" aria-disabled="true">
-        <h2>Untitled</h2>
-        <p>An education project in the works. Check back soon - it'll open here once there's something to show.</p>
+      <a class="card" style="--accent:#a04a2f" href="Time-Scroller/index.html">
+        <h2>Time Scroller</h2>
+        <p>Scroll through a culture, one moment at a time. A feed written by the people who lived each year.</p>
         <div class="research">
           <span class="label">Currently researching</span>
-          <span class="subject">to be defined</span>
+          <span class="subject">language learning through cultural memory</span>
         </div>
-        <span class="pill">Coming soon</span>
-      </div>
+        <div class="card-foot">
+          <span class="pill">In progress</span>
+          <span class="open">Open project <span class="arrow">&rarr;</span></span>
+        </div>
+      </a>
 
       <div class="card is-soon" style="--accent:#b06fb0" aria-disabled="true">
         <h2>Untitled</h2>
