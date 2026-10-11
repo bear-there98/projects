@@ -12,10 +12,11 @@
   /* ==================================================================
      MIRRORCORE LAB — index
 
-     A dark surface holding six names. Nothing is illustrated; the only
-     colour in the page belongs to the one experiment still running.
-     The name being read throws a short reflection, which is the whole
-     of the decoration and the reason for the name of the lab.
+     Six names on a dark surface, nothing explained. At rest the page is
+     grey. Colour is attention, not status: the name under the lens
+     lights in its own hue and throws a short reflection, which is the
+     whole of the decoration and the reason for the name of the lab.
+     The one running badge is the exception that stays lit.
      No script: every state here is hover, focus or :target.
      ================================================================== */
 
@@ -25,13 +26,11 @@
     --ink:    #090c0f;   /* the surface */
     --line:   #1b2126;   /* hairline between entries */
     --dim:    #59636b;   /* dormant text */
-    --mid:    #8c959c;   /* notes under the lens */
     --bone:   #e9e6df;   /* full light */
-    --live:   #86cdbf;   /* reserved for the running experiment */
 
     --gutter: clamp(1.4rem, 7vw, 7rem);
-    --name:   clamp(1.65rem, 5vw, 2.9rem);
-    --small:  clamp(0.74rem, 0.3vw + 0.68rem, 0.82rem);
+    --name:   clamp(1.3rem, 3.6vw, 2.05rem);
+    --small:  clamp(0.72rem, 0.3vw + 0.66rem, 0.79rem);
 
     --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   }
@@ -65,16 +64,16 @@
   }
 
   main {
-    max-width: 64rem;
+    max-width: 46rem;
     padding: clamp(3.5rem, 13vh, 9rem) var(--gutter) clamp(4rem, 14vh, 9rem);
   }
 
   /* ---- masthead ------------------------------------------------- */
 
-  .masthead { margin-bottom: clamp(3.5rem, 12vh, 8rem); }
+  .masthead { margin-bottom: clamp(3rem, 11vh, 7rem); }
 
   .lab {
-    font-size: clamp(0.88rem, 0.3vw + 0.8rem, 1rem);
+    font-size: clamp(0.86rem, 0.3vw + 0.78rem, 0.97rem);
     font-weight: 500;
     letter-spacing: 0.01em;
     color: var(--bone);
@@ -92,30 +91,28 @@
   .entry {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    column-gap: clamp(1rem, 4vw, 3rem);
+    column-gap: clamp(1rem, 4vw, 2.5rem);
     align-items: baseline;
-    padding: clamp(1.7rem, 4.5vh, 2.9rem) 0 clamp(1.5rem, 4vh, 2.5rem);
+    padding: clamp(1.4rem, 3.8vh, 2.1rem) 0;
     border-bottom: 1px solid var(--line);
     text-decoration: none;
     color: inherit;
     position: relative;
   }
 
-  /* The left edge of the entry being read. */
+  /* The left edge of the entry being read, in the entry's own colour. */
   .entry::before {
     content: "";
     position: absolute;
     left: calc(var(--gutter) * -0.42);
-    top: clamp(1.7rem, 4.5vh, 2.9rem);
+    top: clamp(1.4rem, 3.8vh, 2.1rem);
     width: 1px;
     height: 0;
-    background: var(--bone);
+    background: var(--accent, var(--bone));
     transition: height 320ms ease;
   }
 
   .name {
-    grid-column: 1;
-    grid-row: 1;
     position: relative;
     font-size: var(--name);
     font-weight: 400;
@@ -123,7 +120,7 @@
     line-height: 1.05;
     color: var(--dim);
     padding-bottom: 0.5em;
-    transition: color 260ms ease;
+    transition: color 280ms ease;
   }
 
   /* The reflection: mirrored, dropped just under the glyphs, and gone
@@ -135,7 +132,7 @@
     white-space: nowrap;
     transform: scaleY(-1);
     opacity: 0;
-    color: var(--bone);
+    color: var(--accent, var(--bone));
     filter: blur(0.5px);
     pointer-events: none;
     -webkit-mask-image: linear-gradient(to bottom, transparent 52%, #000 100%);
@@ -143,19 +140,9 @@
     transition: opacity 320ms ease;
   }
 
-  .note {
-    grid-column: 1;
-    grid-row: 2;
-    max-width: 46ch;
-    color: var(--dim);
-    transition: color 260ms ease;
-  }
-
   /* ---- badges --------------------------------------------------- */
 
   .state {
-    grid-column: 2;
-    grid-row: 1;
     justify-self: end;
     display: inline-flex;
     align-items: center;
@@ -167,6 +154,7 @@
     line-height: 1.5;
     color: var(--dim);
     white-space: nowrap;
+    transition: color 280ms ease, border-color 280ms ease;
   }
 
   /* Suspended reads as a flatline. */
@@ -177,9 +165,10 @@
     background: currentColor;
   }
 
+  /* The one running experiment keeps its colour whether read or not. */
   .state[data-state="running"] {
-    border-color: rgba(134,205,191,0.32);
-    color: var(--live);
+    border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+    color: var(--accent);
   }
   .state[data-state="running"]::before {
     content: "";
@@ -199,39 +188,42 @@
 
   .entry:hover .name,
   .entry:focus-visible .name,
-  .entry:target .name { color: var(--bone); }
-
-  .entry:hover .note,
-  .entry:focus-visible .note,
-  .entry:target .note { color: var(--mid); }
+  .entry:target .name { color: var(--accent, var(--bone)); }
 
   .entry:hover .reflect,
   .entry:focus-visible .reflect,
-  .entry:target .reflect { opacity: 0.17; }
+  .entry:target .reflect { opacity: 0.2; }
 
   .entry:hover::before,
   .entry:focus-visible::before,
   .entry:target::before { height: 1.1em; }
 
+  .entry:hover .state[data-state="suspended"],
+  .entry:focus-visible .state[data-state="suspended"],
+  .entry:target .state[data-state="suspended"] {
+    color: color-mix(in srgb, var(--accent) 70%, var(--bone));
+    border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+
   .entry:focus { outline: none; }
   .entry:focus-visible {
-    outline: 1px solid var(--bone);
-    outline-offset: clamp(0.5rem, 2vw, 1.2rem);
+    outline: 1px solid var(--accent, var(--bone));
+    outline-offset: clamp(0.5rem, 2vw, 1.1rem);
   }
 
   /* ---- the one that is not open yet ----------------------------- */
 
+  /* Sealed means inert: it does not answer the lens at all. */
   .entry.sealed { cursor: default; }
-  .entry.sealed .name,
-  .entry.sealed .note { color: #39424a; }
+  .entry.sealed .name { color: #39424a; }
+  .entry.sealed:hover::before { height: 0; }
 
   /* ---- narrow --------------------------------------------------- */
 
-  @media (max-width: 40rem) {
+  @media (max-width: 34rem) {
     .entry { grid-template-columns: minmax(0, 1fr); }
-    .state { grid-column: 1; grid-row: 1; justify-self: start; }
-    .name  { grid-column: 1; grid-row: 2; margin-top: 0.8rem; }
-    .note  { grid-column: 1; grid-row: 3; }
+    .state { grid-row: 1; justify-self: start; }
+    .name  { grid-row: 2; margin-top: 0.7rem; }
     .entry::before { display: none; }
   }
 
@@ -256,40 +248,34 @@
 
     <nav class="index" id="index" aria-label="Experiments">
 
-      <a class="entry" id="bioelectric" href="Bioelectric-studio/index.html">
+      <div class="entry sealed" id="dream-lab" style="--accent:#9b93dd">
+        <h2 class="name">Dream Lab</h2>
+      </div>
+
+      <a class="entry" id="bioelectric" href="Bioelectric-studio/index.html" style="--accent:#9d84f0">
         <h2 class="name">Bioelectric Studio<span class="reflect" aria-hidden="true">Bioelectric Studio</span></h2>
         <span class="state" data-state="running">running</span>
-        <span class="note">Reads the electric field between two points on a leaf.</span>
       </a>
 
-      <a class="entry" id="daily-flow" href="Daily-Flow/index.html">
+      <a class="entry" id="daily-flow" href="Daily-Flow/index.html" style="--accent:#5fc8a6">
         <h2 class="name">Daily Flow<span class="reflect" aria-hidden="true">Daily Flow</span></h2>
         <span class="state" data-state="suspended">suspended</span>
-        <span class="note">A quiet tracker for body, mind, soul and hobbies.</span>
       </a>
 
-      <a class="entry" id="local-species" href="Local-Species/index.html">
+      <a class="entry" id="local-species" href="Local-Species/index.html" style="--accent:#85c95f">
         <h2 class="name">Local Species<span class="reflect" aria-hidden="true">Local Species</span></h2>
         <span class="state" data-state="suspended">suspended</span>
-        <span class="note">A field compendium of the wild things nearby.</span>
       </a>
 
-      <a class="entry" id="quest-omen" href="Quest-Omen/index.html">
+      <a class="entry" id="quest-omen" href="Quest-Omen/index.html" style="--accent:#e0ab3d">
         <h2 class="name">Quest Omen<span class="reflect" aria-hidden="true">Quest Omen</span></h2>
         <span class="state" data-state="suspended">suspended</span>
-        <span class="note">A role-playing game that runs on where you stand.</span>
       </a>
 
-      <a class="entry" id="time-scroller" href="Time-Scroller/index.html">
+      <a class="entry" id="time-scroller" href="Time-Scroller/index.html" style="--accent:#ef8055">
         <h2 class="name">Time Scroller<span class="reflect" aria-hidden="true">Time Scroller</span></h2>
         <span class="state" data-state="suspended">suspended</span>
-        <span class="note">A feed written by the people who lived each year.</span>
       </a>
-
-      <div class="entry sealed" id="dream-lab">
-        <h2 class="name">Dream Lab</h2>
-        <span class="note">Not opened yet.</span>
-      </div>
 
     </nav>
   </main>
