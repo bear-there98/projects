@@ -263,7 +263,7 @@ table.cmp td.hi{color:var(--moon)}
 "use strict";
 /* ---------------- state ---------------- */
 const S = {
-  db:null, sample:null, downloads:null, uid:null, persistent:false,
+  db:null, sample:null, builtIn:false, downloads:null, uid:null, persistent:false,
   root:null, dreamsCol:null, symbolsCol:null,
   dreams:[], symbols:[], profile:{dismissed:[]},
   tab:'write', sheet:null, editingId:null,
@@ -496,9 +496,157 @@ async function saveDream(analyze){
   }finally{ btns.forEach(b=>b.disabled=false); }
 }
 
+/* ---------------- Claude, on your own key ----------------
+   Outside Claude there is no window.claude.use('sample'), so this talks
+   to the Messages API directly. It presents exactly the interface the
+   rest of the app already expects of S.sample: call it with a prompt
+   for streaming prose, call .json() for the symbol pass, and throw
+   objects carrying a .code that errCopy knows how to phrase. Nothing
+   downstream of here had to change.
+
+   The key is read from this browser on every request and is never
+   written into the page. */
+
+const API_URL   = 'https://api.anthropic.com/v1/messages';
+const API_MODEL = 'claude-opus-5';
+const KEY_STORE = 'dreamarchive.apikey';
+
+function loadKey(){ try{ return localStorage.getItem(KEY_STORE) || ''; }catch(_){ return ''; } }
+function storeKey(k){ try{ localStorage.setItem(KEY_STORE, k); return true; }catch(_){ return false; } }
+function dropKey(){ try{ localStorage.removeItem(KEY_STORE); }catch(_){} }
+
+/* The schema the symbol pass must answer in, so the reply cannot come
+   back as prose wrapped around JSON. */
+const DETECT_SCHEMA = {
+  type:'object',
+  properties:{
+    language:{type:'string'},
+    elements:{type:'array', items:{
+      type:'object',
+      properties:{
+        name:{type:'string'}, note:{type:'string'},
+        words:{type:'array', items:{type:'string'}},
+        feelings:{type:'array', items:{type:'string'}},
+        depth:{type:'number'}
+      },
+      required:['name','note','words','feelings','depth'],
+      additionalProperties:false
+    }}
+  },
+  required:['language','elements'],
+  additionalProperties:false
+};
+
+/* Server-side refusal fallbacks are on by default. If the account has
+   not got the beta, the first 400 turns them off and we carry on. */
+let FALLBACKS_OK = true;
+
+function apiFault(status, body){
+  const msg = (body?.error?.message || '') + ' ' + (body?.error?.type || '');
+  if(status===401 || status===403) return {code:'bad_key'};
+  if(status===429) return {code:'rate_limited'};
+  if(status>=500) return {code:'upstream_error'};
+  if(status===400 && /too long|too large|exceed|maximum|context/i.test(msg)) return {code:'prompt_too_large'};
+  if(status===400) return {code:'bad_request', detail:(body?.error?.message||'').slice(0,160)};
+  return {code:'upstream_error'};
+}
+
+async function apiRequest(body, signal, retried){
+  const key = loadKey();
+  if(!key) throw {code:'no_key'};
+  const headers = {
+    'content-type':'application/json',
+    'x-api-key':key,
+    'anthropic-version':'2023-06-01',
+    'anthropic-dangerous-direct-browser-access':'true'
+  };
+  const payload = {model:API_MODEL, thinking:{type:'adaptive'}, ...body};
+  if(FALLBACKS_OK){
+    headers['anthropic-beta'] = 'server-side-fallback-2026-07-01';
+    payload.fallbacks = 'default';
+  }
+  let res;
+  try{
+    res = await fetch(API_URL, {method:'POST', signal, headers, body:JSON.stringify(payload)});
+  }catch(e){
+    if(e?.name==='AbortError') throw {code:'cancelled'};
+    throw {code:'offline'};
+  }
+  if(res.ok) return res;
+  let j=null; try{ j=await res.json(); }catch(_){}
+  /* the account may not have the fallback beta: drop it and try once */
+  if(res.status===400 && FALLBACKS_OK && !retried && /fallback|beta/i.test(j?.error?.message||'')){
+    FALLBACKS_OK=false;
+    return apiRequest(body, signal, true);
+  }
+  throw apiFault(res.status, j);
+}
+
+function makeApiSampler(){
+  /* streaming prose, the shape runAI and traceEvolution consume */
+  async function sample(prompt, {signal, onText, effort='high', max=32000}={}){
+    const res = await apiRequest({
+      max_tokens:max, stream:true,
+      output_config:{effort},
+      messages:[{role:'user', content:prompt}]
+    }, signal);
+
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let buf='', text='', stop='';
+    try{
+      for(;;){
+        const {value, done} = await reader.read();
+        if(done) break;
+        buf += dec.decode(value, {stream:true});
+        let nl;
+        while((nl = buf.indexOf('\n')) >= 0){
+          const line = buf.slice(0, nl).trim();
+          buf = buf.slice(nl+1);
+          if(!line.startsWith('data:')) continue;
+          let ev; try{ ev = JSON.parse(line.slice(5).trim()); }catch(_){ continue; }
+          if(ev.type==='content_block_delta' && ev.delta?.type==='text_delta'){
+            text += ev.delta.text;
+            if(onText) onText({text});
+          }else if(ev.type==='message_delta' && ev.delta?.stop_reason){
+            stop = ev.delta.stop_reason;
+          }else if(ev.type==='error'){
+            throw apiFault(500, ev);
+          }
+        }
+      }
+    }catch(e){
+      if(e?.name==='AbortError') throw Object.assign({code:'cancelled'}, text?{text}:{});
+      if(e?.code) throw Object.assign(e, text?{text}:{});
+      throw Object.assign({code:'upstream_error'}, text?{text}:{});
+    }
+    if(stop==='refusal') throw {code:'refused'};
+    return {text, truncated: stop==='max_tokens'};
+  }
+
+  /* the symbol pass: short, cheap, and schema-constrained */
+  sample.json = async function(prompt, {signal}={}){
+    const res = await apiRequest({
+      max_tokens:8000,
+      output_config:{effort:'low', format:{type:'json_schema', schema:DETECT_SCHEMA}},
+      messages:[{role:'user', content:prompt}]
+    }, signal);
+    let j; try{ j = await res.json(); }catch(_){ throw {code:'upstream_error'}; }
+    if(j?.stop_reason==='refusal') throw {code:'refused'};
+    const txt = (j?.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+    try{ return JSON.parse(txt); }catch(_){ throw {code:'invalid_json'}; }
+  };
+
+  return sample;
+}
+
 /* ---------------- AI ---------------- */
 function errCopy(e){
   switch(e?.code){
+    case 'no_key': return 'No API key saved. Add one under Archive to turn analysis on.';
+    case 'bad_key': return 'Anthropic refused that API key. Check it under Archive, or make a new one.';
+    case 'offline': return 'Could not reach Anthropic. Check your connection and try again.';
+    case 'refused': return 'Claude declined to analyze this one. You can edit the dream and try again.';
+    case 'bad_request': return 'Anthropic rejected the request' + (e.detail ? ': ' + e.detail : '.');
     case 'not_granted': S.sampleDenied=true; return 'Claude access was declined for this visit. Reload the page to be asked again.';
     case 'rate_limited': return 'Too many requests at once. Wait a minute and try again.';
     case 'prompt_too_large': return 'This dream and its history are too long to send at once. Try shortening the context fields.';
@@ -795,10 +943,28 @@ function renderJournal(){
       html+=dreamItem(d, dict);
     }
   }
+  html+=`<hr><h2>Claude access</h2>`+accessHTML();
   html+=`<hr><h2>Backup</h2><p class="small muted">Your archive is saved privately to your Claude account. A backup file keeps a copy you control, and lets you move everything elsewhere later.</p>
     <div class="actions"><button class="btn sm" data-action="export">Export backup</button><button class="btn sm quiet" data-action="import">Restore from backup</button></div><div id="backup-msg" class="small muted" style="margin-top:8px"></div>`;
   el.innerHTML=html;
 }
+function accessHTML(){
+  if(S.builtIn) return `<p class="small muted">This page is open inside Claude, so readings use Claude's own access and cost you nothing. No API key is needed here.</p>`;
+  const has = !!loadKey();
+  return `<p class="small muted">Readings run on your own Anthropic account. The key is kept in this browser only: it is never written into the page, never sent anywhere but Anthropic, and never leaves this device. Each reading costs a few cents.</p>
+  <div class="field">
+    <label for="f-key">Anthropic API key</label>
+    <input class="input" id="f-key" type="password" autocomplete="off" spellcheck="false"
+      placeholder="${has ? 'a key is saved in this browser' : 'sk-ant-…'}">
+  </div>
+  <div class="actions">
+    <button class="btn primary sm" data-action="save-key">${has ? 'Replace key' : 'Save key'}</button>
+    ${has ? `<button class="btn sm danger" data-action="forget-key">Forget this key</button>` : ''}
+  </div>
+  <div id="key-msg" class="small muted" style="margin-top:8px">${has ? 'Readings are on.' : ''}</div>
+  <p class="small muted" style="margin-top:10px">Make a key at console.anthropic.com, under API keys. If it ever leaks, revoke it there.</p>`;
+}
+
 function renderDict(){
   const el=$('#view-dict'); const idx=elementIndex(); const sugg=suggestions(idx); const dict=symbolByKey();
   const q=norm($('#dict-q')?.value||'');
@@ -1088,6 +1254,26 @@ document.addEventListener('click', async e=>{
       try{ await putProfile({...clone(S.profile), intention:v}); if(msg) msg.textContent='Kept.'; }
       catch(_){ if(msg) msg.textContent='Could not save.'; }
       break; }
+    case 'save-key': {
+      const v=($('#f-key')?.value||'').trim();
+      const say=t=>{ const m=$('#key-msg'); if(m) m.textContent=t; };
+      if(!v){ say('Paste a key into the box first.'); break; }
+      if(!/^sk-ant-\S{20,}$/.test(v)){ say('That does not look like an Anthropic key. They begin with sk-ant- and are much longer.'); break; }
+      if(!storeKey(v)){ say('This browser would not let the key be saved. Private windows often block that.'); break; }
+      if(!S.builtIn) S.sample=makeApiSampler();
+      S.sampleDenied=false;
+      $('#btn-save-analyze').hidden=false;
+      $('#write-note').textContent='Saving finds the symbols in the dream and links them to your lexicon. The Jungian reading takes a minute or two.';
+      renderAll(); setStatus(); say('Key saved. Readings are on.');
+      break;
+    }
+    case 'forget-key': {
+      dropKey();
+      if(!S.builtIn){ S.sample=null; $('#btn-save-analyze').hidden=true; }
+      renderAll(); setStatus();
+      const m=$('#key-msg'); if(m) m.textContent='Key removed from this browser.';
+      break;
+    }
     case 'export': exportBackup(); break;
     case 'import': $('#import-file').click(); break;
   }
@@ -1137,10 +1323,18 @@ renderMoonLabel();
 
 async function boot(){
   const c=window.claude;
-  if(!c || typeof c.use!=='function'){ startMemory('Open this page in Claude to save and read your dreams.'); return; }
+  if(!c || typeof c.use!=='function'){
+    /* opened as an ordinary web page: readings run on a saved key */
+    if(loadKey()) S.sample=makeApiSampler();
+    startMemory(S.sample
+      ? 'Dreams live in this page only and go when you close it, so export a backup before you leave. Readings are running on your own API key.'
+      : 'Dreams live in this page only and go when you close it, so export a backup before you leave. To turn readings on, add an Anthropic API key under Archive.');
+    return;
+  }
   const [db,user,sample,downloads]=await Promise.all(['db','user','sample','downloads'].map(n=>c.use(n).catch(()=>null)));
-  S.sample=sample; S.downloads=downloads;
-  if(!sample){ $('#btn-save-analyze').hidden=true; $('#write-note').textContent='Analysis works when this page is open in Claude. You can still save dreams.'; }
+  S.sample=sample; S.builtIn=!!sample; S.downloads=downloads;
+  if(!sample && loadKey()) S.sample=makeApiSampler();
+  if(!S.sample){ $('#btn-save-analyze').hidden=true; $('#write-note').textContent='To turn readings on, add an Anthropic API key under Archive. You can still save dreams.'; }
   let uid=null; try{ uid=user? await user.id() : null; }catch(_){}
   if(!db || !uid){ startMemory('Saving is off in this view, so dreams will disappear when you close the page. Export a backup before leaving.'); return; }
   S.db=db; S.uid=uid; S.persistent=true;
