@@ -199,7 +199,7 @@
   /* ---- wall furniture -------------------------------------------- */
 
   .chart, .hanging { position: absolute; pointer-events: none; line-height: 0; }
-  .chart   { left: 36%; bottom: 20%; width: 10em; }
+  .chart   { left: 41%; bottom: 26%; width: 10em; }
   .chart svg, .hanging svg { display: block; width: 100%; height: auto; }
   .hanging { left: 47%; top: 0;   width: 8em; }
 
@@ -212,16 +212,34 @@
     50%     { transform: rotate(0.9deg); }
   }
 
+  /* ---- props: things that fill a working room but do nothing ----- */
+
+  .prop { line-height: 0; align-self: flex-end; pointer-events: none; }
+  .prop svg {
+    display: block;
+    height: calc(var(--k) * var(--u));
+    width: auto;
+    filter: drop-shadow(0 0.4em 0.6em rgba(0,0,0,0.6)) saturate(0.55) brightness(0.88);
+  }
+
   /* ---- the shelf ------------------------------------------------- */
 
   .shelf {
     position: absolute;
     left: 6%; bottom: 4%;
-    width: 32em;
+    width: 39em;
     display: flex;
     align-items: flex-end;
     justify-content: space-around;
     gap: 1em;
+  }
+  /* the upper shelf, which is all stock and no experiment */
+  .shelf.high {
+    left: 5%; bottom: auto; top: 7%;
+    width: 25em;
+    justify-content: flex-start;
+    gap: 0.9em;
+    padding-left: 1em;
   }
   .shelf::after {
     content: "";
@@ -239,7 +257,7 @@
     display: flex;
     align-items: flex-end;
     justify-content: flex-start;
-    gap: clamp(0.5em, 2.2vw, 3.6em);
+    gap: clamp(0.4em, 1.5vw, 2.6em);
     padding: 0 0 0.4em 5%;
     min-height: 21em;
   }
@@ -337,14 +355,14 @@
 
   /* ---- what moves, and only where it should ---------------------- */
 
-  .ripple, .corona, .flame { transform-box: fill-box; transform-origin: center; }
+  .swirl, .corona, .flame { transform-box: fill-box; transform-origin: center; }
+  /* mist, not a shape floating in a jar */
+  .swirl { filter: blur(2.6px); }
   .flame { transform-origin: 50% 100%; }
 
   @media (prefers-reduced-motion: no-preference) {
-    /* the basin's surface never settles */
-    .instr.on .ripple { animation: ripple 5.5s ease-out infinite; }
-    .instr.on .ripple.r2 { animation-delay: 1.9s; }
-    .instr.on .ripple.r3 { animation-delay: 3.7s; }
+    /* the globe never stops turning over */
+    .instr.on .swirl { animation: swirl 26s linear infinite; }
     /* the leaf's corona, breathing */
     .instr.on .corona { animation: corona 3.4s ease-in-out infinite; }
     /* and the arc across the electrodes, which stutters */
@@ -354,11 +372,7 @@
     .instr.on .bub.b2 { animation-delay: 1.5s; animation-duration: 5.4s; }
     .instr.on .bub.b3 { animation-delay: 3.1s; animation-duration: 3.9s; }
   }
-  @keyframes ripple {
-    0%   { transform: scale(0.18); opacity: 0; }
-    18%  { opacity: 0.5; }
-    100% { transform: scale(1); opacity: 0; }
-  }
+  @keyframes swirl { to { transform: rotate(360deg); } }
   @keyframes corona { 0%,100% { opacity: 0.16; transform: scale(0.94); } 50% { opacity: 0.4; transform: scale(1.06); } }
   @keyframes arc    { 0%,42% { opacity: 0.15; } 46%,54% { opacity: 1; } 58%,100% { opacity: 0.25; } }
   @keyframes bub    { 0% { transform: translateY(0) scale(0.6); opacity: 0; } 20% { opacity: 0.75; } 100% { transform: translateY(-11px) scale(1); opacity: 0; } }
@@ -405,22 +419,57 @@
 
   /* ---- the ledger ------------------------------------------------ */
 
+  /* An open book: two leaves splayed back from a dark gutter, with the
+     block of pages showing its thickness at the outer edges. */
   .ledger {
     position: absolute;
-    right: 3%; bottom: 1.6em;
+    right: 3%; bottom: 1.4em;
     z-index: 6;
-    width: 33em;
-    display: grid;
-    grid-template-columns: 0.78fr 1fr;
-    background:
-      linear-gradient(to right, rgba(232,226,210,0.10), rgba(232,226,210,0.045) 48%, rgba(0,0,0,0.3) 50%, rgba(232,226,210,0.05) 52%, rgba(232,226,210,0.085));
-    border: 1px solid rgba(232,226,210,0.14);
-    border-radius: 0.2em;
-    box-shadow: 0 1.4em 3em rgba(0,0,0,0.8), inset 0 0 3em rgba(0,0,0,0.45);
-    padding: 1.5em 1.7em;
-    gap: 1.5em;
-    transform: rotate(-0.5deg);
+    width: 32em;
+    display: flex;
+    align-items: stretch;
+    transform: rotate(-0.6deg);
+    filter: drop-shadow(0 1.1em 1.8em rgba(0,0,0,0.85));
   }
+  .page {
+    position: relative;
+    padding: 1.5em 1.6em 1.7em;
+    background: linear-gradient(to bottom, #272116 0%, #221d14 55%, #1b1710 100%);
+    border: 1px solid rgba(232,226,210,0.2);
+    box-shadow: inset 0 0 2.5em rgba(0,0,0,0.35);
+  }
+  .page.l {
+    flex: 0 0 41%;
+    border-right: 0;
+    border-radius: 0.45em 0 0 0.45em;
+    transform: perspective(70em) rotateY(-6deg);
+    transform-origin: right center;
+  }
+  .page.r {
+    flex: 1;
+    border-left: 0;
+    border-radius: 0 0.45em 0.45em 0;
+    transform: perspective(70em) rotateY(6deg);
+    transform-origin: left center;
+  }
+  /* the gutter, where the paper turns down into the spine */
+  .page::after {
+    content: "";
+    position: absolute; top: 0; bottom: 0;
+    width: 2.4em;
+    pointer-events: none;
+  }
+  .page.l::after { right: 0; background: linear-gradient(to right, transparent, rgba(0,0,0,0.55)); }
+  .page.r::after { left: 0;  background: linear-gradient(to left,  transparent, rgba(0,0,0,0.55)); }
+  /* the cut edge of the leaves underneath */
+  .page::before {
+    content: "";
+    position: absolute; top: 0.45em; bottom: 0.45em;
+    width: 0.45em;
+    background: repeating-linear-gradient(to right, rgba(232,226,210,0.16) 0 1px, rgba(0,0,0,0.25) 1px 2px);
+  }
+  .page.l::before { left: -0.45em;  border-radius: 0.4em 0 0 0.4em; }
+  .page.r::before { right: -0.45em; border-radius: 0 0.4em 0.4em 0; }
 
   .ledger h1 {
     font-weight: 400;
@@ -431,7 +480,7 @@
     font-family: var(--mono);
     font-size: 0.78em;
     line-height: 1.55;
-    color: var(--bone-3);
+    color: #8e8674;
     margin-top: 0.8em;
   }
   .ledger .flourish {
@@ -458,7 +507,7 @@
     margin-left: auto;
     font-family: var(--mono);
     font-size: 0.64em;
-    color: var(--bone-3);
+    color: #8e8674;
     white-space: nowrap;
   }
   .line .mark {
@@ -514,20 +563,28 @@
       min-height: 0;
       padding: 2em 5% 0.5em;
     }
-    .flame-wrap { display: none; }
-    .ledger-row { }
+    .flame-wrap, .prop { display: none; }
+    .shelf.high { display: none; }
+    .bench-top .instr:last-of-type { grid-column: 1 / -1; }
     .floor { grid-row: 4; height: auto; min-height: 2.5em; }
+    /* a phone has no room for two leaves side by side, so the book
+       folds the other way: title leaf above, list leaf below */
     .ledger {
       position: static;
       grid-row: 3;
       width: auto;
       margin: 1.2em 5% 1.4em;
       transform: none;
-      grid-template-columns: 1fr;
-      gap: 0.8em;
-      padding: 1.1em 1.3em;
+      flex-direction: column;
     }
-    .ledger h1 { font-size: 1.75em; }
+    .page { padding: 1em 1.2em; border: 1px solid rgba(232,226,210,0.2); transform: none; }
+    .page.l { flex: none; border-bottom: 0; border-radius: 0.45em 0.45em 0 0; padding-bottom: 0.9em; }
+    .page.r { border-top: 0; border-radius: 0 0 0.45em 0.45em; }
+    .page::before { display: none; }
+    .page::after { left: 0; right: 0; width: auto; height: 1.3em; }
+    .page.l::after { top: auto; bottom: 0; background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.5)); }
+    .page.r::after { bottom: auto; top: 0;  background: linear-gradient(to top,    transparent, rgba(0,0,0,0.5)); }
+    .ledger h1 { font-size: 1.7em; }
     .ledger .sub, .ledger .flourish { display: none; }
   }
 
@@ -656,7 +713,46 @@
       </svg>
     </div>
 
-    <!-- SHELF: the two that live off the bench -->
+    <!-- the stock shelf, higher up and of no consequence -->
+    <div class="shelf high" aria-hidden="true">
+      <div class="prop" style="--reagent:#7fa88e; --k:6.4">
+        <svg viewBox="0 0 28 62" focusable="false">
+          <path class="cork" d="M10 2 h8 v6 h-8 Z" />
+          <path class="glass" d="M11 8 h6 v8 q8 4 8 14 v22 q0 6-6 6 H9 q-6 0-6-6 V30 q0-10 8-14 Z" />
+          <path class="fluid" d="M4 36 h20 v14 q0 5-5 5 H9 q-5 0-5-5 Z" />
+        </svg>
+      </div>
+      <div class="prop" style="--reagent:#b08a5a; --k:5">
+        <svg viewBox="0 0 26 48" focusable="false">
+          <path class="cork" d="M9 2 h8 v5 h-8 Z" />
+          <path class="glass" d="M10 7 h6 v6 q7 3 7 12 v15 q0 5-5 5 H8 q-5 0-5-5 V25 q0-9 7-12 Z" />
+          <path class="fluid" d="M4 30 h18 v9 q0 4-4 4 H8 q-4 0-4-4 Z" />
+        </svg>
+      </div>
+      <div class="prop" style="--reagent:#8e96c4; --k:7.2">
+        <svg viewBox="0 0 24 70" focusable="false">
+          <path class="cork" d="M8 2 h8 v6 h-8 Z" />
+          <path class="glass" d="M9 8 h6 v12 q6 4 6 12 v30 q0 5-5 5 H8 q-5 0-5-5 V32 q0-8 6-12 Z" />
+          <path class="fluid" d="M4 40 h16 v18 q0 4-4 4 H8 q-4 0-4-4 Z" />
+        </svg>
+      </div>
+      <div class="prop" style="--reagent:#a88c6a; --k:4.4">
+        <svg viewBox="0 0 30 42" focusable="false">
+          <path class="cork" d="M11 2 h8 v5 h-8 Z" />
+          <path class="glass" d="M12 7 h6 v5 q9 4 9 15 v7 q0 5-5 5 H8 q-5 0-5-5 v-7 q0-11 9-15 Z" />
+          <path class="fluid" d="M4 28 h22 v5 q0 4-4 4 H8 q-4 0-4-4 Z" />
+        </svg>
+      </div>
+      <div class="prop" style="--reagent:#7fa88e; --k:5.6">
+        <svg viewBox="0 0 24 54" focusable="false">
+          <path class="cork" d="M8 2 h8 v5 h-8 Z" />
+          <path class="glass" d="M9 7 h6 v9 q6 3 6 11 v22 q0 5-5 5 H8 q-5 0-5-5 V27 q0-8 6-11 Z" />
+          <path class="fluid" d="M4 34 h16 v12 q0 4-4 4 H8 q-4 0-4-4 Z" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- SHELF: the three that live off the bench -->
     <div class="shelf">
 
       <!-- Local Species: a specimen jar, stopped -->
@@ -699,12 +795,47 @@
         </svg>
       </a>
 
+      <!-- Daily Flow: a water clock whose drip has dried -->
+      <a class="instr off" data-key="flow" href="Daily-Flow/index.html"
+         style="--reagent:#5fc8a6; --k:12" aria-label="Daily Flow — suspended">
+        <svg class="art" viewBox="0 0 64 102" aria-hidden="true" focusable="false">
+          <path class="brassy" d="M8 6 h48 v4 H8 Z" />
+          <path class="brassy" d="M12 10 h4 v84 h-4 Z M48 10 h4 v84 h-4 Z" />
+          <path class="brassy" d="M6 94 h52 q3 0 3 3 v4 H3 v-4 q0-3 3-3 Z" />
+          <!-- the vessel, graduated for the four tracks -->
+          <path class="glass" d="M20 12 h24 v58 q0 8-8 8 h-8 q-8 0-8-8 Z" />
+          <!-- the level, low and perfectly flat -->
+          <path class="fluid" d="M21.2 50 h21.6 v19 q0 7.6-7.6 7.6 h-6.4 q-7.6 0-7.6-7.6 Z" />
+          <path class="hair" d="M21.2 50 h21.6" />
+          <!-- the graduations: body, mind, soul, hobbies -->
+          <path class="hair-f" d="M20 22 h7 M20 32 h7 M20 42 h7 M20 52 h7 M20 62 h7" />
+          <path class="hair-f" d="M37 22 h7 M37 42 h7 M37 62 h7" />
+          <!-- the spout, and the drop that never leaves it -->
+          <path class="brassy" d="M36 74 h10 q3 0 3 3 v3 h-4 v-2 h-9 Z" />
+          <path class="lit" opacity="0.5" d="M46.6 81 q2 3 0 4.6 q-2-1.6 0-4.6 Z" />
+          <path d="M23 16 q-1.4 24 0 50" fill="none" stroke="rgba(207,227,230,0.38)" stroke-width="2.2" stroke-linecap="round" opacity="0.5" />
+          <path class="dust" d="M21 13.5 h22" />
+          <g class="wraith"><use href="#wraith-shape" transform="translate(32 46) scale(0.6)" /></g>
+        </svg>
+      </a>
+
     </div>
   </div>
 
   <!-- BENCH -->
   <div class="bench">
     <div class="bench-top">
+
+      <!-- what has been left on the bench -->
+      <div class="prop books" aria-hidden="true" style="--k:4.6">
+        <svg viewBox="0 0 66 40" focusable="false">
+          <path d="M4 26 h58 v10 q0 3-3 3 H7 q-3 0-3-3 Z" fill="#3a2a1e" stroke="rgba(232,226,210,0.2)" stroke-width="0.8" />
+          <path d="M9 16 h50 v10 H9 Z" fill="#283830" stroke="rgba(232,226,210,0.18)" stroke-width="0.8" />
+          <path d="M6 5 h47 v11 H6 Z" fill="#43302a" stroke="rgba(232,226,210,0.18)" stroke-width="0.8" />
+          <path d="M7 29 h52 M11 19.5 h45 M8 8.5 h43" fill="none" stroke="rgba(232,226,210,0.26)" stroke-width="0.9" />
+          <path d="M53 5 h3 v11 h-3 Z" fill="#5f9b87" opacity="0.4" />
+        </svg>
+      </div>
 
       <!-- Quest Omen: an astrolabe, its plumb line dead still -->
       <a class="instr off" data-key="omen" href="Quest-Omen/index.html"
@@ -734,29 +865,32 @@
         </svg>
       </a>
 
-      <!-- Dream Archive: the scrying basin. Working, and the moon lands in it -->
+      <!-- Dream Archive: a scrying globe on its claw stand. Working, and
+           the biggest piece of glass in the room, so the best mirror -->
       <a class="instr on" data-key="dream" href="Dream-Archive/index.html"
          style="--reagent:#a79ce8; --k:19" aria-label="Dream Archive — running">
-        <svg class="art" viewBox="0 0 108 108" aria-hidden="true" focusable="false">
-          <ellipse class="aura" cx="54" cy="46" rx="42" ry="14" />
-          <!-- the bowl -->
-          <path class="metal" d="M10 44 h88 q-4 30-18 38 H28 Q14 74 10 44 Z" />
-          <!-- the water -->
-          <ellipse class="fluid" cx="54" cy="45" rx="42" ry="12.5" />
-          <ellipse class="hair" cx="54" cy="45" rx="42" ry="12.5" />
-          <!-- the moon, fallen in -->
-          <ellipse class="lit" opacity="0.75" cx="70" cy="42" rx="7" ry="2.6" />
-          <ellipse class="lit" cx="70" cy="42" rx="3.4" ry="1.2" />
-          <!-- rings, going out and out -->
-          <ellipse class="ripple hair" cx="54" cy="45" rx="40" ry="11.6" />
-          <ellipse class="ripple r2 hair" cx="54" cy="45" rx="40" ry="11.6" />
-          <ellipse class="ripple r3 hair" cx="54" cy="45" rx="40" ry="11.6" />
-          <!-- the pedestal -->
-          <path class="metal" d="M48 82 h12 v14 H48 Z" />
-          <path class="metal" d="M34 96 h40 q4 0 4 4 v4 H30 v-4 q0-4 4-4 Z" />
-          <!-- light on the near rim, where it tends to appear -->
-          <path d="M16 48 q6 22 16 30" fill="none" stroke="rgba(207,227,230,0.34)" stroke-width="2.4" stroke-linecap="round" />
-          <g class="wraith"><use href="#wraith-shape" transform="translate(42 63) scale(0.6)" /></g>
+        <svg class="art" viewBox="0 0 96 112" aria-hidden="true" focusable="false">
+          <circle class="aura" cx="48" cy="44" rx="38" r="38" />
+          <!-- the stand, which shows through the glass as it should -->
+          <path class="brassy" d="M24 92 h48 q4 0 4 4 v8 H20 v-8 q0-4 4-4 Z" />
+          <path class="brassy" d="M44 72 h8 v22 h-8 Z" />
+          <path class="brassy" d="M19 48 q-5 20 9 33 q-3-17-1-32 Z" />
+          <path class="brassy" d="M77 48 q5 20-9 33 q3-17 1-32 Z" />
+          <path class="brassy" d="M30 86 q8 6 18 6 q10 0 18-6 l2 5 q-9 7-20 7 q-11 0-20-7 Z" />
+          <!-- the globe -->
+          <circle class="glass" cx="48" cy="44" r="34" />
+          <circle class="fluid" cx="48" cy="44" r="34" />
+          <!-- what turns over inside it, slowly and for ever -->
+          <g class="swirl">
+            <ellipse class="lit" opacity="0.16" cx="40" cy="50" rx="19" ry="9"  transform="rotate(-20 40 50)" />
+            <ellipse class="lit" opacity="0.13" cx="56" cy="38" rx="15" ry="7"  transform="rotate(26 56 38)" />
+            <ellipse class="lit" opacity="0.1"  cx="46" cy="32" rx="11" ry="5.5" transform="rotate(-8 46 32)" />
+          </g>
+          <circle class="lit" cx="48" cy="44" r="5" opacity="0.45" />
+          <!-- the moon, caught on the curve of the glass -->
+          <path d="M26 34 a28 28 0 0 1 13-11" fill="none" stroke="rgba(207,227,230,0.22)" stroke-width="1.7" stroke-linecap="round" />
+          <circle cx="63" cy="60" r="2.8" fill="rgba(207,227,230,0.28)" />
+          <g class="wraith"><use href="#wraith-shape" transform="translate(48 46) scale(0.8)" /></g>
         </svg>
       </a>
 
@@ -792,29 +926,15 @@
         </svg>
       </a>
 
-      <!-- Daily Flow: a water clock whose drip has dried -->
-      <a class="instr off" data-key="flow" href="Daily-Flow/index.html"
-         style="--reagent:#5fc8a6; --k:16" aria-label="Daily Flow — suspended">
-        <svg class="art" viewBox="0 0 64 102" aria-hidden="true" focusable="false">
-          <path class="brassy" d="M8 6 h48 v4 H8 Z" />
-          <path class="brassy" d="M12 10 h4 v84 h-4 Z M48 10 h4 v84 h-4 Z" />
-          <path class="brassy" d="M6 94 h52 q3 0 3 3 v4 H3 v-4 q0-3 3-3 Z" />
-          <!-- the vessel, graduated for the four tracks -->
-          <path class="glass" d="M20 12 h24 v58 q0 8-8 8 h-8 q-8 0-8-8 Z" />
-          <!-- the level, low and perfectly flat -->
-          <path class="fluid" d="M21.2 50 h21.6 v19 q0 7.6-7.6 7.6 h-6.4 q-7.6 0-7.6-7.6 Z" />
-          <path class="hair" d="M21.2 50 h21.6" />
-          <!-- the graduations: body, mind, soul, hobbies -->
-          <path class="hair-f" d="M20 22 h7 M20 32 h7 M20 42 h7 M20 52 h7 M20 62 h7" />
-          <path class="hair-f" d="M37 22 h7 M37 42 h7 M37 62 h7" />
-          <!-- the spout, and the drop that never leaves it -->
-          <path class="brassy" d="M36 74 h10 q3 0 3 3 v3 h-4 v-2 h-9 Z" />
-          <path class="lit" opacity="0.5" d="M46.6 81 q2 3 0 4.6 q-2-1.6 0-4.6 Z" />
-          <path d="M23 16 q-1.4 24 0 50" fill="none" stroke="rgba(207,227,230,0.38)" stroke-width="2.2" stroke-linecap="round" opacity="0.5" />
-          <path class="dust" d="M21 13.5 h22" />
-          <g class="wraith"><use href="#wraith-shape" transform="translate(32 46) scale(0.6)" /></g>
+      <div class="prop" aria-hidden="true" style="--k:4.2">
+        <svg viewBox="0 0 52 42" focusable="false">
+          <path class="brassy" d="M32 2 l5 3 -14 19 -5-3 Z" />
+          <path class="metal" d="M6 16 h40 q-2 20-11 24 H17 Q8 36 6 16 Z" />
+          <ellipse class="metal" cx="26" cy="16" rx="20" ry="5.5" />
+          <ellipse cx="26" cy="16" rx="15" ry="3.6" fill="#0b1210" opacity="0.7" />
+          <circle class="brassy" cx="21" cy="21" r="4" />
         </svg>
-      </a>
+      </div>
 
       <!-- the candle and the censer. Not a project; just the light -->
       <div class="flame-wrap" aria-hidden="true">
@@ -846,11 +966,12 @@
 
   <!-- THE LEDGER: the readable index, lying open on the near edge -->
   <section class="ledger" id="ledger" aria-label="The ledger">
-    <div>
+    <div class="page l">
       <h1>Mirrorcore&nbsp;Lab</h1>
       <p class="sub">Six experiments.<br />Two of them are working.</p>
       <div class="flourish"></div>
     </div>
+    <div class="page r">
     <ol>
       <li><a class="line" data-key="dream" data-state="running" href="Dream-Archive/index.html" style="--reagent:#a79ce8">
         <span class="mark"></span><span class="nm">Dream Archive</span><span class="st">running</span></a></li>
@@ -865,6 +986,7 @@
       <li><a class="line" data-key="time" data-state="suspended" href="Time-Scroller/index.html" style="--reagent:#e0784f">
         <span class="mark"></span><span class="nm">Time Scroller</span><span class="st">suspended</span></a></li>
     </ol>
+    </div>
   </section>
 </main>
 
