@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Mirrorcore Lab</title>
-<meta name="description" content="Six experiments. One is awake." />
+<meta name="description" content="Experiments in progress." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet" />
@@ -16,7 +16,7 @@
      grey. Colour is attention, not status: the name under the lens
      lights in its own hue and throws a short reflection, which is the
      whole of the decoration and the reason for the name of the lab.
-     The one running badge is the exception that stays lit.
+     Running badges are the exception that stay lit.
      No script: every state here is hover, focus or :target.
      ================================================================== */
 
@@ -79,10 +79,6 @@
     color: var(--bone);
   }
 
-  .census {
-    margin-top: 0.35rem;
-    color: var(--dim);
-  }
 
   /* ---- the index ------------------------------------------------ */
 
@@ -165,7 +161,7 @@
     background: currentColor;
   }
 
-  /* The one running experiment keeps its colour whether read or not. */
+  /* A running experiment keeps its colour whether read or not. */
   .state[data-state="running"] {
     border-color: color-mix(in srgb, var(--accent) 34%, transparent);
     color: var(--accent);
@@ -211,12 +207,6 @@
     outline-offset: clamp(0.5rem, 2vw, 1.1rem);
   }
 
-  /* ---- the one that is not open yet ----------------------------- */
-
-  /* Sealed means inert: it does not answer the lens at all. */
-  .entry.sealed { cursor: default; }
-  .entry.sealed .name { color: #39424a; }
-  .entry.sealed:hover::before { height: 0; }
 
   /* ---- narrow --------------------------------------------------- */
 
@@ -243,14 +233,14 @@
   <main>
     <header class="masthead">
       <h1 class="lab">Mirrorcore Lab</h1>
-      <p class="census">Six experiments. One is awake.</p>
     </header>
 
     <nav class="index" id="index" aria-label="Experiments">
 
-      <div class="entry sealed" id="dream-lab" style="--accent:#9b93dd">
-        <h2 class="name">Dream Lab</h2>
-      </div>
+      <a class="entry" id="dream-archive" href="Dream-Archive/index.html" style="--accent:#9b93dd">
+        <h2 class="name">Dream Archive<span class="reflect" aria-hidden="true">Dream Archive</span></h2>
+        <span class="state" data-state="running">running</span>
+      </a>
 
       <a class="entry" id="bioelectric" href="Bioelectric-studio/index.html" style="--accent:#9d84f0">
         <h2 class="name">Bioelectric Studio<span class="reflect" aria-hidden="true">Bioelectric Studio</span></h2>

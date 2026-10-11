@@ -1,0 +1,1149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dream Archive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#f0e4cd; --ink-dim:#b3a289; --ink-faint:#776a58;
+  --bg:#0a0908; --bg-2:#120f0c; --paper:rgba(226,201,154,.045); --paper-2:#17120d;
+  --line:rgba(226,201,154,.16); --line-2:rgba(226,201,154,.32);
+  --flame:#e0a44a; --ember:#c2703a; --deep:#5e7f82; --danger:#cc6b5e;
+  --btn-text:#140f0a;
+  --map-sky:#070a12; --map-horizon:#2a1d12; --map-water:#0a1518; --map-deep:#030607;
+  --star:var(--flame); --glow:var(--deep); --text:var(--ink); --muted:var(--ink-dim);
+  --surface:rgba(226,201,154,.05); --surface-2:#140f0a;
+  --serif:"Newsreader","Iowan Old Style","Palatino Linotype",Georgia,serif;
+  --sans:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;min-height:100%;font-family:var(--sans);color:var(--text);background:var(--bg);font-size:16px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:
+  radial-gradient(120% 55% at 50% -8%, rgba(224,164,74,.13), transparent 62%),
+  radial-gradient(90% 40% at 50% 108%, rgba(94,127,130,.10), transparent 60%),
+  linear-gradient(to bottom, #0b0a08, #0a0908 55%, #070605)}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+  background-image:radial-gradient(rgba(226,201,154,.05) .5px, transparent .5px);background-size:3px 3px}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--glow);outline-offset:2px;border-radius:6px}
+.wrap{max-width:680px;margin:0 auto;padding:18px 18px 120px}
+header.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:6px 2px 14px}
+.brand{font-family:var(--serif);font-size:1.05rem;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim)}
+.brand .seal{color:var(--flame);letter-spacing:0}
+.status{font-size:.8rem;color:var(--muted);text-align:right}
+.view{display:none}
+.view.on{display:block}
+h1{font-family:var(--serif);font-weight:300;font-size:clamp(1.9rem,6.4vw,2.6rem);line-height:1.1;margin:6px 0 6px;letter-spacing:.005em}
+h1+.muted{margin-top:0}
+.moon{font-size:.85rem;color:var(--ink-dim)}
+.moon b{font-weight:400;color:var(--flame);font-size:1.05rem}
+.rule{height:1px;background:linear-gradient(to right,var(--line-2),transparent);margin:14px 0 20px}
+h2{font-family:var(--serif);font-weight:400;font-size:1.3rem;margin:30px 0 10px;color:var(--ink)}
+h2::before{content:"";display:inline-block;width:16px;height:1px;background:var(--flame);vertical-align:middle;margin-right:10px}
+.muted{color:var(--muted)}
+.small{font-size:.85rem}
+.banner{background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:12px 14px;margin:0 0 16px;font-size:.9rem}
+/* write */
+.dreamtext{width:100%;min-height:42vh;resize:vertical;background:transparent;border:0;border-left:2px solid var(--line);
+  padding:4px 0 4px 16px;font-family:var(--serif);font-size:1.18rem;line-height:1.65;outline:none}
+.dreamtext:focus{border-left-color:var(--glow)}
+.dreamtext::placeholder{color:var(--muted);font-style:italic}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.field{margin:14px 0}
+.field label,.lbl{display:block;font-size:.85rem;color:var(--muted);margin-bottom:6px}
+.input,textarea.input,select.input{width:100%;background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:3px;padding:10px 12px}
+textarea.input{min-height:74px;resize:vertical;line-height:1.5}
+input[type=date].input,input[type=time].input{width:auto}
+details.ctx{margin:18px 0;background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:4px 14px}
+details.ctx summary{padding:10px 0;cursor:pointer;font-weight:500;list-style:none}
+details.ctx summary::-webkit-details-marker{display:none}
+details.ctx summary::before{content:"+";display:inline-block;width:1.2em;color:var(--glow)}
+details.ctx[open] summary::before{content:"−"}
+.scale{display:flex;gap:6px;flex-wrap:wrap}
+.scale button{min-width:40px;padding:7px 10px;border-radius:3px;border:1px solid var(--line);background:transparent;font-size:.9rem}
+.scale button[aria-pressed="true"]{background:var(--flame);color:var(--btn-text);border-color:transparent}
+.scale-ends{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-top:4px;max-width:240px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.btn{border:1px solid var(--line-2);background:transparent;border-radius:3px;padding:11px 18px;font-weight:500;letter-spacing:.02em}
+.btn:hover{border-color:var(--flame);color:var(--flame)}
+.btn.primary{background:var(--flame);color:var(--btn-text);border-color:transparent}
+.btn.primary:hover{background:#eeb75f;color:var(--btn-text)}
+.btn.quiet{background:transparent}
+.btn.danger{color:var(--danger)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.sm{padding:7px 13px;font-size:.88rem}
+/* nav */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;
+  padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));
+  background:rgba(10,9,8,.93);border-top:1px solid var(--line);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+nav.tabs .in{display:flex;gap:4px;max-width:680px;width:100%}
+nav.tabs button{flex:1;border:0;background:transparent;padding:9px 2px;border-radius:3px;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint)}
+nav.tabs button[aria-current="page"]{color:var(--flame);background:rgba(224,164,74,.09);font-weight:600}
+/* lists and cards */
+.stats{display:flex;gap:22px;flex-wrap:wrap;margin:4px 0 8px}
+.stat b{display:block;font-family:var(--serif);font-weight:300;font-size:2.1rem;line-height:1;color:var(--flame)}
+.stat span{font-size:.82rem;color:var(--muted)}
+.bars{margin:10px 0 4px}
+.bar{display:grid;grid-template-columns:minmax(90px,38%) 1fr 26px;gap:10px;align-items:center;margin:7px 0;font-size:.9rem}
+.bar i{display:block;height:5px;border-radius:2px;background:linear-gradient(to right,var(--ember),var(--flame));opacity:.9}
+.bar em{font-style:normal;color:var(--muted);text-align:right;font-size:.8rem}
+.month{font-family:var(--serif);font-style:italic;color:var(--muted);margin:24px 0 6px}
+.dream-item{display:block;width:100%;text-align:left;background:var(--paper);border:1px solid var(--line);border-left:2px solid var(--line-2);border-radius:3px;padding:12px 15px;margin:9px 0;transition:border-color .15s,background .15s}
+.dream-item:hover{background:rgba(226,201,154,.075);border-left-color:var(--flame)}
+.dream-item .d{font-size:.8rem;color:var(--muted);display:flex;gap:8px;align-items:center}
+.dream-item p{margin:4px 0 8px;font-family:var(--serif);font-size:1.02rem;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.tag{display:inline-block;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:2px;border:1px solid var(--line)}
+.tag.nm{color:var(--danger);border-color:currentColor}
+.tag.lu{color:var(--deep);border-color:currentColor}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:.8rem;padding:4px 10px;border-radius:3px;border:1px solid var(--line);background:transparent}
+.chip.sym{border-color:var(--star);color:var(--text)}
+button.chip{cursor:pointer}
+.chip.feel{border-style:dashed}
+.sym-item{display:block;width:100%;text-align:left;background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:12px 15px;margin:9px 0}
+.sym-item:hover{background:rgba(226,201,154,.075)}
+.sym-item .n{font-family:var(--serif);font-size:1.2rem}
+.sym-item .c{float:right;font-size:.8rem;color:var(--muted)}
+.sym-item .w{font-size:.85rem;color:var(--muted);margin-top:2px}
+.suggest{border:1px solid var(--flame);border-radius:3px;padding:12px 14px;margin:8px 0;background:var(--surface)}
+.suggest .n{font-family:var(--serif);font-size:1.15rem}
+.empty{padding:22px 4px;color:var(--muted);font-family:var(--serif);font-style:italic;font-size:1.05rem}
+/* map */
+#map-wrap{position:relative;margin:0 -18px;border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2)}
+#map-wrap svg{display:block;width:100%;height:auto;touch-action:pan-y}
+#map-wrap .node{cursor:grab;touch-action:none}
+#map-wrap .node text{font-family:var(--sans);font-size:12px;fill:var(--text);paint-order:stroke;stroke:var(--map-sky);stroke-width:3px;stroke-opacity:.7}
+#map-wrap .node.deep text{stroke:var(--map-water)}
+#map-wrap .node:focus-visible{outline:none}
+#map-wrap .node:focus-visible circle.core{stroke:var(--text);stroke-width:2}
+.zone{font-family:var(--serif);font-style:italic;font-size:12px;fill:var(--muted)}
+/* sheet */
+#sheet{position:fixed;inset:0;z-index:40;display:none}
+#sheet.on{display:block}
+#sheet .scrim{position:absolute;inset:0;background:rgba(0,0,0,.66)}
+#sheet .panel{position:absolute;left:0;right:0;bottom:0;top:max(40px,env(safe-area-inset-top,0px));max-width:720px;margin:0 auto;
+  background:#0d0b09;border:1px solid var(--line-2);border-bottom:0;border-radius:4px 4px 0 0;overflow-y:auto;
+  padding:14px 20px calc(40px + env(safe-area-inset-bottom,0px));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+@media (prefers-reduced-motion:no-preference){ #sheet.on .panel{animation:rise .28s ease-out} @keyframes rise{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}} }
+.sheet-head{display:flex;justify-content:space-between;align-items:center;position:sticky;top:-14px;padding:10px 0;background:#0d0b09;z-index:2;border-bottom:1px solid var(--line)}
+.close{border:0;background:transparent;font-size:.95rem;color:var(--muted);padding:6px 4px}
+.dream-body{font-family:var(--serif);font-size:1.12rem;line-height:1.7;white-space:pre-wrap;margin:6px 0 16px}
+.ctx-list{font-size:.9rem;margin:0 0 12px;padding:0;list-style:none}
+.ctx-list li{margin:4px 0}
+.ctx-list b{font-weight:500;color:var(--muted)}
+.analysis{font-family:var(--serif);font-size:1.08rem;line-height:1.72;max-width:68ch}
+.analysis h2,.analysis h3,.analysis h4{font-family:var(--serif);font-weight:500;margin:26px 0 8px;line-height:1.25}
+.analysis h2{font-size:1.45rem}.analysis h3{font-size:1.28rem}.analysis h4{font-size:1.12rem}
+.analysis p{margin:0 0 14px}
+.analysis ul,.analysis ol{padding-left:1.3em;margin:0 0 14px}
+.analysis li{margin:5px 0}
+.analysis blockquote{margin:0 0 14px;padding-left:14px;border-left:2px solid var(--glow);font-style:italic}
+.thinking{font-family:var(--serif);font-style:italic;color:var(--muted);padding:12px 0}
+@media (prefers-reduced-motion:no-preference){ .thinking{animation:breathe 2.4s ease-in-out infinite} @keyframes breathe{50%{opacity:.45}} }
+.err{color:var(--danger);font-size:.92rem;margin:10px 0}
+.appear{border-left:2px solid var(--line);padding:2px 0 2px 12px;margin:10px 0;display:block;width:100%;text-align:left;background:transparent;border-top:0;border-right:0;border-bottom:0}
+.appear .d{font-size:.8rem;color:var(--muted)}
+.appear .t{font-family:var(--serif);font-size:1rem}
+input[type=range]{width:100%;accent-color:var(--glow)}
+hr{border:0;border-top:1px solid var(--line);margin:22px 0}
+ul.plain{list-style:none;padding:0;margin:10px 0;font-size:.95rem}
+ul.plain li{padding:9px 0 9px 14px;border-left:1px solid var(--line);margin:0 0 2px}
+ul.plain b{font-weight:500;color:var(--flame)}
+h3{font-family:var(--serif);font-weight:400;font-size:1.08rem;margin:20px 0 8px;color:var(--ink-dim)}
+table.cmp{width:100%;border-collapse:collapse;font-size:.92rem;margin:10px 0}
+table.cmp th{font-weight:400;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);text-align:right;padding:4px 0}
+table.cmp th:first-child{text-align:left}
+table.cmp td{padding:7px 0;border-top:1px solid var(--line);text-align:right}
+table.cmp td:first-child{text-align:left;color:var(--ink-dim)}
+table.cmp td.hi{color:var(--flame)}
+.moons{display:flex;gap:10px;align-items:flex-end;margin:10px 0}
+.mn{flex:1;text-align:center;font-size:.72rem;color:var(--ink-faint);display:flex;flex-direction:column;align-items:center;gap:3px}
+.mn b{font-size:1.1rem;color:var(--flame);font-weight:400}
+.mn i{display:block;width:70%;background:var(--ember);border-radius:1px}
+.chip em{font-style:normal;font-size:.78rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><span class="seal">☾</span> Dream Archive</div>
+    <div class="status" id="status">Opening the archive…</div>
+  </header>
+  <div id="banner"></div>
+
+  <!-- WRITE -->
+  <section class="view on" id="view-write">
+    <h1 id="write-title">What did you dream?</h1>
+    <div class="rule"></div>
+    <div class="row" style="margin-bottom:12px">
+      <label class="small muted" for="f-date">Night of</label>
+      <input class="input" type="date" id="f-date">
+      <span class="moon" id="f-moon"></span>
+    </div>
+    <textarea class="dreamtext" id="f-text" placeholder="Write it as you remember it. Fragments are fine."></textarea>
+
+    <details class="ctx" id="ctx">
+      <summary>Add context (optional)</summary>
+      <div class="field"><label for="f-emotions">Emotions during the dream</label><input class="input" id="f-emotions" placeholder="fear, urgency, relief…"></div>
+      <div class="field"><label for="f-waking">Feeling on waking</label><input class="input" id="f-waking"></div>
+      <div class="field"><span class="lbl">Did it feel like a nightmare?</span>
+        <div class="scale" data-field="nightmare"><button type="button" data-v="yes">Yes</button><button type="button" data-v="somewhat">Somewhat</button><button type="button" data-v="no">No</button></div></div>
+      <div class="field"><span class="lbl">How vivid was it?</span>
+        <div class="scale" data-field="intensity"></div><div class="scale-ends"><span>faint</span><span>very vivid</span></div></div>
+      <div class="field"><span class="lbl">Did you know you were dreaming?</span>
+        <div class="scale" data-field="lucid"><button type="button" data-v="no">No</button><button type="button" data-v="partly">Partly</button><button type="button" data-v="yes">Yes</button></div></div>
+      <div class="field"><label for="f-daybefore">The day before: events, worries, conversations</label><textarea class="input" id="f-daybefore"></textarea></div>
+      <div class="field"><label for="f-life">What's going on in your life lately</label><textarea class="input" id="f-life"></textarea></div>
+      <div class="field"><span class="lbl">Stress level lately</span>
+        <div class="scale" data-field="stress"></div><div class="scale-ends"><span>calm</span><span>very stressed</span></div></div>
+      <div class="field"><span class="lbl">Sleep quality</span>
+        <div class="scale" data-field="sleepQuality"></div><div class="scale-ends"><span>poor</span><span>great</span></div></div>
+      <div class="row">
+        <div class="field"><label for="f-woke">Woke up at</label><input class="input" type="time" id="f-woke"></div>
+      </div>
+      <div class="field"><label for="f-sleepnotes">Anything that disturbed your sleep</label><input class="input" id="f-sleepnotes"></div>
+      <div class="field"><label for="f-presleep">Before sleep</label><textarea class="input" id="f-presleep" placeholder="herbs, tea, screens, food, alcohol, medication, what you read or watched…"></textarea></div>
+      <div class="field"><label for="f-assoc">Your first associations</label><textarea class="input" id="f-assoc" placeholder="What comes to mind straight away, before any analysis"></textarea></div>
+    </details>
+
+    <div class="actions">
+      <button class="btn primary" data-action="save-dream" data-analyze="1" id="btn-save-analyze">Save and analyze</button>
+      <button class="btn" data-action="save-dream" data-analyze="0" id="btn-save">Save only</button>
+      <button class="btn quiet" data-action="cancel-edit" id="btn-cancel-edit" hidden>Cancel editing</button>
+    </div>
+    <p class="small muted" id="write-note" style="margin-top:14px">Saving finds the symbols in the dream and links them to your lexicon. The Jungian reading takes a minute or two.</p>
+  </section>
+
+  <!-- JOURNAL -->
+  <section class="view" id="view-journal"></section>
+
+  <!-- DICTIONARY -->
+  <section class="view" id="view-dict"></section>
+
+  <!-- MAP -->
+  <section class="view" id="view-map">
+    <h1>The sky inside the archive</h1>
+    <p class="muted small" id="map-hint">Each light is a symbol from your lexicon. High means close to waking life, low means deep water. Lines join symbols that shared a dream. Tap a light to open it, drag it up or down to set its depth.</p>
+    <div class="rule"></div>
+    <div id="map-wrap"></div>
+  </section>
+
+  <!-- LUCID -->
+  <section class="view" id="view-lucid"></section>
+</div>
+
+<nav class="tabs" aria-label="Sections"><div class="in">
+  <button data-tab="write" aria-current="page">Record</button>
+  <button data-tab="journal">Archive</button>
+  <button data-tab="dict">Lexicon</button>
+  <button data-tab="map">Sky</button>
+  <button data-tab="lucid">Lucid</button>
+</div></nav>
+
+<div id="sheet" aria-hidden="true"><div class="scrim" data-action="close-sheet"></div><div class="panel" role="dialog" aria-modal="true" id="sheet-panel"></div></div>
+<input type="file" id="import-file" accept=".json,application/json" class="sr" tabindex="-1">
+
+<script>
+(() => {
+"use strict";
+/* ---------------- state ---------------- */
+const S = {
+  db:null, sample:null, downloads:null, uid:null, persistent:false,
+  root:null, dreamsCol:null, symbolsCol:null,
+  dreams:[], symbols:[], profile:{dismissed:[]},
+  tab:'write', sheet:null, editingId:null,
+  busy:{},             // dreamId -> {stage, text, ctl, error}
+  symBusy:{},          // symbolId -> {text, error}
+  confirmDelete:null,
+  sampleDenied:false,
+};
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s||'').trim().toLowerCase();
+const clamp = (v,a=0,b=1) => Math.max(a, Math.min(b, Number.isFinite(+v) ? +v : 0.5));
+const todayISO = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+const parseDate = iso => { const [y,m,d]=String(iso||'').split('-').map(Number); return y ? new Date(y,(m||1)-1,d||1) : new Date(); };
+const fmtDate = iso => parseDate(iso).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});
+const fmtMonth = iso => parseDate(iso).toLocaleDateString(undefined,{month:'long',year:'numeric'});
+function hash01(str){ let h=2166136261; for(const ch of str){ h^=ch.charCodeAt(0); h=Math.imul(h,16777619);} return ((h>>>0)%10000)/10000; }
+function rng(seed){ let s=seed>>>0||1; return ()=>{ s=Math.imul(s^(s>>>15),2246822507)^Math.imul(s^(s>>>13),3266489909); s^=s>>>16; return (s>>>0)/4294967296; }; }
+const clone = o => JSON.parse(JSON.stringify(o ?? null));
+/* moon: synodic approximation from a known new moon */
+const MOON_NAMES=['new moon','waxing crescent','first quarter','waxing gibbous','full moon','waning gibbous','last quarter','waning crescent'];
+const MOON_GLYPH=['\u25CF','\u263D','\u25D7','\u25D7','\u25CB','\u25D6','\u25D6','\u263E'];
+function moonAge(iso){
+  const d=parseDate(iso); d.setHours(12,0,0,0);
+  const synodic=29.530588853, known=Date.UTC(2000,0,6,18,14)/86400000;
+  let age=((d.getTime()/86400000)-known)%synodic; if(age<0) age+=synodic; return age;
+}
+function moonPhase(iso){
+  const age=moonAge(iso), i=Math.floor((age/29.530588853)*8+0.5)%8;
+  return {name:MOON_NAMES[i], glyph:MOON_GLYPH[i], index:i, age, illum:Math.round((1-Math.cos(2*Math.PI*age/29.530588853))/2*100)};
+}
+
+/* scales 1..5 */
+document.querySelectorAll('.scale[data-field="intensity"],.scale[data-field="stress"],.scale[data-field="sleepQuality"]').forEach(el=>{
+  el.innerHTML=[1,2,3,4,5].map(n=>`<button type="button" data-v="${n}">${n}</button>`).join('');
+});
+document.addEventListener('click', e=>{
+  const b=e.target.closest('.scale button'); if(!b) return;
+  const on=b.getAttribute('aria-pressed')==='true';
+  b.parentElement.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));
+  if(!on) b.setAttribute('aria-pressed','true');
+  saveDraft();
+});
+function scaleVal(field){ const b=document.querySelector(`.scale[data-field="${field}"] button[aria-pressed="true"]`); return b?b.dataset.v:''; }
+function setScale(field,v){ document.querySelectorAll(`.scale[data-field="${field}"] button`).forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.v===String(v??'')))); }
+
+/* ---------------- storage layer ---------------- */
+async function putDream(id, data){
+  if(S.persistent){ const ref = id ? S.dreamsCol.doc(id) : S.dreamsCol.doc(); await ref.set(data); return ref.id; }
+  id = id || ('m'+Date.now()+Math.random().toString(36).slice(2,6));
+  const i=S.dreams.findIndex(d=>d.id===id); const rec={...data,id};
+  if(i>=0) S.dreams[i]=rec; else S.dreams.push(rec);
+  sortDreams(); renderAll(); return id;
+}
+async function delDream(id){
+  if(S.persistent){ await S.dreamsCol.doc(id).delete(); return; }
+  S.dreams=S.dreams.filter(d=>d.id!==id); renderAll();
+}
+async function putSymbol(id, data){
+  if(S.persistent){ const ref = id ? S.symbolsCol.doc(id) : S.symbolsCol.doc(); await ref.set(data); return ref.id; }
+  id = id || ('s'+Date.now()+Math.random().toString(36).slice(2,6));
+  const i=S.symbols.findIndex(d=>d.id===id); const rec={...data,id};
+  if(i>=0) S.symbols[i]=rec; else S.symbols.push(rec);
+  renderAll(); return id;
+}
+async function delSymbol(id){
+  if(S.persistent){ await S.symbolsCol.doc(id).delete(); return; }
+  S.symbols=S.symbols.filter(d=>d.id!==id); renderAll();
+}
+async function putProfile(data){
+  S.profile=data;
+  if(S.persistent) await S.root.set(data); else renderAll();
+}
+const stripId = o => { const c=clone(o); delete c.id; return c; };
+function sortDreams(){ S.dreams.sort((a,b)=> (b.date||'').localeCompare(a.date||'') || (b.createdAt||0)-(a.createdAt||0)); }
+
+/* ---------------- derived ---------------- */
+function elementIndex(){
+  const m=new Map();
+  for(const d of S.dreams){
+    const seen=new Set();
+    for(const el of (d.elements||[])){
+      const k=norm(el.name); if(!k||seen.has(k)) continue; seen.add(k);
+      if(!m.has(k)) m.set(k,{name:el.name, key:k, apps:[]});
+      m.get(k).apps.push({dream:d, el});
+    }
+  }
+  for(const v of m.values()) v.apps.sort((a,b)=>(a.dream.date||'').localeCompare(b.dream.date||'') || (a.dream.createdAt||0)-(b.dream.createdAt||0));
+  return m;
+}
+function symbolByKey(){ return new Map(S.symbols.map(s=>[norm(s.name),s])); }
+function suggestions(idx=elementIndex()){
+  const dict=symbolByKey(), dis=new Set((S.profile.dismissed||[]).map(norm));
+  return [...idx.values()].filter(v=>v.apps.length>=2 && !dict.has(v.key) && !dis.has(v.key)).sort((a,b)=>b.apps.length-a.apps.length);
+}
+function prefillFrom(entry){
+  const words=[], feelings=[]; let depthSum=0, n=0;
+  for(const a of entry.apps.slice().reverse()){
+    for(const w of (a.el.words||[])) if(!words.some(x=>norm(x)===norm(w))) words.push(w);
+    for(const f of (a.el.feelings||[])) if(!feelings.some(x=>norm(x)===norm(f))) feelings.push(f);
+    if(Number.isFinite(+a.el.depth)){ depthSum+=+a.el.depth; n++; }
+  }
+  return {words:words.slice(0,6), feelings:feelings.slice(0,4), depth: n? depthSum/n : 0.5};
+}
+function isNightmare(d){ return d.ctx?.nightmare==='yes'; }
+function isLucid(d){ return d.ctx?.lucid==='yes'; }
+function avg(a){ return a.length ? a.reduce((x,y)=>x+y,0)/a.length : null; }
+function numCtx(list,key){ return avg(list.map(d=>+(d.ctx?.[key])).filter(Number.isFinite)); }
+function patterns(){
+  const nm=S.dreams.filter(isNightmare), ok=S.dreams.filter(d=>d.ctx?.nightmare==='no');
+  const rows=[];
+  const pair=(label,key,hint)=>{ const a=numCtx(nm,key), b=numCtx(ok,key);
+    if(a==null||b==null) return; rows.push({label,a,b,hint}); };
+  pair('Stress in the days before','stress','higher stress on nightmare nights');
+  pair('Sleep quality','sleepQuality','worse sleep on nightmare nights');
+  pair('Vividness','intensity','');
+  // moon
+  const moonN={}, moonAll={};
+  for(const d of S.dreams){ const i=moonPhase(d.date).index; moonAll[i]=(moonAll[i]||0)+1; if(isNightmare(d)) moonN[i]=(moonN[i]||0)+1; }
+  // words appearing in preSleep notes of nightmare nights
+  const words=new Map();
+  for(const d of nm){ const t=(d.ctx?.preSleep||'')+' '+(d.ctx?.sleepNotes||'');
+    for(const w of t.toLowerCase().split(/[^\p{L}]+/u)) if(w.length>3) words.set(w,(words.get(w)||0)+1); }
+  const topWords=[...words].filter(([,n])=>n>=2).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  // symbols most tied to nightmares
+  const idx=elementIndex(); const symN=[];
+  for(const v of idx.values()){ if(v.apps.length<2) continue;
+    const n=v.apps.filter(a=>isNightmare(a.dream)).length; if(n>=2) symN.push({name:v.name, n, total:v.apps.length}); }
+  symN.sort((a,b)=>b.n/b.total-a.n/a.total || b.n-a.n);
+  return {rows, nmCount:nm.length, okCount:ok.length, moonN, moonAll, topWords, symN:symN.slice(0,6)};
+}
+function lastLang(){ for(const d of S.dreams) if(d.lang) return d.lang; return 'the language of the notes below'; }
+
+/* ---------------- markdown ---------------- */
+function inline(s){
+  return s.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/(^|[^*])\*(?!\s)(.+?)\*(?!\*)/g,'$1<em>$2</em>').replace(/`([^`]+)`/g,'<code>$1</code>');
+}
+function md(src){
+  const lines=esc(src).split('\n'); let out='', list=null, para=[];
+  const flush=()=>{ if(para.length){ out+='<p>'+inline(para.join(' '))+'</p>'; para=[]; } };
+  const close=()=>{ if(list){ out+=`</${list}>`; list=null; } };
+  for(const raw of lines){
+    const l=raw.trim(); let m;
+    if(!l){ flush(); close(); continue; }
+    if((m=l.match(/^(#{1,4})\s+(.*)$/))){ flush(); close(); const lv=Math.min(4,m[1].length+1); out+=`<h${lv}>${inline(m[2])}</h${lv}>`; continue; }
+    if((m=l.match(/^[-*•]\s+(.*)$/))){ flush(); if(list!=='ul'){ close(); out+='<ul>'; list='ul'; } out+=`<li>${inline(m[1])}</li>`; continue; }
+    if((m=l.match(/^\d+[.)]\s+(.*)$/))){ flush(); if(list!=='ol'){ close(); out+='<ol>'; list='ol'; } out+=`<li>${inline(m[1])}</li>`; continue; }
+    if((m=l.match(/^&gt;\s?(.*)$/))){ flush(); close(); out+=`<blockquote>${inline(m[1])}</blockquote>`; continue; }
+    close(); para.push(l);
+  }
+  flush(); close(); return out;
+}
+
+/* ---------------- write form ---------------- */
+const CTX_FIELDS = [
+  ['emotions','Emotions during the dream'], ['waking','Feeling on waking'], ['nightmare','Felt like a nightmare'],
+  ['intensity','Vividness (1-5)'], ['lucid','Knew it was a dream'], ['dayBefore','The day before'],
+  ['lifeContext','Life lately'], ['stress','Stress lately (1-5)'], ['sleepQuality','Sleep quality (1-5)'],
+  ['wokeAt','Woke up at'], ['sleepNotes','Sleep disturbances'], ['preSleep','Before sleep'], ['associations','First associations'],
+];
+function readForm(){
+  return {
+    date: $('#f-date').value || todayISO(),
+    text: $('#f-text').value.trim(),
+    ctx: {
+      emotions:$('#f-emotions').value.trim(), waking:$('#f-waking').value.trim(), nightmare:scaleVal('nightmare'),
+      intensity:scaleVal('intensity'), lucid:scaleVal('lucid'), dayBefore:$('#f-daybefore').value.trim(),
+      lifeContext:$('#f-life').value.trim(), stress:scaleVal('stress'), sleepQuality:scaleVal('sleepQuality'),
+      wokeAt:$('#f-woke').value, sleepNotes:$('#f-sleepnotes').value.trim(), preSleep:$('#f-presleep').value.trim(), associations:$('#f-assoc').value.trim(),
+    }
+  };
+}
+function fillForm(d){
+  const c=d?.ctx||{};
+  $('#f-date').value=d?.date||todayISO(); $('#f-text').value=d?.text||'';
+  $('#f-emotions').value=c.emotions||''; $('#f-waking').value=c.waking||''; $('#f-daybefore').value=c.dayBefore||'';
+  $('#f-life').value=c.lifeContext||''; $('#f-woke').value=c.wokeAt||''; $('#f-sleepnotes').value=c.sleepNotes||''; $('#f-presleep').value=c.preSleep||''; $('#f-assoc').value=c.associations||'';
+  for(const f of ['nightmare','intensity','lucid','stress','sleepQuality']) setScale(f,c[f]);
+  $('#ctx').open = Object.values(c).some(Boolean);
+}
+const DRAFT_KEY='dreamarchive-draft';
+function saveDraft(){ if(S.editingId) return; try{ localStorage.setItem(DRAFT_KEY, JSON.stringify(readForm())); }catch(_){} }
+function loadDraft(){ try{ const d=JSON.parse(localStorage.getItem(DRAFT_KEY)||'null'); if(d&&(d.text||Object.values(d.ctx||{}).some(Boolean))) fillForm(d); else fillForm(null); }catch(_){ fillForm(null); } }
+function clearDraft(){ try{ localStorage.removeItem(DRAFT_KEY); }catch(_){} }
+function renderMoonLabel(){
+  const el=$('#f-moon'); if(!el) return;
+  const m=moonPhase($('#f-date').value||todayISO());
+  el.innerHTML=`<b>${m.glyph}</b> ${esc(m.name)} \u00b7 ${m.illum}% lit`;
+}
+document.addEventListener('input', e=>{ if(e.target.closest('#view-write')){ saveDraft(); if(e.target.id==='f-date') renderMoonLabel(); } });
+
+function setEditMode(id){
+  S.editingId=id;
+  $('#write-title').textContent = id ? 'Edit this dream' : 'What did you dream?';
+  $('#btn-cancel-edit').hidden = !id;
+  $('#btn-save-analyze').textContent = id ? 'Save and analyze again' : 'Save and analyze';
+  $('#btn-save').textContent = id ? 'Save changes' : 'Save only';
+}
+
+async function saveDream(analyze){
+  const f=readForm();
+  if(!f.text){ $('#write-note').textContent='Write the dream first, even a few fragments.'; $('#f-text').focus(); return; }
+  const existing = S.editingId ? S.dreams.find(d=>d.id===S.editingId) : null;
+  const textChanged = !existing || existing.text!==f.text;
+  const data = existing ? {...stripId(existing), date:f.date, text:f.text, ctx:f.ctx, updatedAt:Date.now()}
+                        : {date:f.date, text:f.text, ctx:f.ctx, elements:[], analysis:'', createdAt:Date.now()};
+  const btns=[...document.querySelectorAll('[data-action="save-dream"]')]; btns.forEach(b=>b.disabled=true);
+  try{
+    const id = await putDream(existing?.id, data);
+    clearDraft(); setEditMode(null); fillForm(null);
+    $('#write-note').textContent='Saving finds the symbols in the dream and links them to your lexicon. The Jungian reading takes a minute or two.';
+    openSheet({type:'dream', id});
+    if(S.sample && !S.sampleDenied){
+      runAI(id, {detect: textChanged || !(data.elements||[]).length, analyze});
+    }
+  }catch(e){
+    $('#write-note').textContent = e?.code==='quota_exceeded' ? 'The archive is full. Export a backup and delete some old dreams to make room.' : 'The dream could not be saved. Check your connection and try again.';
+  }finally{ btns.forEach(b=>b.disabled=false); }
+}
+
+/* ---------------- AI ---------------- */
+function errCopy(e){
+  switch(e?.code){
+    case 'not_granted': S.sampleDenied=true; return 'Claude access was declined for this visit. Reload the page to be asked again.';
+    case 'rate_limited': return 'Too many requests at once. Wait a minute and try again.';
+    case 'prompt_too_large': return 'This dream and its history are too long to send at once. Try shortening the context fields.';
+    case 'cancelled': return 'Stopped.';
+    case 'invalid_json': return 'The symbols could not be read this time. Try again.';
+    case 'session_expired': return 'Your session expired. Reload the page and try again.';
+    case 'sampling_disabled': return 'Analysis is turned off for this account.';
+    default: return 'Claude could not finish this. Try again in a moment.';
+  }
+}
+function ctxLines(ctx){
+  return CTX_FIELDS.filter(([k])=>ctx?.[k]).map(([k,l])=>`- ${l}: ${ctx[k]}`).join('\n');
+}
+function knownNames(excludeId){
+  const set=new Map();
+  for(const s of S.symbols) set.set(norm(s.name), s.name);
+  for(const d of S.dreams){ if(d.id===excludeId) continue; for(const el of (d.elements||[])) if(!set.has(norm(el.name))) set.set(norm(el.name), el.name); }
+  return [...set.values()].slice(0,300);
+}
+function detectPrompt(d){
+  const known=knownNames(d.id);
+  return `You are helping someone keep a personal dream lexicon. Read the dream and list its meaningful elements.
+
+Reply with ONLY a JSON object of this shape:
+{"language":"English","elements":[{"name":"crocodiles","note":"Hidden around the building at first, then seen and fought.","words":["ancient","hidden","predator"],"feelings":["terror"],"depth":0.85}]}
+
+Rules:
+- Include 4 to 14 elements: places, animals, people, objects, and recurring situations or motifs (for example "calling for help that fails"). Skip trivial details.
+- "name": 1 to 4 words, lowercase unless a proper name, written in the dream's own language.
+- If an element is the same thing as one of the KNOWN NAMES below, use that exact known name. Only reuse a name for the same element: different creatures or things stay separate (a crocodile is not an alligator, a theater is not a cinema).
+- "note": one sentence in the dream's language on how the element appeared in THIS dream.
+- "words": 3 to 5 short associations. "feelings": 1 to 3 feelings the element carried. Both in the dream's language.
+- "depth": a number from 0 to 1. 0 = the conscious, social, civilized surface (work, phones, institutions, rules). 0.5 = in between. 1 = deep, instinctive, wild or watery.
+- "language": the English name of the language the dream is written in.
+
+KNOWN NAMES: ${known.length? known.map(n=>JSON.stringify(n)).join(', ') : '(none yet)'}
+
+DREAM (night of ${d.date}):
+"""
+${d.text}
+"""
+${ctxLines(d.ctx) ? '\nCONTEXT FROM THE DREAMER:\n'+ctxLines(d.ctx) : ''}`;
+}
+function analysisPrompt(d){
+  const lang=d.lang||'the same language the dream is written in';
+  const idx=elementIndex(); const dict=symbolByKey();
+  const els=(d.elements||[]);
+  const elLines=els.map(e=>`- ${e.name}: ${e.note||''}`).join('\n');
+  const dictRel=[], dictOther=[];
+  for(const s of S.symbols){
+    const line=`- ${s.name}: words: ${(s.words||[]).join(', ')||'none'}; feelings: ${(s.feelings||[]).join(', ')||'none'}${s.notes?'; notes: '+s.notes:''}`;
+    (els.some(e=>norm(e.name)===norm(s.name)) ? dictRel : dictOther).push(line);
+  }
+  const earlier=[];
+  for(const e of els){
+    const v=idx.get(norm(e.name)); if(!v) continue;
+    const prev=v.apps.filter(a=>a.dream.id!==d.id).slice(-6);
+    if(prev.length) earlier.push(`- ${e.name}: `+prev.map(a=>`${a.dream.date}: ${a.el.note||'appeared'}`).join(' | '));
+  }
+  const recent=S.dreams.filter(x=>x.id!==d.id && (x.date||'')<= (d.date||'9999')).slice(0,5)
+    .map(x=>`- ${x.date}: ${x.text.slice(0,320).replace(/\s+/g,' ')}${x.text.length>320?'…':''}`).join('\n');
+  const mo=moonPhase(d.date);
+  return `You are a Jungian analyst writing a long, careful reading of one dream for the dreamer, who keeps a personal dream archive and a lexicon of their own recurring symbols.
+
+Write the whole reading in ${lang}.
+
+Approach:
+- Jung is the backbone of this reading. Work in his terms: the compensatory function, the dream ego and its attitude, the subjective level (every figure as a part of the dreamer) alongside the objective level, archetypal patterns (shadow, anima/animus, the child, the wise old figure, the trickster, the mother, the Self), and where this dream sits in the movement of individuation.
+- Amplify, but anchor. You may draw on myth, fairy tale, alchemy and religious imagery where an image genuinely calls for it, and name the parallel plainly. Always return from the amplification to this dream and this dreamer.
+- The dreamer's own associations come first, always. Where an element is in their lexicon, interpret it through their words and feelings before any general or archetypal meaning.
+- Treat recurrence as the most important evidence you have. When an element appeared in earlier dreams, compare how it appears now with before, and say what has shifted.
+- Follow the structure of the dream as Jung did: setting (exposition), development, culmination, and lysis (the resolution or its absence). A dream that breaks off without a lysis says something; name it.
+- Keep each lens clearly separate, so the dreamer always knows which framework is speaking. Say once, briefly and without hedging the whole text, that Jungian analysis is an interpretive tradition rather than proven science, and that the research lenses offer possibilities rather than certainties.
+- Be concrete and specific to this dream's details. No fortune-telling, no predictions, no diagnosis. Offer readings as possibilities, and where two readings compete, give both.
+- Only if the dream or the context suggests serious ongoing distress (for example frequent nightmares that badly disturb sleep), gently mention once in the synthesis that talking with someone they trust or a professional can help.
+- Length: thorough and unhurried, about 2000 to 2800 words. Warm, clear, direct prose; no mystification. Markdown: "## " for section headings, short paragraphs, occasional bullet lists, bold used sparingly. No title and no preamble before the first heading.
+
+Sections, in this order, with headings translated into ${lang} and without the notes in brackets:
+## The dream in brief [a short retelling of its arc and emotional shape]
+## Structure [setting, development, culmination, lysis; where the turn happens and how it ends]
+## The dream ego [how the dreamer behaves inside the dream: active or passive, watching or acting, fleeing or turning; and what that attitude suggests]
+## The figures and the landscape [each significant figure and place read on the subjective level, as aspects of the dreamer; the dreamer's own associations first]
+## Archetypal currents [which archetypal patterns the dream touches, with any myth, tale or alchemical parallel that genuinely fits, always brought back to this dream]
+## Compensation [what conscious attitude this dream may be balancing, and what it is asking to be seen]
+## Threat simulation [the research lens: what danger is rehearsed, how the dream ego responds, what that rehearsal trains]
+## Emotional processing [which emotions the dream works through, and how; include the gap between the dream's feelings and the waking feeling if known]
+## Continuity with waking life [links to the dreamer's concerns, the day before, and the context given; if little context was given, suggest what to watch for]
+## Recurring elements [only if some element appeared in earlier dreams; how each has changed and in which direction it is moving. Skip this section entirely otherwise]
+## Synthesis [bring the lenses into one reading, and name the question the dream seems to be putting to the dreamer]
+## Questions to carry [4 to 6 open questions to reflect on while awake]
+
+THE DREAM (night of ${d.date}):
+"""
+${d.text}
+"""
+MOON THAT NIGHT: ${mo.name}, ${mo.illum}% lit. (Mention it only if the dream's own imagery makes it relevant; there is no established link between moon phase and dream content.)
+${ctxLines(d.ctx) ? '\nCONTEXT FROM THE DREAMER:\n'+ctxLines(d.ctx)+'\n' : ''}
+ELEMENTS FOUND IN THIS DREAM:
+${elLines || '(none detected)'}
+
+THE DREAMER'S DICTIONARY, FOR ELEMENTS IN THIS DREAM:
+${dictRel.join('\n') || '(none of them are in the lexicon yet)'}
+${dictOther.length ? '\nOTHER DICTIONARY ENTRIES:\n'+dictOther.slice(0,40).join('\n')+'\n' : ''}
+EARLIER APPEARANCES OF THESE ELEMENTS:
+${earlier.join('\n') || '(none: this is their first appearance)'}
+
+RECENT EARLIER DREAMS, FOR CONTINUITY:
+${recent || '(no earlier dreams)'}`;
+}
+
+async function runAI(id, {detect=true, analyze=true}={}){
+  if(!S.sample || S.busy[id]?.stage) return;
+  const ctl=new AbortController();
+  S.busy[id]={stage: detect?'detect':'analyze', text:'', ctl, error:''};
+  renderSheet(); setStatus();
+  try{
+    let d=S.dreams.find(x=>x.id===id); if(!d) throw {code:'upstream_error'};
+    if(detect){
+      const res = await S.sample.json(detectPrompt(d), {signal:ctl.signal, modelTier:'default'});
+      const els = (Array.isArray(res?.elements)?res.elements:[]).filter(e=>e && typeof e.name==='string' && e.name.trim())
+        .slice(0,16).map(e=>({name:String(e.name).trim().slice(0,60), note:String(e.note||'').slice(0,400),
+          words:(Array.isArray(e.words)?e.words:[]).map(String).slice(0,6), feelings:(Array.isArray(e.feelings)?e.feelings:[]).map(String).slice(0,4),
+          depth:clamp(e.depth)}));
+      d={...stripId(S.dreams.find(x=>x.id===id)||d), elements:els, lang: typeof res?.language==='string'? res.language.slice(0,40) : (d.lang||'')};
+      await putDream(id, d);
+      d={...d,id};
+    }
+    if(analyze){
+      S.busy[id].stage='analyze'; S.busy[id].text=''; renderSheet(); setStatus();
+      const {text, truncated} = await S.sample(analysisPrompt(d), {signal:ctl.signal, modelTier:'default', cache:false,
+        onText:({text})=>{ S.busy[id].text=text; const el=document.getElementById('live-analysis'); if(el) el.innerHTML=md(text); }});
+      const cur=S.dreams.find(x=>x.id===id)||d;
+      await putDream(id, {...stripId(cur), analysis:text, analysisTruncated:!!truncated, analyzedAt:Date.now()});
+    }
+    delete S.busy[id];
+  }catch(e){
+    const keep=e?.text && S.busy[id]?.stage==='analyze' ? e.text : '';
+    if(keep){ const cur=S.dreams.find(x=>x.id===id); if(cur) { try{ await putDream(id,{...stripId(cur), analysis:keep, analysisTruncated:true, analyzedAt:Date.now()}); }catch(_){} } }
+    S.busy[id]={stage:null, text:'', error: errCopy(e)};
+  }
+  renderAll(); setStatus();
+}
+
+async function traceEvolution(symId){
+  const s=S.symbols.find(x=>x.id===symId); if(!s||!S.sample) return;
+  const v=elementIndex().get(norm(s.name)); if(!v||v.apps.length<2) return;
+  S.symBusy[symId]={text:'', error:''}; renderSheet();
+  const prompt=`A dreamer keeps a journal of recurring dream symbols. Describe how one symbol has changed across their dreams.
+
+Write in ${lastLang()}. About 150 to 250 words of warm, plain prose, no headings, no lists. Trace the arc in order, name what shifted (distance, activity, threat, the dreamer's response, setting), and offer one or two possible meanings of the direction it is moving in, as possibilities rather than certainties.
+
+SYMBOL: ${s.name}
+THE DREAMER'S OWN ASSOCIATIONS: words: ${(s.words||[]).join(', ')||'none'}; feelings: ${(s.feelings||[]).join(', ')||'none'}
+
+APPEARANCES, OLDEST FIRST:
+${v.apps.map(a=>`- ${a.dream.date}: ${a.el.note||'appeared'}`).join('\n')}`;
+  try{
+    const {text}=await S.sample(prompt,{modelTier:'default', cache:false, onText:({text})=>{ S.symBusy[symId].text=text; const el=document.getElementById('live-evo'); if(el) el.innerHTML=md(text); }});
+    const cur=S.symbols.find(x=>x.id===symId)||s;
+    await putSymbol(symId,{...stripId(cur), evolution:text, evolutionCount:v.apps.length});
+    delete S.symBusy[symId];
+  }catch(e){ S.symBusy[symId]={text:'', error:errCopy(e)}; }
+  renderSheet();
+}
+
+/* ---------------- renderers ---------------- */
+function setStatus(){
+  const busy=Object.values(S.busy).some(b=>b.stage);
+  $('#status').textContent = busy ? 'Reading a dream\u2026' : (S.persistent ? `${S.dreams.length} dream${S.dreams.length===1?'':'s'} saved` : (S.uid===undefined?'':'Not saving'));
+}
+function renderAll(){
+  sortDreams();
+  if(S.tab==='journal') renderJournal();
+  if(S.tab==='dict') renderDict();
+  if(S.tab==='map') renderMap();
+  if(S.tab==='lucid' && !document.activeElement?.matches?.('#f-intent')) renderLucid();
+  renderSheet(); setStatus();
+}
+function dreamItem(d, dict){
+  const syms=(d.elements||[]).filter(e=>dict.has(norm(e.name)));
+  const nm = d.ctx?.nightmare==='yes' ? '<span class="tag nm">nightmare</span>' : '';
+  const lu = (d.ctx?.lucid==='yes'||d.ctx?.lucid==='partly') ? '<span class="tag lu">lucid</span>' : '';
+  const mo = `<span title="${esc(moonPhase(d.date).name)}" style="color:var(--flame)">${moonPhase(d.date).glyph}</span>`;
+  return `<button class="dream-item" data-action="open-dream" data-id="${esc(d.id)}">
+    <span class="d">${mo} ${esc(fmtDate(d.date))} ${nm} ${lu} ${d.analysis?'':'<span class="tag">not analyzed</span>'}</span>
+    <p>${esc(d.text)}</p>
+    ${syms.length?`<span class="chips">${syms.map(e=>`<span class="chip sym">${esc(e.name)}</span>`).join('')}</span>`:''}
+  </button>`;
+}
+function patternsHTML(){
+  const p=patterns();
+  if(p.nmCount<2) return `<h2>Nightmares</h2><p class="small muted">Mark a few dreams as nightmares in the context fields, and patterns start appearing here: what the bad nights have in common, which symbols belong to them, and whether stress, sleep or the moon move with them.</p>`;
+  let h=`<h2>Nightmares</h2><p class="small muted">${p.nmCount} marked as nightmares, ${p.okCount} marked as not.</p>`;
+  if(p.rows.length){
+    h+=`<table class="cmp"><tr><th></th><th>Nightmare nights</th><th>Calm nights</th></tr>`;
+    for(const r of p.rows) h+=`<tr><td>${esc(r.label)}</td><td class="${r.a>r.b?'hi':''}">${r.a.toFixed(1)}</td><td class="${r.b>r.a?'hi':''}">${r.b.toFixed(1)}</td></tr>`;
+    h+=`</table><p class="small muted">Averages on a 1 to 5 scale. Small numbers of nights mean little, so read these as hints, not proof.</p>`;
+  }
+  if(p.symN.length){
+    h+=`<h3>Symbols that belong to the bad nights</h3><div class="chips">`+
+      p.symN.map(x=>`<span class="chip sym">${esc(x.name)} <em class="muted">${x.n}/${x.total}</em></span>`).join('')+`</div>`;
+  }
+  if(p.topWords.length){
+    h+=`<h3>Repeating in "before sleep" on those nights</h3><div class="chips">`+
+      p.topWords.map(([w,n])=>`<span class="chip">${esc(w)} <em class="muted">${n}</em></span>`).join('')+`</div>`;
+  }
+  const moons=Object.keys(p.moonAll).map(Number).sort((a,b)=>a-b);
+  if(moons.length>2){
+    h+=`<h3>By moon</h3><div class="moons">`+moons.map(i=>{
+      const t=p.moonAll[i], n=p.moonN[i]||0, pct=Math.round(n/t*100);
+      return `<div class="mn"><b>${MOON_GLYPH[i]}</b><span>${n}/${t}</span><i style="height:${Math.max(2,pct*0.5)}px"></i></div>`;
+    }).join('')+`</div><p class="small muted">Nightmares per dream recorded at each phase.</p>`;
+  }
+  return h;
+}
+function renderLucid(){
+  const el=$('#view-lucid'); if(!el) return;
+  const lucid=S.dreams.filter(d=>d.ctx?.lucid==='yes');
+  const partly=S.dreams.filter(d=>d.ctx?.lucid==='partly');
+  const rate=S.dreams.length? Math.round(lucid.length/S.dreams.length*100):0;
+  const last=lucid[0];
+  const idx=elementIndex();
+  const signs=[...idx.values()].filter(v=>v.apps.length>=2).sort((a,b)=>b.apps.length-a.apps.length).slice(0,8);
+  const m=moonPhase(todayISO());
+  let h=`<h1>Lucid</h1><p class="muted small">Knowing you are dreaming, while you dream.</p><div class="rule"></div>`;
+  h+=`<div class="stats">
+    <div class="stat"><b>${lucid.length}</b><span>fully lucid</span></div>
+    <div class="stat"><b>${partly.length}</b><span>partly</span></div>
+    <div class="stat"><b>${rate}%</b><span>of recorded dreams</span></div></div>`;
+  h+=`<p class="small muted">Tonight: <span style="color:var(--flame)">${m.glyph}</span> ${esc(m.name)}, ${m.illum}% lit.${last?` Last lucid dream: ${esc(fmtDate(last.date))}.`:''}</p>`;
+
+  h+=`<h2>Tonight's intention</h2>
+    <p class="small muted">Write it as if it has already happened, and read it back as you fall asleep. This is the core of the MILD technique.</p>
+    <textarea class="input" id="f-intent" placeholder="Tonight I notice I am dreaming when…">${esc(S.profile.intention||'')}</textarea>
+    <div class="actions"><button class="btn sm primary" data-action="save-intention">Keep this intention</button><span class="small muted" id="intent-msg"></span></div>`;
+
+  h+=`<h2>Your dream signs</h2>`;
+  if(signs.length){
+    h+=`<p class="small muted">These return often in your dreams. When one of them shows up in waking life, do a reality check: it trains your mind to check inside the dream too.</p><div class="chips">`+
+      signs.map(v=>`<span class="chip sym">${esc(v.name)} <em class="muted">${v.apps.length}</em></span>`).join('')+`</div>`;
+  } else {
+    h+=`<p class="small muted">Once a few symbols repeat across your dreams, they appear here as the things to check against.</p>`;
+  }
+
+  h+=`<h2>Reality checks</h2>
+    <ul class="plain">
+      <li><b>Hands.</b> Look at them, look away, look again. In dreams they tend to change, blur, or have the wrong number of fingers.</li>
+      <li><b>Text or a clock.</b> Read it, look away, read it again. It rarely stays the same.</li>
+      <li><b>Nose pinch.</b> Hold your nose shut and try to breathe in. If air comes, you are dreaming.</li>
+      <li><b>Light switch.</b> Switches often refuse to work properly in dreams.</li>
+    </ul>
+    <p class="small muted">Do them 5 to 10 times a day, and always ask the question seriously: "am I dreaming right now?" A check done on autopilot teaches nothing.</p>`;
+
+  h+=`<h2>Techniques</h2>
+    <details class="ctx"><summary>MILD · intention before sleep</summary>
+      <p class="small">As you fall asleep, repeat your intention and picture yourself back inside a recent dream, this time noticing it is a dream. Best combined with waking up in the night first.</p></details>
+    <details class="ctx"><summary>WBTB · wake back to bed</summary>
+      <p class="small">Set an alarm 5 to 6 hours after falling asleep. Stay up 20 to 30 minutes, keep the light low, read something about dreaming, then go back to sleep with your intention. REM is longest in the early morning, which is why this works so well.</p></details>
+    <details class="ctx"><summary>SSILD · cycling the senses</summary>
+      <p class="small">After the night waking, cycle slowly through sight, sound and body sensation, a few seconds each, four or five rounds, then let yourself drift off. Gentler than WILD and easier to learn.</p></details>
+    <details class="ctx"><summary>WILD · staying awake into the dream</summary>
+      <p class="small">Keep a thread of awareness while the body falls asleep. Expect strange images, sounds and heaviness, sometimes sleep paralysis. It passes; stay calm and let the scene form.</p></details>
+    <details class="ctx"><summary>Herbs</summary>
+      <p class="small">Mugwort and calea are traditional dream herbs; passionflower and valerian calm the way in rather than intensifying dreams. Note what you took in the "before sleep" field, and the archive will show you whether it actually changes anything for you.</p></details>`;
+
+  if(lucid.length||partly.length){
+    h+=`<h2>Lucid nights</h2>`;
+    const dict=symbolByKey();
+    for(const d of [...lucid,...partly].sort((a,b)=>(b.date||'').localeCompare(a.date||''))) h+=dreamItem(d,dict);
+  }
+  el.innerHTML=h;
+}
+function renderJournal(){
+  const el=$('#view-journal'); const idx=elementIndex(); const dict=symbolByKey();
+  const nightmares=S.dreams.filter(d=>d.ctx?.nightmare==='yes').length;
+  const top=[...idx.values()].filter(v=>v.apps.length>=2).sort((a,b)=>b.apps.length-a.apps.length).slice(0,7);
+  const max=top[0]?.apps.length||1;
+  let html=`<h1>The archive</h1>`;
+  if(!S.dreams.length){
+    html+=`<p class="empty">Nothing recorded yet. The next dream you remember goes in Record.</p>`;
+  }else{
+    html+=`<div class="stats">
+      <div class="stat"><b>${S.dreams.length}</b><span>dreams</span></div>
+      <div class="stat"><b>${S.symbols.length}</b><span>symbols in the lexicon</span></div>
+      <div class="stat"><b>${nightmares}</b><span>nightmares</span></div></div>`;
+    if(top.length){
+      html+=`<h2>What keeps returning</h2><div class="bars">${top.map(v=>`<div class="bar"><span>${esc(v.name)}</span><i style="width:${Math.max(6,v.apps.length/max*100)}%"></i><em>${v.apps.length}</em></div>`).join('')}</div>`;
+    }
+    html+=patternsHTML();
+    html+=`<h2>The record</h2>`;
+    let month='';
+    for(const d of S.dreams){
+      const m=fmtMonth(d.date); if(m!==month){ month=m; html+=`<div class="month">${esc(m)}</div>`; }
+      html+=dreamItem(d, dict);
+    }
+  }
+  html+=`<hr><h2>Backup</h2><p class="small muted">Your archive is saved privately to your Claude account. A backup file keeps a copy you control, and lets you move everything elsewhere later.</p>
+    <div class="actions"><button class="btn sm" data-action="export">Export backup</button><button class="btn sm quiet" data-action="import">Restore from backup</button></div><div id="backup-msg" class="small muted" style="margin-top:8px"></div>`;
+  el.innerHTML=html;
+}
+function renderDict(){
+  const el=$('#view-dict'); const idx=elementIndex(); const sugg=suggestions(idx); const dict=symbolByKey();
+  const q=norm($('#dict-q')?.value||'');
+  let html=`<h1>Lexicon</h1><p class="muted small">Your recurring symbols, in your own words. Something earns a place in the lexicon once it has appeared in two dreams.</p>`;
+  if(sugg.length){
+    html+=`<h2>Ready to join</h2>`;
+    html+=sugg.map(v=>{ const p=prefillFrom(v); return `<div class="suggest">
+      <div class="n">${esc(v.name)}</div><div class="small muted">Appeared in ${v.apps.length} dreams</div>
+      ${p.words.length||p.feelings.length?`<div class="chips" style="margin:8px 0">${p.words.map(w=>`<span class="chip">${esc(w)}</span>`).join('')}${p.feelings.map(w=>`<span class="chip feel">${esc(w)}</span>`).join('')}</div>`:''}
+      <div class="actions" style="margin-top:8px"><button class="btn sm primary" data-action="add-suggestion" data-key="${esc(v.key)}">Add to lexicon</button><button class="btn sm quiet" data-action="dismiss-suggestion" data-key="${esc(v.key)}">Not now</button></div></div>`; }).join('');
+  }
+  html+=`<div class="row" style="margin-top:22px"><input class="input" id="dict-q" placeholder="Search symbols" value="${esc($('#dict-q')?.value||'')}" style="flex:1"><button class="btn" data-action="new-symbol">Add a symbol</button></div><div id="dict-list"></div>`;
+  const waiting=[...idx.values()].filter(v=>v.apps.length===1 && !dict.has(v.key));
+  if(waiting.length){
+    html+=`<details class="ctx" style="margin-top:24px"><summary>Seen once (${waiting.length})</summary><p class="small muted">These appeared in one dream. They'll be suggested here if they come back.</p><div class="chips" style="margin-bottom:14px">${waiting.map(v=>`<span class="chip">${esc(v.name)}</span>`).join('')}</div></details>`;
+  }
+  el.innerHTML=html;
+  renderDictList(idx);
+  $('#dict-q').addEventListener('input',()=>renderDictList());
+}
+function renderDictList(idx=elementIndex()){
+  const q=norm($('#dict-q')?.value||'');
+  const list=S.symbols.map(s=>({s,count:idx.get(norm(s.name))?.apps.length||0}))
+    .filter(({s})=>!q || norm(s.name).includes(q) || (s.words||[]).some(w=>norm(w).includes(q)) || (s.feelings||[]).some(w=>norm(w).includes(q)))
+    .sort((a,b)=>b.count-a.count || a.s.name.localeCompare(b.s.name));
+  $('#dict-list').innerHTML = list.length ? list.map(({s,count})=>`<button class="sym-item" data-action="open-symbol" data-id="${esc(s.id)}">
+      <span class="c">${count} dream${count===1?'':'s'}</span><div class="n">${esc(s.name)}</div>
+      <div class="w">${esc([...(s.words||[]),...(s.feelings||[])].join(', '))}</div></button>`).join('')
+    : `<p class="empty">${S.symbols.length?'Nothing matches that search.':'The lexicon is empty. Symbols appear here once they recur, or add one yourself.'}</p>`;
+}
+
+/* ---------------- map ---------------- */
+let mapState=null;
+function renderMap(){
+  const wrap=$('#map-wrap'); if(!wrap) return;
+  const W=Math.max(320, Math.round(wrap.clientWidth||360));
+  const H=Math.round(Math.min(920, Math.max(560, W*1.5)));
+  const pad=40, padX=52, idx=elementIndex();
+  const nodes=S.symbols.map(s=>{ const key=norm(s.name); const depth=clamp(s.depth ?? 0.5); return {s, key, depth, count:idx.get(key)?.apps.length||0, x:padX+hash01(key)*(W-2*padX), y:pad+depth*(H-2*pad)}; });
+  const order=nodes.map((n,i)=>i).sort((a,b)=>hash01(nodes[a].key)-hash01(nodes[b].key));
+  order.forEach((i,r)=>{ const slots=Math.max(1,nodes.length-1); nodes[i].x = nodes.length===1 ? W/2 : padX + ((r/slots)*0.8+0.1+ (hash01(nodes[i].key+'j')-.5)*0.08)*(W-2*padX); });
+  const keyToI=new Map(nodes.map((n,i)=>[n.key,i])); const pairs=new Map();
+  for(const d of S.dreams){
+    const ks=[...new Set((d.elements||[]).map(e=>norm(e.name)))].filter(k=>keyToI.has(k));
+    for(let a=0;a<ks.length;a++) for(let b=a+1;b<ks.length;b++){ const i=keyToI.get(ks[a]), j=keyToI.get(ks[b]); const pk=i<j?`${i}-${j}`:`${j}-${i}`; pairs.set(pk,(pairs.get(pk)||0)+1); }
+  }
+  const edges=[...pairs].map(([k,w])=>{ const [i,j]=k.split('-').map(Number); return {i,j,w}; });
+  for(let it=0; it<260; it++){
+    for(let a=0;a<nodes.length;a++) for(let b=a+1;b<nodes.length;b++){
+      const A=nodes[a],B=nodes[b]; const dy=Math.abs(A.y-B.y); if(dy>46) continue;
+      const dx=B.x-A.x; if(Math.abs(dx)<110){ const f=(110-Math.abs(dx))*0.06*(1-dy/46)*(dx>=0?1:-1); A.x-=f; B.x+=f; }
+    }
+    for(const e of edges){ const A=nodes[e.i],B=nodes[e.j]; const dx=B.x-A.x, ad=Math.abs(dx); if(ad>W*0.45){ const f=(ad-W*0.45)*0.01*Math.min(3,e.w)*(dx>0?1:-1); A.x+=f; B.x-=f; } }
+    for(const n of nodes) n.x=Math.max(padX,Math.min(W-padX,n.x));
+  }
+  const r=rng(7), water=H/2;
+  let bg='';
+  for(let i=0;i<Math.round(W/5);i++){ const x=r()*W, y=r()*(water-20), s=r()*1.1+.3; bg+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${s.toFixed(2)}" fill="var(--star)" opacity="${(.15+r()*.45).toFixed(2)}"/>`; }
+  for(let i=0;i<Math.round(W/12);i++){ const x=r()*W, y=water+20+r()*(H-water-30), s=r()*1.3+.4; bg+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${s.toFixed(2)}" fill="var(--glow)" opacity="${(.08+r()*.25).toFixed(2)}"/>`; }
+  let wave=`M0 ${water}`; for(let x=0;x<=W;x+=W/12){ wave+=` Q ${(x+W/24).toFixed(1)} ${water+(Math.round(x/(W/12))%2?4:-4)} ${(x+W/12).toFixed(1)} ${water}`; }
+  const color=n=> n.depth>0.5 ? 'var(--glow)' : 'var(--star)';
+  const rad=n=> 3.2+2.4*Math.sqrt(Math.max(1,n.count));
+  const edgeSvg=edges.map((e,k)=>{ const A=nodes[e.i],B=nodes[e.j]; return `<line class="edge" data-i="${e.i}" data-j="${e.j}" x1="${A.x.toFixed(1)}" y1="${A.y.toFixed(1)}" x2="${B.x.toFixed(1)}" y2="${B.y.toFixed(1)}" stroke="var(--text)" stroke-opacity="${Math.min(.5,.12+.08*e.w)}" stroke-width="${Math.min(3,.6+.5*e.w)}"/>`; }).join('');
+  const nodeSvg=nodes.map((n,i)=>`<g class="node${n.depth>0.5?' deep':''}" data-i="${i}" tabindex="0" role="button" aria-label="${esc(n.s.name)}, in ${n.count} dreams" transform="translate(${n.x.toFixed(1)},${n.y.toFixed(1)})">
+      <circle r="${(rad(n)*3.2).toFixed(1)}" fill="${color(n)}" opacity=".12" filter="url(#blur)"/>
+      <circle class="core" r="${rad(n).toFixed(1)}" fill="${color(n)}"/>
+      <circle r="${(rad(n)+14).toFixed(1)}" fill="transparent"/>
+      <text text-anchor="middle" y="${(rad(n)+15).toFixed(1)}">${esc(n.s.name)}</text></g>`).join('');
+  const empty = nodes.length ? '' : `<text x="${W/2}" y="${water+60}" text-anchor="middle" class="zone" style="font-size:15px">The sky fills as symbols join the lexicon.</text>`;
+  wrap.innerHTML=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Map of your dream symbols by depth">
+    <defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" style="stop-color:var(--map-sky)"/><stop offset=".44" style="stop-color:var(--map-sky)"/>
+      <stop offset=".5" style="stop-color:var(--map-horizon)"/><stop offset=".505" style="stop-color:var(--map-water)"/>
+      <stop offset="1" style="stop-color:var(--map-deep)"/></linearGradient>
+      <filter id="blur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter></defs>
+    <rect width="${W}" height="${H}" fill="url(#bg)"/>${bg}
+    <path d="${wave}" fill="none" stroke="var(--glow)" stroke-opacity=".45" stroke-width="1"/>
+    <text x="14" y="24" class="zone">waking surface</text>
+    <text x="14" y="${water-10}" class="zone">the waterline</text>
+    <text x="14" y="${H-14}" class="zone">deep water</text>
+    ${edgeSvg}${nodeSvg}${empty}</svg>`;
+  mapState={nodes, edges, W, H, pad, svg:wrap.querySelector('svg')};
+  bindMap();
+}
+function bindMap(){
+  const {svg}=mapState; let drag=null;
+  svg.addEventListener('pointerdown',e=>{
+    const g=e.target.closest('.node'); if(!g) return;
+    const i=+g.dataset.i; drag={i,g,startY:e.clientY,y0:mapState.nodes[i].y,moved:false,id:e.pointerId};
+    try{ g.setPointerCapture(e.pointerId); }catch(_){}
+    g.style.cursor='grabbing';
+  });
+  svg.addEventListener('pointermove',e=>{
+    if(!drag||e.pointerId!==drag.id) return;
+    const scale=mapState.H/svg.getBoundingClientRect().height;
+    const dy=(e.clientY-drag.startY)*scale;
+    if(Math.abs(dy)>6) drag.moved=true;
+    if(!drag.moved) return;
+    const n=mapState.nodes[drag.i]; const y=Math.max(mapState.pad,Math.min(mapState.H-mapState.pad,drag.y0+dy)); n.y=y;
+    drag.g.setAttribute('transform',`translate(${n.x.toFixed(1)},${y.toFixed(1)})`);
+    svg.querySelectorAll(`.edge[data-i="${drag.i}"]`).forEach(l=>l.setAttribute('y1',y.toFixed(1)));
+    svg.querySelectorAll(`.edge[data-j="${drag.i}"]`).forEach(l=>l.setAttribute('y2',y.toFixed(1)));
+  });
+  const end=async e=>{
+    if(!drag||e.pointerId!==drag.id) return;
+    const d=drag; drag=null; d.g.style.cursor='';
+    const n=mapState.nodes[d.i];
+    if(!d.moved){ openSheet({type:'symbol', id:n.s.id}); return; }
+    if(e.type==='pointercancel'){ renderMap(); return; }
+    const depth=clamp((n.y-mapState.pad)/(mapState.H-2*mapState.pad));
+    try{ await putSymbol(n.s.id,{...stripId(n.s), depth, depthSetByYou:true}); }catch(_){ renderMap(); }
+  };
+  svg.addEventListener('pointerup',end); svg.addEventListener('pointercancel',end);
+  svg.addEventListener('keydown',e=>{ const g=e.target.closest('.node'); if(!g) return;
+    if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openSheet({type:'symbol', id:mapState.nodes[+g.dataset.i].s.id}); }});
+}
+let rz; window.addEventListener('resize',()=>{ clearTimeout(rz); rz=setTimeout(()=>{ if(S.tab==='map') renderMap(); },200); });
+
+/* ---------------- sheet ---------------- */
+function openSheet(sh){ S.sheet=sh; S.confirmDelete=null; $('#sheet').classList.add('on'); $('#sheet').setAttribute('aria-hidden','false'); $('#sheet-panel').scrollTop=0; renderSheet(); setTimeout(()=>$('#sheet-panel .close')?.focus(),30); }
+function closeSheet(){ S.sheet=null; $('#sheet').classList.remove('on'); $('#sheet').setAttribute('aria-hidden','true'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && S.sheet) closeSheet(); });
+function renderSheet(){
+  const sh=S.sheet; if(!sh) return;
+  if(sh.type==='symbol' && sh.editing && document.activeElement?.matches?.('#sheet-panel input, #sheet-panel textarea')) return; // don't wipe edits mid-typing
+  const panel=$('#sheet-panel'); const top=panel.scrollTop; let html='';
+  if(sh.type==='dream') html=sheetDream(sh.id);
+  else if(sh.type==='symbol') html=sheetSymbol(sh.id, sh.editing);
+  else if(sh.type==='newSymbol') html=sheetNewSymbol();
+  else if(sh.type==='backup') html=sh.html;
+  if(html===null){ closeSheet(); return; }
+  panel.innerHTML=html; panel.scrollTop=top;
+}
+function head(title){ return `<div class="sheet-head"><span class="small muted">${title}</span><button class="close" data-action="close-sheet">Close</button></div>`; }
+function sheetDream(id){
+  const d=S.dreams.find(x=>x.id===id); if(!d) return null;
+  const dict=symbolByKey(), idx=elementIndex(), busy=S.busy[id];
+  const c=d.ctx||{};
+  const ctxItems=CTX_FIELDS.filter(([k])=>c[k]).map(([k,l])=>`<li><b>${esc(l)}:</b> ${esc(c[k])}</li>`).join('');
+  let html=head(esc(fmtDate(d.date)));
+  html+=`<div class="dream-body">${esc(d.text)}</div>`;
+  if(ctxItems) html+=`<details class="ctx"><summary>Context</summary><ul class="ctx-list">${ctxItems}</ul></details>`;
+  if(busy?.stage==='detect') html+=`<p class="thinking">Finding the symbols in this dream…</p>`;
+  if((d.elements||[]).length){
+    html+=`<h2>In this dream</h2><div class="chips">${d.elements.map(e=>{ const s=dict.get(norm(e.name)); const n=idx.get(norm(e.name))?.apps.length||1;
+      return s ? `<button class="chip sym" data-action="open-symbol" data-id="${esc(s.id)}">${esc(e.name)}</button>` : `<span class="chip" title="${n>1?'recurring':'first time'}">${esc(e.name)}${n>1?' ·'+n:''}</span>`; }).join('')}</div>`;
+    const sugg=suggestions(idx).filter(v=>(d.elements||[]).some(e=>norm(e.name)===v.key));
+    if(sugg.length && !busy?.stage){
+      html+=`<h2>New recurring symbols</h2><p class="small muted">These have now appeared in more than one dream.</p>`+sugg.map(v=>`<div class="suggest"><div class="n">${esc(v.name)}</div><div class="small muted">Appeared in ${v.apps.length} dreams</div>
+        <div class="actions" style="margin-top:8px"><button class="btn sm primary" data-action="add-suggestion" data-key="${esc(v.key)}">Add to lexicon</button><button class="btn sm quiet" data-action="dismiss-suggestion" data-key="${esc(v.key)}">Not now</button></div></div>`).join('');
+    }
+  }
+  html+=`<h2>Analysis</h2>`;
+  if(busy?.stage==='analyze'){
+    html+=`<div class="analysis" id="live-analysis">${busy.text?md(busy.text):'<p class="thinking">Reading the dream through each lens. This takes about a minute…</p>'}</div>
+      <div class="actions"><button class="btn sm" data-action="stop" data-id="${esc(id)}">Stop</button></div>`;
+  }else if(busy?.stage==='detect'){
+    html+=`<p class="thinking">Waiting for the symbols first…</p><div class="actions"><button class="btn sm" data-action="stop" data-id="${esc(id)}">Stop</button></div>`;
+  }else{
+    if(busy?.error) html+=`<p class="err">${esc(busy.error)}</p>`;
+    if(d.analysis){
+      html+=`<div class="analysis">${md(d.analysis)}</div>`;
+      if(d.analysisTruncated) html+=`<p class="small muted">This analysis stopped early. Analyze again for a complete reading.</p>`;
+    }else if(!S.sample){
+      html+=`<p class="muted">Analysis works when this page is open in Claude.</p>`;
+    }else html+=`<p class="muted">Not analyzed yet.</p>`;
+  }
+  const del = S.confirmDelete===id ? 'Tap again to delete' : 'Delete';
+  html+=`<hr><div class="actions">
+    ${S.sample && !busy?.stage ? `<button class="btn ${d.analysis?'':'primary'}" data-action="analyze" data-id="${esc(id)}">${d.analysis?'Analyze again':'Analyze'}</button>`:''}
+    ${S.sample && !busy?.stage ? `<button class="btn quiet" data-action="redetect" data-id="${esc(id)}">Find symbols again</button>`:''}
+    <button class="btn quiet" data-action="edit-dream" data-id="${esc(id)}">Edit</button>
+    <button class="btn quiet danger" data-action="delete-dream" data-id="${esc(id)}">${del}</button></div>`;
+  return html;
+}
+function sheetSymbol(id, editing){
+  const s=S.symbols.find(x=>x.id===id); if(!s) return null;
+  const idx=elementIndex(); const v=idx.get(norm(s.name)); const apps=v?.apps||[];
+  const dict=symbolByKey();
+  const conn=new Map();
+  for(const a of apps) for(const e of (a.dream.elements||[])){ const k=norm(e.name); if(k===norm(s.name)||!dict.has(k)) continue; conn.set(k,(conn.get(k)||0)+1); }
+  const connList=[...conn].sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<button class="chip sym" data-action="open-symbol" data-id="${esc(dict.get(k).id)}">${esc(dict.get(k).name)} ${n>1?'·'+n:''}</button>`).join('');
+  const depth=clamp(s.depth ?? .5);
+  let html=head(`${apps.length} dream${apps.length===1?'':'s'}`);
+  if(editing){
+    html+=`<div class="field"><label for="e-name">Name</label><input class="input" id="e-name" value="${esc(s.name)}"></div>
+      <div class="field"><label for="e-words">Words you associate with it, separated by commas</label><textarea class="input" id="e-words">${esc((s.words||[]).join(', '))}</textarea></div>
+      <div class="field"><label for="e-feel">Feelings it brings, separated by commas</label><textarea class="input" id="e-feel">${esc((s.feelings||[]).join(', '))}</textarea></div>
+      <div class="field"><label for="e-notes">Notes</label><textarea class="input" id="e-notes">${esc(s.notes||'')}</textarea></div>
+      <div class="actions"><button class="btn primary" data-action="save-symbol-edit" data-id="${esc(id)}">Save</button><button class="btn quiet" data-action="cancel-symbol-edit">Cancel</button>
+      <button class="btn quiet danger" data-action="delete-symbol" data-id="${esc(id)}">${S.confirmDelete===id?'Tap again to delete':'Delete symbol'}</button></div>`;
+    return html;
+  }
+  html+=`<h1 style="margin-bottom:10px">${esc(s.name)}</h1>
+    <div class="chips">${(s.words||[]).map(w=>`<span class="chip">${esc(w)}</span>`).join('')}${(s.feelings||[]).map(w=>`<span class="chip feel">${esc(w)}</span>`).join('')}</div>
+    ${s.notes?`<p class="small" style="margin-top:10px">${esc(s.notes)}</p>`:''}
+    <div class="actions" style="margin-top:12px"><button class="btn sm" data-action="edit-symbol" data-id="${esc(id)}">Edit words and feelings</button></div>
+    <h2>Depth</h2>
+    <input type="range" min="0" max="100" value="${Math.round(depth*100)}" data-action-change="depth" data-id="${esc(id)}" aria-label="Depth, from waking surface to deep water">
+    <div class="scale-ends" style="max-width:none"><span>waking surface</span><span>deep water</span></div>
+    ${s.depthSetByYou?'':'<p class="small muted">Suggested from its meaning. Move it wherever it feels right.</p>'}`;
+  if(connList) html+=`<h2>Connected symbols</h2><div class="chips">${connList}</div>`;
+  if(apps.length>=2){
+    const sb=S.symBusy[id];
+    html+=`<h2>How it has evolved</h2>`;
+    if(sb && !sb.error) html+=`<div class="analysis" id="live-evo">${sb.text?md(sb.text):'<p class="thinking">Tracing its path through your dreams…</p>'}</div>`;
+    else{
+      if(sb?.error) html+=`<p class="err">${esc(sb.error)}</p>`;
+      if(s.evolution){ html+=`<div class="analysis">${md(s.evolution)}</div>`; if((s.evolutionCount||0)<apps.length) html+=`<p class="small muted">It has appeared again since this was written.</p>`; }
+      if(S.sample) html+=`<div class="actions"><button class="btn sm" data-action="trace-evolution" data-id="${esc(id)}">${s.evolution?'Trace it again':'Trace its evolution'}</button></div>`;
+    }
+  }
+  html+=`<h2>Appearances</h2>`;
+  html+= apps.length ? apps.map(a=>`<button class="appear" data-action="open-dream" data-id="${esc(a.dream.id)}"><div class="d">${esc(fmtDate(a.dream.date))}</div><div class="t">${esc(a.el.note||a.dream.text.slice(0,140))}</div></button>`).join('')
+    : `<p class="muted">It hasn't appeared in a saved dream yet.</p>`;
+  return html;
+}
+function sheetNewSymbol(){
+  return head('New symbol')+`<div class="field"><label for="n-name">Name</label><input class="input" id="n-name" placeholder="the theater, crocodiles, my cat…"></div>
+    <div class="field"><label for="n-words">Words you associate with it, separated by commas</label><textarea class="input" id="n-words"></textarea></div>
+    <div class="field"><label for="n-feel">Feelings it brings, separated by commas</label><textarea class="input" id="n-feel"></textarea></div>
+    <div class="field"><span class="lbl">Depth</span><input type="range" min="0" max="100" value="50" id="n-depth" aria-label="Depth"><div class="scale-ends" style="max-width:none"><span>waking surface</span><span>deep water</span></div></div>
+    <p class="err" id="n-err"></p>
+    <div class="actions"><button class="btn primary" data-action="create-symbol">Add to lexicon</button></div>`;
+}
+const splitList = s => String(s||'').split(/[,\n;]/).map(x=>x.trim()).filter(Boolean).slice(0,12);
+
+/* depth slider in sheet */
+document.addEventListener('change', async e=>{
+  const t=e.target;
+  if(t.dataset.actionChange==='depth'){
+    const s=S.symbols.find(x=>x.id===t.dataset.id); if(!s) return;
+    try{ await putSymbol(s.id,{...stripId(s), depth:clamp(+t.value/100), depthSetByYou:true}); }catch(_){}
+  }
+});
+
+/* ---------------- actions ---------------- */
+document.addEventListener('click', async e=>{
+  const tabBtn=e.target.closest('[data-tab]');
+  if(tabBtn){ switchTab(tabBtn.dataset.tab); return; }
+  const a=e.target.closest('[data-action]'); if(!a) return;
+  const act=a.dataset.action, id=a.dataset.id;
+  if(act!=='delete-dream' && act!=='delete-symbol') S.confirmDelete=null;
+  switch(act){
+    case 'save-dream': saveDream(a.dataset.analyze==='1'); break;
+    case 'cancel-edit': setEditMode(null); loadDraft(); switchTab('journal'); break;
+    case 'open-dream': openSheet({type:'dream', id}); break;
+    case 'open-symbol': openSheet({type:'symbol', id}); break;
+    case 'close-sheet': closeSheet(); break;
+    case 'analyze': runAI(id,{detect:!(S.dreams.find(d=>d.id===id)?.elements||[]).length, analyze:true}); break;
+    case 'redetect': runAI(id,{detect:true, analyze:false}); break;
+    case 'stop': S.busy[id]?.ctl?.abort(); break;
+    case 'edit-dream': { const d=S.dreams.find(x=>x.id===id); if(!d) break; closeSheet(); fillForm(d); renderMoonLabel(); setEditMode(id); switchTab('write'); window.scrollTo(0,0); break; }
+    case 'delete-dream':
+      if(S.confirmDelete!==id){ S.confirmDelete=id; renderSheet(); break; }
+      S.confirmDelete=null; closeSheet(); try{ await delDream(id); }catch(_){} break;
+    case 'add-suggestion': {
+      const v=elementIndex().get(a.dataset.key); if(!v) break; const p=prefillFrom(v);
+      a.disabled=true;
+      try{ await putSymbol(null,{name:v.name, words:p.words, feelings:p.feelings, depth:clamp(p.depth), createdAt:Date.now()}); }catch(_){ a.disabled=false; }
+      break; }
+    case 'dismiss-suggestion': {
+      const dis=[...new Set([...(S.profile.dismissed||[]), a.dataset.key])];
+      try{ await putProfile({...clone(S.profile), dismissed:dis}); }catch(_){} break; }
+    case 'new-symbol': openSheet({type:'newSymbol'}); setTimeout(()=>$('#n-name')?.focus(),50); break;
+    case 'create-symbol': {
+      const name=$('#n-name').value.trim(); if(!name){ $('#n-err').textContent='Give the symbol a name.'; break; }
+      if(symbolByKey().has(norm(name))){ $('#n-err').textContent='That symbol is already in your lexicon.'; break; }
+      try{ await putSymbol(null,{name, words:splitList($('#n-words').value), feelings:splitList($('#n-feel').value), depth:clamp(+$('#n-depth').value/100), depthSetByYou:true, createdAt:Date.now()}); closeSheet(); }
+      catch(_){ $('#n-err').textContent='It could not be saved. Try again.'; }
+      break; }
+    case 'edit-symbol': S.sheet={type:'symbol', id, editing:true}; renderSheet(); break;
+    case 'cancel-symbol-edit': S.sheet={...S.sheet, editing:false}; document.activeElement?.blur(); renderSheet(); break;
+    case 'save-symbol-edit': {
+      const s=S.symbols.find(x=>x.id===id); if(!s) break;
+      const name=$('#e-name').value.trim()||s.name;
+      const data={...stripId(s), name, words:splitList($('#e-words').value), feelings:splitList($('#e-feel').value), notes:$('#e-notes').value.trim()};
+      S.sheet={type:'symbol', id, editing:false}; document.activeElement?.blur();
+      try{ await putSymbol(id,data); }catch(_){} renderSheet(); break; }
+    case 'delete-symbol':
+      if(S.confirmDelete!==id){ S.confirmDelete=id; document.activeElement?.blur(); S.sheet={...S.sheet}; renderSheet(); break; }
+      S.confirmDelete=null; closeSheet(); try{ await delSymbol(id); }catch(_){} break;
+    case 'trace-evolution': traceEvolution(id); break;
+    case 'save-intention': {
+      const v=($('#f-intent')?.value||'').trim().slice(0,600);
+      const msg=$('#intent-msg'); if(msg) msg.textContent='Saving\u2026';
+      try{ await putProfile({...clone(S.profile), intention:v}); if(msg) msg.textContent='Kept.'; }
+      catch(_){ if(msg) msg.textContent='Could not save.'; }
+      break; }
+    case 'export': exportBackup(); break;
+    case 'import': $('#import-file').click(); break;
+  }
+});
+
+function switchTab(t){
+  S.tab=t;
+  document.querySelectorAll('nav.tabs button').forEach(b=>{ if(b.dataset.tab===t) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on', v.id==='view-'+t));
+  window.scrollTo(0,0);
+  renderAll();
+}
+
+/* ---------------- backup ---------------- */
+async function exportBackup(){
+  const payload=JSON.stringify({app:'dreamarchive', version:2, exportedAt:new Date().toISOString(),
+    dreams:S.dreams.map(clone), symbols:S.symbols.map(clone), profile:clone(S.profile)}, null, 2);
+  const msg=$('#backup-msg');
+  const fname=`dream-archive-${todayISO()}.json`;
+  if(S.downloads){
+    try{ const r=await S.downloads.save({filename:fname, data:payload}); if(msg) msg.textContent = r?.status==='saved' ? 'Backup saved.' : 'Backup sent.'; return; }
+    catch(e){ if(e?.code==='declined'){ if(msg) msg.textContent='Backup not saved.'; return; } if(e?.code==='rate_limited'){ if(msg) msg.textContent='Wait a moment, then try again.'; return; } }
+  }
+  openSheet({type:'backup', html: head('Backup')+`<p class="small">Downloads aren't available here. Copy this text and keep it in a file named ${esc(fname)}.</p><textarea class="input" style="min-height:50vh;font-family:ui-monospace,monospace;font-size:.75rem" readonly>${esc(payload)}</textarea>`});
+}
+$('#import-file').addEventListener('change', async e=>{
+  const file=e.target.files?.[0]; e.target.value=''; if(!file) return;
+  const msg=$('#backup-msg');
+  try{
+    const data=JSON.parse(await file.text());
+    if(!['dreamarchive','nightwater'].includes(data?.app) || !Array.isArray(data.dreams)) throw new Error('bad');
+    if(msg) msg.textContent='Restoring…';
+    let n=0;
+    for(const d of data.dreams){ if(!d?.text) continue; await putDream(typeof d.id==='string' && /^[\w-]{1,60}$/.test(d.id) ? d.id : null, stripId(d)); n++; }
+    for(const s of (data.symbols||[])){ if(!s?.name) continue; if(symbolByKey().has(norm(s.name)) && !S.symbols.some(x=>x.id===s.id)) continue; await putSymbol(typeof s.id==='string' && /^[\w-]{1,60}$/.test(s.id) ? s.id : null, stripId(s)); }
+    if(data.profile) await putProfile({...clone(S.profile), dismissed:[...new Set([...(S.profile.dismissed||[]), ...((data.profile.dismissed)||[])])]});
+    if(msg) msg.textContent=`Restored ${n} dream${n===1?'':'s'}.`;
+  }catch(err){
+    if(msg) msg.textContent = err?.code==='quota_exceeded' ? 'The archive is full, so not everything could be restored.' : 'That file is not a Dream Archive backup.';
+  }
+});
+
+/* ---------------- boot ---------------- */
+loadDraft();
+if(!$('#f-date').value) $('#f-date').value=todayISO();
+renderMoonLabel();
+
+async function boot(){
+  const c=window.claude;
+  if(!c || typeof c.use!=='function'){ startMemory('Open this page in Claude to save and read your dreams.'); return; }
+  const [db,user,sample,downloads]=await Promise.all(['db','user','sample','downloads'].map(n=>c.use(n).catch(()=>null)));
+  S.sample=sample; S.downloads=downloads;
+  if(!sample){ $('#btn-save-analyze').hidden=true; $('#write-note').textContent='Analysis works when this page is open in Claude. You can still save dreams.'; }
+  let uid=null; try{ uid=user? await user.id() : null; }catch(_){}
+  if(!db || !uid){ startMemory('Saving is off in this view, so dreams will disappear when you close the page. Export a backup before leaving.'); return; }
+  S.db=db; S.uid=uid; S.persistent=true;
+  S.root=db.doc(`data/users/${uid}/profile`);
+  S.dreamsCol=S.root.collection('dreams'); S.symbolsCol=S.root.collection('symbols');
+  const onErr = e => { if(e?.code==='revoked') $('#banner').innerHTML='<div class="banner">Access to your saved journal ended for this visit. Reload the page to reconnect.</div>'; };
+  S.dreamsCol.onSnapshot(snap=>{ S.dreams=snap.docs.map(d=>({...clone(d.data()), id:d.id})); renderAll(); }, onErr);
+  S.symbolsCol.onSnapshot(snap=>{ S.symbols=snap.docs.map(d=>({...clone(d.data()), id:d.id})); renderAll(); }, onErr);
+  S.root.onSnapshot(snap=>{ S.profile = snap.exists ? {dismissed:[], ...clone(snap.data())} : {dismissed:[]}; renderAll(); }, onErr);
+  setStatus();
+}
+function startMemory(note){
+  S.persistent=false; S.uid=null;
+  $('#banner').innerHTML=`<div class="banner">${esc(note)}</div>`;
+  if(!S.sample){ $('#btn-save-analyze').hidden=true; }
+  setStatus(); renderAll();
+}
+boot().catch(()=>startMemory('Saving is off in this view, so dreams will disappear when you close the page.'));
+})();
+</script>
+</body>
+</html>
