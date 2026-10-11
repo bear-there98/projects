@@ -4,270 +4,935 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Mirrorcore Lab</title>
-<meta name="description" content="Experiments in progress." />
+<meta name="description" content="Six experiments, kept in one room." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <style>
   /* ==================================================================
-     MIRRORCORE LAB — index
+     MIRRORCORE LAB — the room
 
-     Six names on a dark surface, nothing explained. At rest the page is
-     grey. Colour is attention, not status: the name under the lens
-     lights in its own hue and throws a short reflection, which is the
-     whole of the decoration and the reason for the name of the lab.
-     Running badges are the exception that stay lit.
-     No script: every state here is hover, focus or :target.
+     One screen, no scrolling. Six projects are six instruments: two
+     working, four cold. The room around them is alive — flame, smoke,
+     dust turning in the moonbeam, condensation on the pane — so that
+     stillness is what marks a project as suspended. The ledger lying
+     open in the near corner is the readable index; the room itself
+     stays wordless.
+
+     Something watches from inside the glass. It is never anywhere but
+     a reflection, and rarely in the same one twice.
+
+     Scale: .room carries a viewport-derived font-size and everything
+     below is in em, so the room grows and shrinks as one object. Each
+     instrument's height is --k of a shared --u, so portrait can resize
+     all six from a single number.
      ================================================================== */
 
   :root {
     color-scheme: dark;
 
-    --ink:    #090c0f;   /* the surface */
-    --line:   #1b2126;   /* hairline between entries */
-    --dim:    #59636b;   /* dormant text */
-    --bone:   #e9e6df;   /* full light */
+    --void:    #060b0a;   /* under the bench, and in the corners */
+    --wall:    #0b1312;
+    --wall-2:  #121d1a;   /* wall where the moon reaches it */
+    --bench:   #171210;   /* old wood: the only warmth in the fabric */
+    --bench-2: #241b15;
+    --bench-3: #0e0a08;
 
-    --gutter: clamp(1.4rem, 7vw, 7rem);
-    --name:   clamp(1.3rem, 3.6vw, 2.05rem);
-    --small:  clamp(0.72rem, 0.3vw + 0.66rem, 0.79rem);
+    --bone:    #e8e2d2;
+    --bone-2:  #a79e8a;
+    --bone-3:  #6f6859;
 
-    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    --verd:    #5f9b87;   /* verdigris, the house colour */
+    --verd-2:  #2c5549;
+    --brass:   #c0984f;
+    --moonlt:  #cfe3e6;
+
+    --serif: "EB Garamond", "Iowan Old Style", Palatino, Georgia, serif;
+    --mono:  "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  html { -webkit-text-size-adjust: 100%; background: var(--ink); }
+  html, body { height: 100%; }
 
   body {
-    font-family: var(--mono);
-    font-size: var(--small);
-    line-height: 1.65;
+    font-family: var(--serif);
     color: var(--bone);
-    background-color: var(--ink);
-    /* One light source, high and to the left. The list walks away from it. */
-    background-image:
-      radial-gradient(135% 75% at 10% -15%, rgba(233,230,223,0.055), transparent 58%);
-    background-repeat: no-repeat;
-    min-height: 100vh;
+    background: var(--void);
+    overflow: hidden;
     -webkit-font-smoothing: antialiased;
   }
 
   .skip { position: absolute; left: -9999px; }
   .skip:focus {
-    left: var(--gutter);
-    top: 0.6rem;
-    z-index: 5;
-    padding: 0.4rem 0.7rem;
-    background: var(--bone);
-    color: var(--ink);
+    left: 1rem; top: 1rem; z-index: 90;
+    padding: 0.5rem 0.8rem;
+    font-family: var(--mono); font-size: 0.8rem;
+    background: var(--bone); color: var(--void);
   }
 
-  main {
-    max-width: 46rem;
-    padding: clamp(3.5rem, 13vh, 9rem) var(--gutter) clamp(4rem, 14vh, 9rem);
-  }
+  svg.defs { position: absolute; width: 0; height: 0; overflow: hidden; }
 
-  /* ---- masthead ------------------------------------------------- */
+  /* ---- the room -------------------------------------------------- */
 
-  .masthead { margin-bottom: clamp(3rem, 11vh, 7rem); }
-
-  .lab {
-    font-size: clamp(0.86rem, 0.3vw + 0.78rem, 0.97rem);
-    font-weight: 500;
-    letter-spacing: 0.01em;
-    color: var(--bone);
-  }
-
-
-  /* ---- the index ------------------------------------------------ */
-
-  .index { border-top: 1px solid var(--line); }
-
-  .entry {
+  .room {
+    position: relative;
+    height: 100dvh;
+    /* the single scale knob; height-led, so the room always fits */
+    font-size: clamp(8px, min(1.05vw, 1.35vh), 15px);
+    --u: 1em;               /* the unit every instrument is cut from */
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    column-gap: clamp(1rem, 4vw, 2.5rem);
-    align-items: baseline;
-    padding: clamp(1.4rem, 3.8vh, 2.1rem) 0;
-    border-bottom: 1px solid var(--line);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 1fr auto auto;
+    overflow: hidden;
+    background:
+      radial-gradient(70% 55% at 78% 6%, rgba(207,227,230,0.10), transparent 62%),
+      radial-gradient(120% 90% at 50% 120%, var(--void), transparent 55%),
+      linear-gradient(to bottom, var(--wall-2) 0%, var(--wall) 46%, #080f0e 100%);
+  }
+
+  /* a slow swell in the light, as if a flame somewhere is working */
+  .room::after {
+    content: "";
+    position: absolute; inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    background: radial-gradient(45% 40% at 20% 76%, rgba(192,152,79,0.07), transparent 70%);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .room::after { animation: swell 7s ease-in-out infinite; }
+  }
+  @keyframes swell { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
+
+  /* ---- the window, and the moon in it ---------------------------- */
+
+  .wall, .bench { position: relative; min-width: 0; }
+
+  .casement {
+    position: absolute;
+    right: 7%; top: 8%;
+    width: 19em; height: 21em;
+    border: 0.5em solid #0a100f;
+    border-radius: 0.3em 0.3em 0 0;
+    background: linear-gradient(170deg, #142028 0%, #0c1419 60%, #091012 100%);
+    box-shadow: 0 0 5em rgba(207,227,230,0.09), inset 0 0 2em rgba(0,0,0,0.7);
+    overflow: hidden;
+  }
+  .casement .bars {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(to right, transparent calc(50% - 0.2em), #0a100f calc(50% - 0.2em), #0a100f calc(50% + 0.2em), transparent calc(50% + 0.2em)),
+      linear-gradient(to bottom, transparent calc(42% - 0.2em), #0a100f calc(42% - 0.2em), #0a100f calc(42% + 0.2em), transparent calc(42% + 0.2em));
+  }
+  .casement .moon {
+    position: absolute; left: 21%; top: 12%;
+    width: 6em; height: 6em;
+    border-radius: 50%;
+    background: radial-gradient(circle at 36% 32%, #f2f6f4, #cfe3e6 58%, #93aeb2 100%);
+    box-shadow: 0 0 2.4em rgba(207,227,230,0.55), 0 0 7em rgba(207,227,230,0.22);
+  }
+  /* condensation, running down the inside of the pane now and then */
+  .casement .bead {
+    position: absolute; left: 68%; top: 10%;
+    width: 0.42em; height: 0.72em;
+    border-radius: 50% 50% 55% 55%;
+    background: rgba(207,227,230,0.5);
+    opacity: 0;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .casement .bead { animation: run 13s linear infinite; }
+    .casement .bead.b2 { left: 33%; top: 52%; animation-duration: 19s; animation-delay: 6s; }
+  }
+  @keyframes run {
+    0%       { opacity: 0;   transform: translateY(0); }
+    6%       { opacity: 0.8; }
+    78%      { opacity: 0.5; transform: translateY(11em); }
+    86%,100% { opacity: 0;   transform: translateY(12em); }
+  }
+
+  /* ---- the light, laid over the whole room ----------------------- */
+
+  /* the shaft from the window, which has to fall across the bench and
+     so lives above it rather than inside the wall */
+  .beam {
+    position: absolute;
+    right: 9%; top: 9%;
+    z-index: 4;
+    width: 46em; height: 62em;
+    pointer-events: none;
+    background: linear-gradient(197deg, rgba(207,227,230,0.14) 0%, rgba(207,227,230,0.05) 42%, transparent 72%);
+    clip-path: polygon(62% 0%, 92% 0%, 46% 100%, 2% 100%);
+    mix-blend-mode: screen;
+    filter: blur(0.3em);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .beam { animation: swell 11s ease-in-out infinite; }
+  }
+
+  /* dust turning over inside the beam */
+  /* the same box and the same cut as the beam, so dust only ever turns
+     over where there is light to catch it */
+  .motes {
+    position: absolute;
+    right: 9%; top: 9%;
+    z-index: 5;
+    width: 46em; height: 62em;
+    pointer-events: none;
+    clip-path: polygon(62% 0%, 92% 0%, 46% 100%, 2% 100%);
+  }
+  .motes i {
+    position: absolute;
+    width: 0.2em; height: 0.2em;
+    border-radius: 50%;
+    background: var(--moonlt);
+    opacity: 0.3;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .motes i { animation: drift 16s ease-in-out infinite; }
+  }
+  @keyframes drift {
+    0%,100% { transform: translate(0,0);        opacity: 0.1; }
+    35%     { transform: translate(-1.4em,3em); opacity: 0.5; }
+    70%     { transform: translate(0.8em,7em);  opacity: 0.22; }
+  }
+
+  /* ---- wall furniture -------------------------------------------- */
+
+  .chart, .hanging { position: absolute; pointer-events: none; line-height: 0; }
+  .chart   { left: 36%; bottom: 20%; width: 10em; }
+  .chart svg, .hanging svg { display: block; width: 100%; height: auto; }
+  .hanging { left: 47%; top: 0;   width: 8em; }
+
+  /* dried things move a little, because everything in here does */
+  @media (prefers-reduced-motion: no-preference) {
+    .sprigs { transform-box: fill-box; transform-origin: 50% 0; animation: sway 11s ease-in-out infinite; }
+  }
+  @keyframes sway {
+    0%,100% { transform: rotate(-0.7deg); }
+    50%     { transform: rotate(0.9deg); }
+  }
+
+  /* ---- the shelf ------------------------------------------------- */
+
+  .shelf {
+    position: absolute;
+    left: 6%; bottom: 4%;
+    width: 32em;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    gap: 1em;
+  }
+  .shelf::after {
+    content: "";
+    position: absolute; left: -1.5em; right: -1.5em; bottom: -1.1em;
+    height: 1.1em;
+    background: linear-gradient(to bottom, var(--bench-2), var(--bench-3));
+    box-shadow: 0 0.5em 1.6em rgba(0,0,0,0.75);
+    border-radius: 0.1em;
+  }
+
+  /* ---- the bench ------------------------------------------------- */
+
+  .bench-top {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    gap: clamp(0.5em, 2.2vw, 3.6em);
+    padding: 0 0 0.4em 5%;
+    min-height: 21em;
+  }
+  /* the near edge of the work surface, catching what light there is */
+  .bench-face {
+    height: 3.4em;
+    background: linear-gradient(to bottom, var(--bench-2) 0%, var(--bench) 35%, var(--bench-3) 100%);
+    box-shadow: inset 0 0.14em 0 rgba(232,226,210,0.16), 0 1.4em 3em rgba(0,0,0,0.85);
+  }
+  .floor {
+    height: 5em;
+    background: linear-gradient(to bottom, #090e0d, var(--void));
+  }
+
+  /* ---- an instrument -------------------------------------------- */
+
+  .instr {
+    position: relative;
+    display: block;
     text-decoration: none;
     color: inherit;
-    position: relative;
+    line-height: 0;
+    border-radius: 0.2em;
   }
-
-  /* The left edge of the entry being read, in the entry's own colour. */
-  .entry::before {
+  /* what the instrument spills onto the surface it stands on. Without
+     this they float; with it they have weight. */
+  .instr::after {
     content: "";
     position: absolute;
-    left: calc(var(--gutter) * -0.42);
-    top: clamp(1.4rem, 3.8vh, 2.1rem);
-    width: 1px;
-    height: 0;
-    background: var(--accent, var(--bone));
-    transition: height 320ms ease;
-  }
-
-  .name {
-    position: relative;
-    font-size: var(--name);
-    font-weight: 400;
-    letter-spacing: -0.035em;
-    line-height: 1.05;
-    color: var(--dim);
-    padding-bottom: 0.5em;
-    transition: color 280ms ease;
-  }
-
-  /* The reflection: mirrored, dropped just under the glyphs, and gone
-     again within half a line. Visible only on the live entry. */
-  .reflect {
-    position: absolute;
-    left: 0;
-    top: calc(100% - 0.5em);
-    white-space: nowrap;
-    transform: scaleY(-1);
-    opacity: 0;
-    color: var(--accent, var(--bone));
-    filter: blur(0.5px);
-    pointer-events: none;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 52%, #000 100%);
-    mask-image: linear-gradient(to bottom, transparent 52%, #000 100%);
-    transition: opacity 320ms ease;
-  }
-
-  /* ---- badges --------------------------------------------------- */
-
-  .state {
-    justify-self: end;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45em;
-    padding: 0.22em 0.6em;
-    border: 1px solid var(--line);
-    border-radius: 2px;
-    font-size: var(--small);
-    line-height: 1.5;
-    color: var(--dim);
-    white-space: nowrap;
-    transition: color 280ms ease, border-color 280ms ease;
-  }
-
-  /* Suspended reads as a flatline. */
-  .state[data-state="suspended"]::before {
-    content: "";
-    width: 0.55em;
-    height: 1px;
-    background: currentColor;
-  }
-
-  /* A running experiment keeps its colour whether read or not. */
-  .state[data-state="running"] {
-    border-color: color-mix(in srgb, var(--accent) 34%, transparent);
-    color: var(--accent);
-  }
-  .state[data-state="running"]::before {
-    content: "";
-    width: 0.45em;
-    height: 0.45em;
+    left: 50%; bottom: -0.5em;
+    width: 125%; height: 1.5em;
+    transform: translateX(-50%);
     border-radius: 50%;
-    background: currentColor;
-    animation: breathe 4.5s ease-in-out infinite;
+    background: radial-gradient(ellipse at center, var(--reagent), transparent 68%);
+    opacity: 0.22;
+    filter: blur(0.35em);
+    pointer-events: none;
+    transition: opacity 420ms ease;
+  }
+  .instr.off::after { opacity: 0.07; }
+  .instr:hover::after,
+  .instr:focus-visible::after,
+  .instr.near::after { opacity: 0.34; }
+
+  .instr .art {
+    display: block;
+    height: calc(var(--k) * var(--u));
+    width: auto;
+    overflow: visible;
+    filter: drop-shadow(0 0.5em 0.7em rgba(0,0,0,0.6));
+    transition: filter 420ms ease, transform 420ms ease;
   }
 
-  @keyframes breathe {
-    0%, 100% { opacity: 0.35; }
-    50%      { opacity: 1; }
+  .instr:focus { outline: none; }
+  .instr:focus-visible { outline: 1px solid var(--reagent); outline-offset: 0.6em; }
+
+  /* glass, metal, wood */
+  .glass  { fill: rgba(207,227,230,0.06); stroke: rgba(207,227,230,0.40); stroke-width: 0.9; }
+  .glass-d{ fill: rgba(207,227,230,0.03);  stroke: rgba(207,227,230,0.24); stroke-width: 0.9; }
+  .metal  { fill: var(--verd-2); stroke: var(--verd); stroke-width: 0.8; }
+  .brassy { fill: #6d5526; stroke: var(--brass); stroke-width: 0.9; }
+  .cork   { fill: #4a3a28; stroke: #6b5538; stroke-width: 0.8; }
+  .hair   { fill: none; stroke: rgba(207,227,230,0.26); stroke-width: 0.7; }
+  .hair-f { fill: none; stroke: rgba(207,227,230,0.22); stroke-width: 0.6; }
+  .ink    { fill: var(--void); }
+
+  /* the contents, which is where the light comes from */
+  .fluid { fill: var(--reagent); opacity: 0.42; }
+  .lit   { fill: var(--reagent); opacity: 0.9; }
+  .aura  { fill: var(--reagent); opacity: 0.2; filter: blur(2.2px); }
+
+  /* a working instrument carries its own light */
+  .instr.on .art { filter: drop-shadow(0 0.5em 0.7em rgba(0,0,0,0.6)) drop-shadow(0 0 1.1em var(--reagent)); }
+  .instr.on .fluid { opacity: 0.55; }
+
+  /* a suspended one has gone cold, and the dust has settled on it */
+  .instr.off .fluid { opacity: 0.2; }
+  .instr.off .aura  { opacity: 0.05; }
+  .instr.off .lit   { opacity: 0.4; }
+  .instr.off .art   { filter: drop-shadow(0 0.5em 0.7em rgba(0,0,0,0.6)) saturate(0.55) brightness(0.92); }
+  .dust { fill: none; stroke: rgba(232,226,210,0.3); stroke-width: 1.1; stroke-linecap: round; display: none; }
+  .instr.off .dust { display: block; }
+
+  /* approaching one wakes it a little, cold or not. .near is set from
+     the ledger, so a line and its instrument light together. */
+  .instr:hover .art,
+  .instr:focus-visible .art,
+  .instr.near .art {
+    transform: translateY(-0.35em);
+    filter: drop-shadow(0 0.5em 0.7em rgba(0,0,0,0.6)) drop-shadow(0 0 1.4em var(--reagent)) saturate(1);
+  }
+  .instr:hover .fluid,
+  .instr:focus-visible .fluid,
+  .instr.near .fluid { opacity: 0.62; }
+
+  /* ---- what moves, and only where it should ---------------------- */
+
+  .ripple, .corona, .flame { transform-box: fill-box; transform-origin: center; }
+  .flame { transform-origin: 50% 100%; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    /* the basin's surface never settles */
+    .instr.on .ripple { animation: ripple 5.5s ease-out infinite; }
+    .instr.on .ripple.r2 { animation-delay: 1.9s; }
+    .instr.on .ripple.r3 { animation-delay: 3.7s; }
+    /* the leaf's corona, breathing */
+    .instr.on .corona { animation: corona 3.4s ease-in-out infinite; }
+    /* and the arc across the electrodes, which stutters */
+    .instr.on .arc { animation: arc 2.6s steps(1, end) infinite; }
+    /* air leaving the bell */
+    .instr.on .bub { animation: bub 4.6s ease-in infinite; }
+    .instr.on .bub.b2 { animation-delay: 1.5s; animation-duration: 5.4s; }
+    .instr.on .bub.b3 { animation-delay: 3.1s; animation-duration: 3.9s; }
+  }
+  @keyframes ripple {
+    0%   { transform: scale(0.18); opacity: 0; }
+    18%  { opacity: 0.5; }
+    100% { transform: scale(1); opacity: 0; }
+  }
+  @keyframes corona { 0%,100% { opacity: 0.16; transform: scale(0.94); } 50% { opacity: 0.4; transform: scale(1.06); } }
+  @keyframes arc    { 0%,42% { opacity: 0.15; } 46%,54% { opacity: 1; } 58%,100% { opacity: 0.25; } }
+  @keyframes bub    { 0% { transform: translateY(0) scale(0.6); opacity: 0; } 20% { opacity: 0.75; } 100% { transform: translateY(-11px) scale(1); opacity: 0; } }
+
+  /* ---- the candle, and the censer beside it ---------------------- */
+
+  .flame-wrap { position: relative; line-height: 0; align-self: flex-end; }
+  .flame-wrap .halo {
+    position: absolute; left: 50%; bottom: 26%;
+    width: 13em; height: 13em; margin-left: -6.5em;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(226,170,84,0.3), rgba(226,170,84,0.08) 40%, transparent 72%);
+    pointer-events: none;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .flame { animation: flicker 1.9s ease-in-out infinite; }
+    .flame-wrap .halo { animation: flicker 1.9s ease-in-out infinite; }
+    .smoke { animation: rise 9s linear infinite; }
+    .smoke.s2 { animation-delay: 3s; }
+    .smoke.s3 { animation-delay: 6s; }
+  }
+  @keyframes flicker {
+    0%,100% { transform: scale(1,1)       translateX(0);     opacity: 0.92; }
+    28%     { transform: scale(0.92,1.1)  translateX(-0.4px);opacity: 1; }
+    54%     { transform: scale(1.05,0.93) translateX(0.3px); opacity: 0.84; }
+    76%     { transform: scale(0.96,1.05) translateX(0.2px); opacity: 1; }
+  }
+  @keyframes rise {
+    0%   { transform: translate(0,0) scale(0.5);        opacity: 0; }
+    15%  { opacity: 0.3; }
+    100% { transform: translate(-7px,-34px) scale(2.4); opacity: 0; }
   }
 
-  /* ---- under the lens ------------------------------------------- */
+  /* ---- the thing in the glass ------------------------------------ */
 
-  .entry:hover .name,
-  .entry:focus-visible .name,
-  .entry:target .name { color: var(--accent, var(--bone)); }
+  .wraith {
+    opacity: 0;
+    mix-blend-mode: screen;
+    filter: blur(1.6px);
+    transition: opacity 2600ms ease-in-out;
+    pointer-events: none;
+  }
+  .haunted .wraith { opacity: 0.22; }
 
-  .entry:hover .reflect,
-  .entry:focus-visible .reflect,
-  .entry:target .reflect { opacity: 0.2; }
+  /* ---- the ledger ------------------------------------------------ */
 
-  .entry:hover::before,
-  .entry:focus-visible::before,
-  .entry:target::before { height: 1.1em; }
-
-  .entry:hover .state[data-state="suspended"],
-  .entry:focus-visible .state[data-state="suspended"],
-  .entry:target .state[data-state="suspended"] {
-    color: color-mix(in srgb, var(--accent) 70%, var(--bone));
-    border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+  .ledger {
+    position: absolute;
+    right: 3%; bottom: 1.6em;
+    z-index: 6;
+    width: 33em;
+    display: grid;
+    grid-template-columns: 0.78fr 1fr;
+    background:
+      linear-gradient(to right, rgba(232,226,210,0.10), rgba(232,226,210,0.045) 48%, rgba(0,0,0,0.3) 50%, rgba(232,226,210,0.05) 52%, rgba(232,226,210,0.085));
+    border: 1px solid rgba(232,226,210,0.14);
+    border-radius: 0.2em;
+    box-shadow: 0 1.4em 3em rgba(0,0,0,0.8), inset 0 0 3em rgba(0,0,0,0.45);
+    padding: 1.5em 1.7em;
+    gap: 1.5em;
+    transform: rotate(-0.5deg);
   }
 
-  .entry:focus { outline: none; }
-  .entry:focus-visible {
-    outline: 1px solid var(--accent, var(--bone));
-    outline-offset: clamp(0.5rem, 2vw, 1.1rem);
+  .ledger h1 {
+    font-weight: 400;
+    font-size: 2em;
+    line-height: 1.05;
+  }
+  .ledger .sub {
+    font-family: var(--mono);
+    font-size: 0.78em;
+    line-height: 1.55;
+    color: var(--bone-3);
+    margin-top: 0.8em;
+  }
+  .ledger .flourish {
+    margin-top: 1em;
+    width: 7em; height: 1px;
+    background: linear-gradient(to right, var(--verd), transparent);
   }
 
+  .ledger ol { list-style: none; }
 
-  /* ---- narrow --------------------------------------------------- */
+  .line {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6em;
+    padding: 0.3em 0.5em 0.3em 0.6em;
+    text-decoration: none;
+    color: var(--bone-2);
+    border-left: 1px solid transparent;
+    border-radius: 0.1em;
+    transition: color 240ms ease, border-color 240ms ease, background 240ms ease;
+  }
+  .line .nm { font-size: 1.12em; }
+  .line .st {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 0.64em;
+    color: var(--bone-3);
+    white-space: nowrap;
+  }
+  .line .mark {
+    width: 0.45em; height: 0.45em;
+    border-radius: 50%;
+    background: var(--reagent);
+    opacity: 0.45;
+    flex: none;
+  }
+  .line[data-state="suspended"] .mark { border-radius: 0; height: 1px; opacity: 0.5; }
 
-  @media (max-width: 34rem) {
-    .entry { grid-template-columns: minmax(0, 1fr); }
-    .state { grid-row: 1; justify-self: start; }
-    .name  { grid-row: 2; margin-top: 0.7rem; }
-    .entry::before { display: none; }
+  /* hovering either the line or its instrument lights both */
+  .line:hover, .line:focus-visible, .line.lit {
+    color: var(--bone);
+    border-left-color: var(--reagent);
+    background: rgba(232,226,210,0.05);
+  }
+  .line:hover .mark, .line:focus-visible .mark, .line.lit .mark { opacity: 1; }
+  .line:focus { outline: none; }
+  .line:focus-visible { outline: 1px solid var(--reagent); outline-offset: 0.15em; }
+
+  /* ---- portrait: the same room, stacked -------------------------- */
+
+  @media (max-aspect-ratio: 9/10) {
+    .room {
+      font-size: clamp(7px, 2.8vw, 14px);
+      --u: 0.5em;
+      grid-template-rows: auto auto auto minmax(0, 1fr);
+      align-content: start;
+    }
+    .wall { display: flex; flex-direction: column; align-items: center; padding-top: 1.4em; }
+    .casement { position: relative; right: auto; top: auto; width: 15em; height: 16em; }
+    /* no room on a phone wall for the chart or the hanging bunch */
+    .chart, .hanging { display: none; }
+    .shelf {
+      position: relative;
+      left: auto; bottom: auto;
+      width: 86%;
+      margin-top: 2.2em;
+      padding: 0;
+      justify-content: space-around;
+    }
+    .shelf::after { left: -0.8em; right: -0.8em; }
+    .beam  { right: -6em; top: 0;   width: 32em; height: 42em; }
+    .motes { right: -6em; top: 0;   width: 32em; height: 42em; }
+    /* two by two, so nothing can push past the edge */
+    .bench-top {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      justify-items: center;
+      align-items: end;
+      gap: 1.2em 0.6em;
+      min-height: 0;
+      padding: 2em 5% 0.5em;
+    }
+    .flame-wrap { display: none; }
+    .ledger-row { }
+    .floor { grid-row: 4; height: auto; min-height: 2.5em; }
+    .ledger {
+      position: static;
+      grid-row: 3;
+      width: auto;
+      margin: 1.2em 5% 1.4em;
+      transform: none;
+      grid-template-columns: 1fr;
+      gap: 0.8em;
+      padding: 1.1em 1.3em;
+    }
+    .ledger h1 { font-size: 1.75em; }
+    .ledger .sub, .ledger .flourish { display: none; }
+  }
+
+  /* when the screen is too short for a room, let it be reached
+     rather than clipped */
+  @media (max-height: 430px) {
+    body { overflow: auto; }
+    .room { height: auto; min-height: 100dvh; overflow: visible; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      animation-duration: 0.001ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.001ms !important;
-    }
-    .state[data-state="running"]::before { opacity: 1; }
+    *, *::before, *::after { animation: none !important; transition-duration: 0.001ms !important; }
   }
 </style>
 </head>
 <body>
-  <a class="skip" href="#index">Skip to the index</a>
+<a class="skip" href="#ledger">Skip to the ledger</a>
 
-  <main>
-    <header class="masthead">
-      <h1 class="lab">Mirrorcore Lab</h1>
-    </header>
+<!-- the watcher, drawn once. Fills are attributes, not classes: CSS
+     selectors do not reach inside a <use> shadow tree. -->
+<svg class="defs" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="wraith-fade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0"    stop-color="#fff" />
+      <stop offset="0.52" stop-color="#fff" />
+      <stop offset="1"    stop-color="#000" />
+    </linearGradient>
+    <mask id="wraith-mask" maskUnits="userSpaceOnUse" x="-22" y="-32" width="44" height="62">
+      <rect x="-22" y="-32" width="44" height="62" fill="url(#wraith-fade)" />
+    </mask>
+    <g id="wraith-shape" mask="url(#wraith-mask)" fill="#cfe3e6">
+      <!-- head and shoulders, and no face at all -->
+      <ellipse cx="0" cy="-21" rx="6.2" ry="7.4" />
+      <path d="M-2.8 -14 L-2.8 -10 C-10 -7 -14.5 0 -16 9 C-17.2 16 -17.6 22 -17.4 28 L17.4 28 C17.6 22 17.2 16 16 9 C14.5 0 10 -7 2.8 -10 L2.8 -14 Z" />
+    </g>
+  </defs>
+</svg>
 
-    <nav class="index" id="index" aria-label="Experiments">
+<main class="room">
 
-      <a class="entry" id="dream-archive" href="Dream-Archive/index.html" style="--accent:#9b93dd">
-        <h2 class="name">Dream Archive<span class="reflect" aria-hidden="true">Dream Archive</span></h2>
-        <span class="state" data-state="running">running</span>
+  <!-- the light, over everything -->
+  <div class="beam" aria-hidden="true"></div>
+  <div class="motes" aria-hidden="true">
+    <i style="left:72%;top:5%;animation-delay:0s"></i>
+    <i style="left:66%;top:15%;animation-delay:2.4s"></i>
+    <i style="left:58%;top:25%;animation-delay:5.1s"></i>
+    <i style="left:70%;top:35%;animation-delay:7.6s"></i>
+    <i style="left:44%;top:45%;animation-delay:1.2s"></i>
+    <i style="left:56%;top:55%;animation-delay:9.8s"></i>
+    <i style="left:34%;top:65%;animation-delay:4.3s"></i>
+    <i style="left:48%;top:75%;animation-delay:6.7s"></i>
+    <i style="left:26%;top:88%;animation-delay:11.5s"></i>
+  </div>
+
+  <div class="wall">
+
+    <div class="casement">
+      <div class="moon"></div>
+      <div class="bars"></div>
+      <div class="bead"></div>
+      <div class="bead b2"></div>
+      <!-- sometimes it is in the window instead of the glassware -->
+      <svg viewBox="0 0 100 126" aria-hidden="true" focusable="false"
+           style="position:absolute;inset:0;width:100%;height:100%">
+        <g class="wraith">
+          <use href="#wraith-shape" transform="translate(66 56) scale(1.1)" />
+        </g>
+      </svg>
+    </div>
+
+    <!-- wall furniture: not projects, just what keeps a room from
+         being a backdrop -->
+    <div class="chart" aria-hidden="true">
+      <svg viewBox="0 0 100 132" focusable="false">
+        <rect x="4" y="6" width="92" height="122" rx="0.8" fill="rgba(232,226,210,0.045)" stroke="rgba(232,226,210,0.13)" stroke-width="0.8" />
+        <circle cx="50" cy="44" r="26" fill="none" stroke="rgba(207,227,230,0.2)" stroke-width="0.7" />
+        <circle cx="50" cy="44" r="17" fill="none" stroke="rgba(207,227,230,0.13)" stroke-width="0.7" />
+        <circle cx="50" cy="44" r="8"  fill="none" stroke="rgba(207,227,230,0.13)" stroke-width="0.7" />
+        <path d="M50 18 V70 M24 44 H76 M32 26 L68 62 M68 26 L32 62" stroke="rgba(207,227,230,0.12)" stroke-width="0.6" fill="none" />
+        <circle cx="50" cy="44" r="2" fill="var(--verd)" opacity="0.5" />
+        <g stroke="rgba(232,226,210,0.14)" stroke-width="1.4" stroke-linecap="round">
+          <path d="M16 84 h58 M16 92 h68 M16 100 h44 M16 108 h64 M16 116 h38" />
+        </g>
+        <circle cx="50" cy="7" r="2.4" fill="#8a7a55" />
+      </svg>
+    </div>
+
+    <div class="hanging" aria-hidden="true">
+      <svg viewBox="0 0 64 152" focusable="false">
+        <path d="M32 0 V40" stroke="rgba(232,226,210,0.22)" stroke-width="0.8" fill="none" />
+        <path d="M26 39 h12 v6 h-12 Z" fill="#4a3a28" stroke="rgba(232,226,210,0.18)" stroke-width="0.6" />
+        <g class="sprigs">
+          <g fill="none" stroke="#56684f" stroke-width="1.2" stroke-linecap="round">
+            <path d="M32 45 C24 72 19 98 14 128" />
+            <path d="M32 45 C28 74 25 102 23 134" />
+            <path d="M32 45 C33 73 34 101 35 132" />
+            <path d="M32 45 C37 72 42 98 48 126" />
+            <path d="M32 45 C36 70 39 93 41 114" />
+          </g>
+          <!-- the leaves, every one of them hanging the way dried
+               things hang: down and away from the stem -->
+          <g fill="#53664c" opacity="0.92">
+            <ellipse cx="25" cy="66"  rx="4.6" ry="1.7" transform="rotate(34 25 66)" />
+            <ellipse cx="21" cy="84"  rx="5"   ry="1.8" transform="rotate(42 21 84)" />
+            <ellipse cx="18" cy="102" rx="4.8" ry="1.7" transform="rotate(48 18 102)" />
+            <ellipse cx="15" cy="118" rx="4"   ry="1.5" transform="rotate(54 15 118)" />
+            <ellipse cx="29" cy="70"  rx="4.4" ry="1.7" transform="rotate(62 29 70)" />
+            <ellipse cx="27" cy="90"  rx="4.8" ry="1.8" transform="rotate(68 27 90)" />
+            <ellipse cx="25" cy="110" rx="4.4" ry="1.6" transform="rotate(72 25 110)" />
+            <ellipse cx="34" cy="68"  rx="4.6" ry="1.7" transform="rotate(100 34 68)" />
+            <ellipse cx="35" cy="90"  rx="4.8" ry="1.8" transform="rotate(96 35 90)" />
+            <ellipse cx="35" cy="112" rx="4.4" ry="1.6" transform="rotate(94 35 112)" />
+            <ellipse cx="39" cy="68"  rx="4.6" ry="1.7" transform="rotate(126 39 68)" />
+            <ellipse cx="43" cy="88"  rx="5"   ry="1.8" transform="rotate(132 43 88)" />
+            <ellipse cx="46" cy="108" rx="4.6" ry="1.7" transform="rotate(136 46 108)" />
+            <ellipse cx="48" cy="122" rx="3.8" ry="1.4" transform="rotate(140 48 122)" />
+            <ellipse cx="37" cy="78"  rx="4.2" ry="1.6" transform="rotate(112 37 78)" />
+            <ellipse cx="40" cy="100" rx="4"   ry="1.5" transform="rotate(118 40 100)" />
+          </g>
+          <g fill="#6b7f5c" opacity="0.5">
+            <ellipse cx="23" cy="75"  rx="3.4" ry="1.3" transform="rotate(38 23 75)" />
+            <ellipse cx="31" cy="100" rx="3.4" ry="1.3" transform="rotate(70 31 100)" />
+            <ellipse cx="44" cy="98"  rx="3.4" ry="1.3" transform="rotate(134 44 98)" />
+          </g>
+        </g>
+      </svg>
+    </div>
+
+    <!-- SHELF: the two that live off the bench -->
+    <div class="shelf">
+
+      <!-- Local Species: a specimen jar, stopped -->
+      <a class="instr off" data-key="species" href="Local-Species/index.html"
+         style="--reagent:#85c95f; --k:13" aria-label="Local Species — suspended">
+        <svg class="art" viewBox="0 0 62 96" aria-hidden="true" focusable="false">
+          <rect class="cork" x="18" y="5" width="26" height="8" rx="1.6" />
+          <rect class="glass-d" x="21" y="12" width="20" height="7" />
+          <path class="glass" d="M14 24 q0-5 5.5-5.6 h23 q5.5 0.6 5.5 5.6 v58 q0 7-7 7 H21 q-7 0-7-7 Z" />
+          <path class="fluid" d="M15.4 36 h31.2 v45 q0 6-6 6 H21.4 q-6 0-6-6 Z" />
+          <!-- what is kept in it -->
+          <path class="lit" opacity="0.5" d="M31 46 q-7 7-6 18 q1 9 6 14 q5-5 6-14 q1-11-6-18 Z" />
+          <path class="hair" d="M31 48 V77 M31 56 l-5-5 M31 56 l5-5 M31 64 l-5-5 M31 64 l5-5 M31 72 l-4-4 M31 72 l4-4" />
+          <ellipse class="lit" opacity="0.6" cx="22" cy="72" rx="2.4" ry="1.5" />
+          <path class="hair-f" d="M18 30 h26 M18 60 h26" />
+          <!-- light caught on the near face of the glass -->
+          <path d="M18.5 26 q-1.6 26 0 56" fill="none" stroke="rgba(207,227,230,0.4)" stroke-width="2.2" stroke-linecap="round" opacity="0.5" />
+          <path class="dust" d="M19.5 14.5 h23" />
+          <g class="wraith"><use href="#wraith-shape" transform="translate(31 58) scale(0.85)" /></g>
+        </svg>
       </a>
 
-      <a class="entry" id="bioelectric" href="Bioelectric-studio/index.html" style="--accent:#9d84f0">
-        <h2 class="name">Bioelectric Studio<span class="reflect" aria-hidden="true">Bioelectric Studio</span></h2>
-        <span class="state" data-state="running">running</span>
+      <!-- Time Scroller: an hourglass whose sand has all fallen -->
+      <a class="instr off" data-key="time" href="Time-Scroller/index.html"
+         style="--reagent:#e0784f; --k:13" aria-label="Time Scroller — suspended">
+        <svg class="art" viewBox="0 0 62 96" aria-hidden="true" focusable="false">
+          <rect class="brassy" x="9" y="4" width="44" height="5" rx="1.2" />
+          <rect class="brassy" x="9" y="87" width="44" height="5" rx="1.2" />
+          <path class="brassy" d="M13 9 h4 v78 h-4 Z M45 9 h4 v78 h-4 Z" />
+          <path class="glass" d="M19 9 h24 v10 q0 10-10 26 q10 16 10 26 v16 H19 V71 q0-10 10-26 Q19 19 19 9 Z" />
+          <!-- strata, settled in the lower bulb and going nowhere -->
+          <path class="fluid" d="M20.4 86 h21.2 V74 q0-7-8-16 h-5.2 q-8 9-8 16 Z" />
+          <path class="lit" opacity="0.55" d="M22 86 h18 v-4 H22 Z" />
+          <path class="lit" opacity="0.4"  d="M23.6 82 h14.8 v-3.4 H23.6 Z" />
+          <path class="lit" opacity="0.28" d="M25.6 78.6 h10.8 v-3 H25.6 Z" />
+          <path class="hair-f" d="M19 45 h24" />
+          <path d="M22 13 q-1.2 14 6 30" fill="none" stroke="rgba(207,227,230,0.4)" stroke-width="2" stroke-linecap="round" opacity="0.45" />
+          <path class="dust" d="M11 6.5 h40" />
+          <g class="wraith"><use href="#wraith-shape" transform="translate(31 28) scale(0.55)" /></g>
+        </svg>
       </a>
 
-      <a class="entry" id="daily-flow" href="Daily-Flow/index.html" style="--accent:#5fc8a6">
-        <h2 class="name">Daily Flow<span class="reflect" aria-hidden="true">Daily Flow</span></h2>
-        <span class="state" data-state="suspended">suspended</span>
+    </div>
+  </div>
+
+  <!-- BENCH -->
+  <div class="bench">
+    <div class="bench-top">
+
+      <!-- Quest Omen: an astrolabe, its plumb line dead still -->
+      <a class="instr off" data-key="omen" href="Quest-Omen/index.html"
+         style="--reagent:#c79a4e; --k:15" aria-label="Quest Omen — suspended">
+        <svg class="art" viewBox="0 0 84 104" aria-hidden="true" focusable="false">
+          <path class="brassy" d="M38 86 h8 v12 h-8 Z" />
+          <path class="brassy" d="M24 96 h36 q3 0 3 3 v3 H21 v-3 q0-3 3-3 Z" />
+          <circle class="brassy" cx="42" cy="46" r="36" />
+          <circle class="ink" cx="42" cy="46" r="32" opacity="0.5" />
+          <circle class="fluid" cx="42" cy="46" r="32" />
+          <circle class="hair" cx="42" cy="46" r="32" />
+          <circle class="hair" cx="42" cy="46" r="25" />
+          <circle class="hair" cx="42" cy="46" r="17" />
+          <circle class="hair" cx="42" cy="46" r="9" />
+          <!-- the rete: pointers for the fixed stars -->
+          <path class="brassy" d="M42 21 l2 5 -2 4 -2-4 Z M63 38 l5 2 -4 3 -3-3 Z M24 56 l-5 2 4 3 3-3 Z M54 66 l3 5 -4 2 -2-4 Z" />
+          <!-- the engraved limb -->
+          <path class="hair-f" d="M42 10 v8 M42 74 v8 M6 46 h8 M70 46 h8 M17 21 l5.6 5.6 M61.4 65.4 l5.6 5.6 M67 21 l-5.6 5.6 M22.6 65.4 l-5.6 5.6" />
+          <!-- the rule, stopped where it was left -->
+          <path class="brassy" transform="rotate(-27 42 46)" d="M14 41 h56 v4 q0 1.6-1.6 1.6 H15.6 Q14 46.6 14 45 Z" />
+          <circle class="lit" cx="42" cy="46" r="3.4" />
+          <!-- the plumb, hanging without a tremor -->
+          <path class="hair" d="M42 46 V88" />
+          <path class="brassy" d="M42 88 l2.6 5 -2.6 5 -2.6-5 Z" />
+          <path class="dust" d="M20 24 a30 30 0 0 1 44 0" />
+          <g class="wraith"><use href="#wraith-shape" transform="translate(42 44) scale(0.8)" /></g>
+        </svg>
       </a>
 
-      <a class="entry" id="local-species" href="Local-Species/index.html" style="--accent:#85c95f">
-        <h2 class="name">Local Species<span class="reflect" aria-hidden="true">Local Species</span></h2>
-        <span class="state" data-state="suspended">suspended</span>
+      <!-- Dream Archive: the scrying basin. Working, and the moon lands in it -->
+      <a class="instr on" data-key="dream" href="Dream-Archive/index.html"
+         style="--reagent:#a79ce8; --k:19" aria-label="Dream Archive — running">
+        <svg class="art" viewBox="0 0 108 108" aria-hidden="true" focusable="false">
+          <ellipse class="aura" cx="54" cy="46" rx="42" ry="14" />
+          <!-- the bowl -->
+          <path class="metal" d="M10 44 h88 q-4 30-18 38 H28 Q14 74 10 44 Z" />
+          <!-- the water -->
+          <ellipse class="fluid" cx="54" cy="45" rx="42" ry="12.5" />
+          <ellipse class="hair" cx="54" cy="45" rx="42" ry="12.5" />
+          <!-- the moon, fallen in -->
+          <ellipse class="lit" opacity="0.75" cx="70" cy="42" rx="7" ry="2.6" />
+          <ellipse class="lit" cx="70" cy="42" rx="3.4" ry="1.2" />
+          <!-- rings, going out and out -->
+          <ellipse class="ripple hair" cx="54" cy="45" rx="40" ry="11.6" />
+          <ellipse class="ripple r2 hair" cx="54" cy="45" rx="40" ry="11.6" />
+          <ellipse class="ripple r3 hair" cx="54" cy="45" rx="40" ry="11.6" />
+          <!-- the pedestal -->
+          <path class="metal" d="M48 82 h12 v14 H48 Z" />
+          <path class="metal" d="M34 96 h40 q4 0 4 4 v4 H30 v-4 q0-4 4-4 Z" />
+          <!-- light on the near rim, where it tends to appear -->
+          <path d="M16 48 q6 22 16 30" fill="none" stroke="rgba(207,227,230,0.34)" stroke-width="2.4" stroke-linecap="round" />
+          <g class="wraith"><use href="#wraith-shape" transform="translate(42 63) scale(0.6)" /></g>
+        </svg>
       </a>
 
-      <a class="entry" id="quest-omen" href="Quest-Omen/index.html" style="--accent:#e0ab3d">
-        <h2 class="name">Quest Omen<span class="reflect" aria-hidden="true">Quest Omen</span></h2>
-        <span class="state" data-state="suspended">suspended</span>
+      <!-- Bioelectric Studio: a leaf under a bell, holding an arc -->
+      <a class="instr on" data-key="bio" href="Bioelectric-studio/index.html"
+         style="--reagent:#9d84f0; --k:17" aria-label="Bioelectric Studio — running">
+        <svg class="art" viewBox="0 0 76 102" aria-hidden="true" focusable="false">
+          <ellipse class="aura" cx="38" cy="54" rx="26" ry="26" />
+          <!-- the bell -->
+          <path class="glass" d="M38 8 q26 0 26 34 v44 H12 V42 Q12 8 38 8 Z" />
+          <circle class="glass" cx="38" cy="8" r="3.4" />
+          <!-- the leaf, and the corona around it -->
+          <ellipse class="corona lit" opacity="0.2" cx="38" cy="54" rx="19" ry="13" />
+          <path class="fluid" d="M20 60 Q28 36 56 40 Q46 64 20 60 Z" />
+          <path class="hair" d="M20 60 Q36 54 56 40" />
+          <path class="hair-f" d="M29 55 q3-7 1-12 M37 52 q3-7 2-12 M45 48 q3-6 3-11" />
+          <!-- the electrodes -->
+          <path class="brassy" d="M23 44 l-6-10 h3 l6 10 Z" />
+          <path class="brassy" d="M53 38 l6-10 h3 l-6 10 Z" />
+          <circle class="lit" cx="24" cy="46" r="2.2" />
+          <circle class="lit" cx="52" cy="40" r="2.2" />
+          <!-- the arc, which stutters -->
+          <path class="arc" fill="none" stroke="var(--reagent)" stroke-width="1.4" stroke-linejoin="round"
+                d="M24 46 l7-5 -3 6 8-4 -2 5 10-6 -3 5 11-7" />
+          <!-- air leaving the bell -->
+          <circle class="bub lit" cx="20" cy="80" r="1.5" />
+          <circle class="bub b2 lit" cx="48" cy="82" r="1.2" />
+          <circle class="bub b3 lit" cx="33" cy="84" r="1.7" />
+          <!-- the plinth -->
+          <path class="metal" d="M8 86 h60 q4 0 4 4 v8 H4 v-8 q0-4 4-4 Z" />
+          <path d="M17 20 q-4 16-3 34" fill="none" stroke="rgba(207,227,230,0.36)" stroke-width="2.4" stroke-linecap="round" />
+          <g class="wraith"><use href="#wraith-shape" transform="translate(38 54) scale(0.9)" /></g>
+        </svg>
       </a>
 
-      <a class="entry" id="time-scroller" href="Time-Scroller/index.html" style="--accent:#ef8055">
-        <h2 class="name">Time Scroller<span class="reflect" aria-hidden="true">Time Scroller</span></h2>
-        <span class="state" data-state="suspended">suspended</span>
+      <!-- Daily Flow: a water clock whose drip has dried -->
+      <a class="instr off" data-key="flow" href="Daily-Flow/index.html"
+         style="--reagent:#5fc8a6; --k:16" aria-label="Daily Flow — suspended">
+        <svg class="art" viewBox="0 0 64 102" aria-hidden="true" focusable="false">
+          <path class="brassy" d="M8 6 h48 v4 H8 Z" />
+          <path class="brassy" d="M12 10 h4 v84 h-4 Z M48 10 h4 v84 h-4 Z" />
+          <path class="brassy" d="M6 94 h52 q3 0 3 3 v4 H3 v-4 q0-3 3-3 Z" />
+          <!-- the vessel, graduated for the four tracks -->
+          <path class="glass" d="M20 12 h24 v58 q0 8-8 8 h-8 q-8 0-8-8 Z" />
+          <!-- the level, low and perfectly flat -->
+          <path class="fluid" d="M21.2 50 h21.6 v19 q0 7.6-7.6 7.6 h-6.4 q-7.6 0-7.6-7.6 Z" />
+          <path class="hair" d="M21.2 50 h21.6" />
+          <!-- the graduations: body, mind, soul, hobbies -->
+          <path class="hair-f" d="M20 22 h7 M20 32 h7 M20 42 h7 M20 52 h7 M20 62 h7" />
+          <path class="hair-f" d="M37 22 h7 M37 42 h7 M37 62 h7" />
+          <!-- the spout, and the drop that never leaves it -->
+          <path class="brassy" d="M36 74 h10 q3 0 3 3 v3 h-4 v-2 h-9 Z" />
+          <path class="lit" opacity="0.5" d="M46.6 81 q2 3 0 4.6 q-2-1.6 0-4.6 Z" />
+          <path d="M23 16 q-1.4 24 0 50" fill="none" stroke="rgba(207,227,230,0.38)" stroke-width="2.2" stroke-linecap="round" opacity="0.5" />
+          <path class="dust" d="M21 13.5 h22" />
+          <g class="wraith"><use href="#wraith-shape" transform="translate(32 46) scale(0.6)" /></g>
+        </svg>
       </a>
 
-    </nav>
-  </main>
+      <!-- the candle and the censer. Not a project; just the light -->
+      <div class="flame-wrap" aria-hidden="true">
+        <div class="halo"></div>
+        <svg class="art" style="height:13em;filter:none" viewBox="0 0 44 90" focusable="false">
+          <g class="flame">
+            <ellipse cx="14" cy="22" rx="4.6" ry="8.6" fill="#e2aa54" opacity="0.5" />
+            <path d="M14 10 q4.4 6 4.4 11.4 Q18.4 28 14 28 Q9.6 28 9.6 21.4 Q9.6 16 14 10 Z" fill="#f6dca2" />
+            <path d="M14 16 q2 3.4 2 6.4 0 3.4-2 3.4 -2 0-2-3.4 0-3 2-6.4 Z" fill="#fffaf0" />
+          </g>
+          <path d="M11.6 28 h4.8 v34 h-4.8 Z" fill="#cfc6ae" />
+          <path d="M11.6 28 h2 v34 h-2 Z" fill="#e8e2d2" opacity="0.6" />
+          <path class="metal" d="M6 62 h16 q2 0 2 2 v3 H4 v-3 q0-2 2-2 Z" />
+          <path class="metal" d="M27 70 h14 q-1.4 10-6 12 h-2 q-4.6-2-6-12 Z" />
+          <path class="hair" d="M27 70 h14" />
+          <g fill="rgba(207,227,230,0.5)">
+            <ellipse class="smoke" cx="34" cy="68" rx="2.6" ry="2" />
+            <ellipse class="smoke s2" cx="34" cy="68" rx="2" ry="1.6" />
+            <ellipse class="smoke s3" cx="34" cy="68" rx="3" ry="2.2" />
+          </g>
+        </svg>
+      </div>
+
+    </div>
+    <div class="bench-face"></div>
+  </div>
+
+  <div class="floor"></div>
+
+  <!-- THE LEDGER: the readable index, lying open on the near edge -->
+  <section class="ledger" id="ledger" aria-label="The ledger">
+    <div>
+      <h1>Mirrorcore&nbsp;Lab</h1>
+      <p class="sub">Six experiments.<br />Two of them are working.</p>
+      <div class="flourish"></div>
+    </div>
+    <ol>
+      <li><a class="line" data-key="dream" data-state="running" href="Dream-Archive/index.html" style="--reagent:#a79ce8">
+        <span class="mark"></span><span class="nm">Dream Archive</span><span class="st">running</span></a></li>
+      <li><a class="line" data-key="bio" data-state="running" href="Bioelectric-studio/index.html" style="--reagent:#9d84f0">
+        <span class="mark"></span><span class="nm">Bioelectric Studio</span><span class="st">running</span></a></li>
+      <li><a class="line" data-key="flow" data-state="suspended" href="Daily-Flow/index.html" style="--reagent:#5fc8a6">
+        <span class="mark"></span><span class="nm">Daily Flow</span><span class="st">suspended</span></a></li>
+      <li><a class="line" data-key="species" data-state="suspended" href="Local-Species/index.html" style="--reagent:#85c95f">
+        <span class="mark"></span><span class="nm">Local Species</span><span class="st">suspended</span></a></li>
+      <li><a class="line" data-key="omen" data-state="suspended" href="Quest-Omen/index.html" style="--reagent:#c79a4e">
+        <span class="mark"></span><span class="nm">Quest Omen</span><span class="st">suspended</span></a></li>
+      <li><a class="line" data-key="time" data-state="suspended" href="Time-Scroller/index.html" style="--reagent:#e0784f">
+        <span class="mark"></span><span class="nm">Time Scroller</span><span class="st">suspended</span></a></li>
+    </ol>
+  </section>
+</main>
+
+<script>
+  /* The room works with this file absent: the instruments and the ledger
+     are ordinary links, and the watcher stays in whichever glass it was
+     first drawn into. Everything below is refinement on top of that. */
+  (function () {
+    "use strict";
+
+    var calm = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    /* ---- the ledger and the room answer for each other ---- */
+
+    var lines = Array.prototype.slice.call(document.querySelectorAll(".line"));
+    var instrs = Array.prototype.slice.call(document.querySelectorAll(".instr[data-key]"));
+
+    function pair(key, on) {
+      lines.forEach(function (l) {
+        if (l.getAttribute("data-key") === key) l.classList.toggle("lit", on);
+      });
+      instrs.forEach(function (i) {
+        if (i.getAttribute("data-key") === key) i.classList.toggle("near", on);
+      });
+    }
+
+    instrs.concat(lines).forEach(function (el) {
+      var key = el.getAttribute("data-key");
+      el.addEventListener("mouseenter", function () { pair(key, true); });
+      el.addEventListener("focus", function () { pair(key, true); });
+      el.addEventListener("mouseleave", function () { pair(key, false); });
+      el.addEventListener("blur", function () { pair(key, false); });
+    });
+
+    /* ---- the watcher ----
+       In the glass from the moment the page opens. It moves, and it does
+       not often come back to the same vessel: the last two hosts are
+       kept out of the draw. */
+
+    var hosts = Array.prototype.slice.call(document.querySelectorAll(".wraith"))
+      .map(function (w) { return w.closest(".instr") || w.closest(".casement"); })
+      .filter(Boolean);
+
+    if (!hosts.length) return;
+
+    var recent = [];
+
+    function clearAll() {
+      hosts.forEach(function (h) { h.classList.remove("haunted"); });
+    }
+    function draw() {
+      var pool = hosts.filter(function (h) { return recent.indexOf(h) === -1; });
+      if (!pool.length) pool = hosts;
+      var h = pool[Math.floor(Math.random() * pool.length)];
+      recent.push(h);
+      while (recent.length > 2) recent.shift();
+      return h;
+    }
+
+    draw().classList.add("haunted");
+    if (calm.matches) return;
+
+    /* gone for a moment, then somewhere else */
+    setInterval(function () {
+      clearAll();
+      setTimeout(function () { draw().classList.add("haunted"); }, 3000);
+    }, 13000);
+  })();
+</script>
 </body>
 </html>
