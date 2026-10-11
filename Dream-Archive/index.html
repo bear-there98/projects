@@ -9,14 +9,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#f0e4cd; --ink-dim:#b3a289; --ink-faint:#776a58;
-  --bg:#0a0908; --bg-2:#120f0c; --paper:rgba(226,201,154,.045); --paper-2:#17120d;
-  --line:rgba(226,201,154,.16); --line-2:rgba(226,201,154,.32);
-  --flame:#e0a44a; --ember:#c2703a; --deep:#5e7f82; --danger:#cc6b5e;
-  --btn-text:#140f0a;
-  --map-sky:#070a12; --map-horizon:#2a1d12; --map-water:#0a1518; --map-deep:#030607;
-  --star:var(--flame); --glow:var(--deep); --text:var(--ink); --muted:var(--ink-dim);
-  --surface:rgba(226,201,154,.05); --surface-2:#140f0a;
+  /* Moonlight above, deep water below: the two ends of the map, used as
+     the whole palette. Nothing here is warm except alarm. */
+  --ink:#e7e5e2; --ink-dim:#a0a6b6; --ink-faint:#737b8d;
+  --bg:#080a10; --bg-2:#0d1118; --paper:rgba(185,195,230,.045); --paper-2:#101420;
+  --line:rgba(185,195,230,.15); --line-2:rgba(185,195,230,.30);
+  --moon:#a79ce8; --tide:#5b8fa8; --deep:#6ba8bd; --danger:#d2766f;
+  --btn-text:#090b12;
+  --map-sky:#060a14; --map-horizon:#1d2748; --map-water:#081619; --map-deep:#03060a;
+  --star:var(--moon); --glow:var(--deep); --text:var(--ink); --muted:var(--ink-dim);
+  --surface:rgba(185,195,230,.05); --surface-2:#10131c;
   --serif:"Newsreader","Iowan Old Style","Palatino Linotype",Georgia,serif;
   --sans:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   box-sizing:border-box;
@@ -28,28 +30,28 @@ html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:10
 *,*::before,*::after{box-sizing:inherit}
 body{margin:0;min-height:100%;font-family:var(--sans);color:var(--text);background:var(--bg);font-size:16px;line-height:1.55}
 body::before{content:"";position:fixed;inset:0;z-index:-1;background:
-  radial-gradient(120% 55% at 50% -8%, rgba(224,164,74,.13), transparent 62%),
-  radial-gradient(90% 40% at 50% 108%, rgba(94,127,130,.10), transparent 60%),
-  linear-gradient(to bottom, #0b0a08, #0a0908 55%, #070605)}
-body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
-  background-image:radial-gradient(rgba(226,201,154,.05) .5px, transparent .5px);background-size:3px 3px}
+  radial-gradient(120% 55% at 50% -8%, rgba(167,156,232,.14), transparent 62%),
+  radial-gradient(90% 40% at 50% 108%, rgba(107,168,189,.11), transparent 60%),
+  linear-gradient(to bottom, #0a0c14, #080a10 55%, #05070b)}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.34;
+  background-image:radial-gradient(rgba(185,195,230,.05) .5px, transparent .5px);background-size:3px 3px}
 button,input,textarea,select{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--glow);outline-offset:2px;border-radius:6px}
 .wrap{max-width:680px;margin:0 auto;padding:18px 18px 120px}
 header.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:6px 2px 14px}
 .brand{font-family:var(--serif);font-size:1.05rem;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-dim)}
-.brand .seal{color:var(--flame);letter-spacing:0}
+.brand .seal{color:var(--moon);letter-spacing:0}
 .status{font-size:.8rem;color:var(--muted);text-align:right}
 .view{display:none}
 .view.on{display:block}
 h1{font-family:var(--serif);font-weight:300;font-size:clamp(1.9rem,6.4vw,2.6rem);line-height:1.1;margin:6px 0 6px;letter-spacing:.005em}
 h1+.muted{margin-top:0}
 .moon{font-size:.85rem;color:var(--ink-dim)}
-.moon b{font-weight:400;color:var(--flame);font-size:1.05rem}
+.moon b{font-weight:400;color:var(--moon);font-size:1.05rem}
 .rule{height:1px;background:linear-gradient(to right,var(--line-2),transparent);margin:14px 0 20px}
 h2{font-family:var(--serif);font-weight:400;font-size:1.3rem;margin:30px 0 10px;color:var(--ink)}
-h2::before{content:"";display:inline-block;width:16px;height:1px;background:var(--flame);vertical-align:middle;margin-right:10px}
+h2::before{content:"";display:inline-block;width:16px;height:1px;background:var(--moon);vertical-align:middle;margin-right:10px}
 .muted{color:var(--muted)}
 .small{font-size:.85rem}
 .banner{background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:12px 14px;margin:0 0 16px;font-size:.9rem}
@@ -71,13 +73,13 @@ details.ctx summary::before{content:"+";display:inline-block;width:1.2em;color:v
 details.ctx[open] summary::before{content:"−"}
 .scale{display:flex;gap:6px;flex-wrap:wrap}
 .scale button{min-width:40px;padding:7px 10px;border-radius:3px;border:1px solid var(--line);background:transparent;font-size:.9rem}
-.scale button[aria-pressed="true"]{background:var(--flame);color:var(--btn-text);border-color:transparent}
+.scale button[aria-pressed="true"]{background:var(--moon);color:var(--btn-text);border-color:transparent}
 .scale-ends{display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-top:4px;max-width:240px}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
 .btn{border:1px solid var(--line-2);background:transparent;border-radius:3px;padding:11px 18px;font-weight:500;letter-spacing:.02em}
-.btn:hover{border-color:var(--flame);color:var(--flame)}
-.btn.primary{background:var(--flame);color:var(--btn-text);border-color:transparent}
-.btn.primary:hover{background:#eeb75f;color:var(--btn-text)}
+.btn:hover{border-color:var(--moon);color:var(--moon)}
+.btn.primary{background:var(--moon);color:var(--btn-text);border-color:transparent}
+.btn.primary:hover{background:#bdb4f2;color:var(--btn-text)}
 .btn.quiet{background:transparent}
 .btn.danger{color:var(--danger)}
 .btn:disabled{opacity:.5;cursor:default}
@@ -85,21 +87,21 @@ details.ctx[open] summary::before{content:"−"}
 /* nav */
 nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;
   padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));
-  background:rgba(10,9,8,.93);border-top:1px solid var(--line);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  background:rgba(8,10,16,.93);border-top:1px solid var(--line);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 nav.tabs .in{display:flex;gap:4px;max-width:680px;width:100%}
 nav.tabs button{flex:1;border:0;background:transparent;padding:9px 2px;border-radius:3px;font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint)}
-nav.tabs button[aria-current="page"]{color:var(--flame);background:rgba(224,164,74,.09);font-weight:600}
+nav.tabs button[aria-current="page"]{color:var(--moon);background:rgba(167,156,232,.10);font-weight:600}
 /* lists and cards */
 .stats{display:flex;gap:22px;flex-wrap:wrap;margin:4px 0 8px}
-.stat b{display:block;font-family:var(--serif);font-weight:300;font-size:2.1rem;line-height:1;color:var(--flame)}
+.stat b{display:block;font-family:var(--serif);font-weight:300;font-size:2.1rem;line-height:1;color:var(--moon)}
 .stat span{font-size:.82rem;color:var(--muted)}
 .bars{margin:10px 0 4px}
 .bar{display:grid;grid-template-columns:minmax(90px,38%) 1fr 26px;gap:10px;align-items:center;margin:7px 0;font-size:.9rem}
-.bar i{display:block;height:5px;border-radius:2px;background:linear-gradient(to right,var(--ember),var(--flame));opacity:.9}
+.bar i{display:block;height:5px;border-radius:2px;background:linear-gradient(to right,var(--tide),var(--moon));opacity:.9}
 .bar em{font-style:normal;color:var(--muted);text-align:right;font-size:.8rem}
 .month{font-family:var(--serif);font-style:italic;color:var(--muted);margin:24px 0 6px}
 .dream-item{display:block;width:100%;text-align:left;background:var(--paper);border:1px solid var(--line);border-left:2px solid var(--line-2);border-radius:3px;padding:12px 15px;margin:9px 0;transition:border-color .15s,background .15s}
-.dream-item:hover{background:rgba(226,201,154,.075);border-left-color:var(--flame)}
+.dream-item:hover{background:rgba(185,195,230,.07);border-left-color:var(--moon)}
 .dream-item .d{font-size:.8rem;color:var(--muted);display:flex;gap:8px;align-items:center}
 .dream-item p{margin:4px 0 8px;font-family:var(--serif);font-size:1.02rem;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .tag{display:inline-block;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:2px;border:1px solid var(--line)}
@@ -111,11 +113,11 @@ nav.tabs button[aria-current="page"]{color:var(--flame);background:rgba(224,164,
 button.chip{cursor:pointer}
 .chip.feel{border-style:dashed}
 .sym-item{display:block;width:100%;text-align:left;background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:12px 15px;margin:9px 0}
-.sym-item:hover{background:rgba(226,201,154,.075)}
+.sym-item:hover{background:rgba(185,195,230,.07)}
 .sym-item .n{font-family:var(--serif);font-size:1.2rem}
 .sym-item .c{float:right;font-size:.8rem;color:var(--muted)}
 .sym-item .w{font-size:.85rem;color:var(--muted);margin-top:2px}
-.suggest{border:1px solid var(--flame);border-radius:3px;padding:12px 14px;margin:8px 0;background:var(--surface)}
+.suggest{border:1px solid var(--moon);border-radius:3px;padding:12px 14px;margin:8px 0;background:var(--surface)}
 .suggest .n{font-family:var(--serif);font-size:1.15rem}
 .empty{padding:22px 4px;color:var(--muted);font-family:var(--serif);font-style:italic;font-size:1.05rem}
 /* map */
@@ -132,10 +134,10 @@ button.chip{cursor:pointer}
 #sheet.on{display:block}
 #sheet .scrim{position:absolute;inset:0;background:rgba(0,0,0,.66)}
 #sheet .panel{position:absolute;left:0;right:0;bottom:0;top:max(40px,env(safe-area-inset-top,0px));max-width:720px;margin:0 auto;
-  background:#0d0b09;border:1px solid var(--line-2);border-bottom:0;border-radius:4px 4px 0 0;overflow-y:auto;
+  background:#0b0e16;border:1px solid var(--line-2);border-bottom:0;border-radius:4px 4px 0 0;overflow-y:auto;
   padding:14px 20px calc(40px + env(safe-area-inset-bottom,0px));backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 @media (prefers-reduced-motion:no-preference){ #sheet.on .panel{animation:rise .28s ease-out} @keyframes rise{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}} }
-.sheet-head{display:flex;justify-content:space-between;align-items:center;position:sticky;top:-14px;padding:10px 0;background:#0d0b09;z-index:2;border-bottom:1px solid var(--line)}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;position:sticky;top:-14px;padding:10px 0;background:#0b0e16;z-index:2;border-bottom:1px solid var(--line)}
 .close{border:0;background:transparent;font-size:.95rem;color:var(--muted);padding:6px 4px}
 .dream-body{font-family:var(--serif);font-size:1.12rem;line-height:1.7;white-space:pre-wrap;margin:6px 0 16px}
 .ctx-list{font-size:.9rem;margin:0 0 12px;padding:0;list-style:none}
@@ -158,19 +160,21 @@ input[type=range]{width:100%;accent-color:var(--glow)}
 hr{border:0;border-top:1px solid var(--line);margin:22px 0}
 ul.plain{list-style:none;padding:0;margin:10px 0;font-size:.95rem}
 ul.plain li{padding:9px 0 9px 14px;border-left:1px solid var(--line);margin:0 0 2px}
-ul.plain b{font-weight:500;color:var(--flame)}
+ul.plain b{font-weight:500;color:var(--moon)}
 h3{font-family:var(--serif);font-weight:400;font-size:1.08rem;margin:20px 0 8px;color:var(--ink-dim)}
 table.cmp{width:100%;border-collapse:collapse;font-size:.92rem;margin:10px 0}
 table.cmp th{font-weight:400;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-faint);text-align:right;padding:4px 0}
 table.cmp th:first-child{text-align:left}
 table.cmp td{padding:7px 0;border-top:1px solid var(--line);text-align:right}
 table.cmp td:first-child{text-align:left;color:var(--ink-dim)}
-table.cmp td.hi{color:var(--flame)}
+table.cmp td.hi{color:var(--moon)}
 .moons{display:flex;gap:10px;align-items:flex-end;margin:10px 0}
 .mn{flex:1;text-align:center;font-size:.72rem;color:var(--ink-faint);display:flex;flex-direction:column;align-items:center;gap:3px}
-.mn b{font-size:1.1rem;color:var(--flame);font-weight:400}
-.mn i{display:block;width:70%;background:var(--ember);border-radius:1px}
+.mn b{font-size:1.1rem;color:var(--moon);font-weight:400}
+.mn i{display:block;width:70%;background:var(--moon);opacity:.55;border-radius:1px}
 .chip em{font-style:normal;font-size:.78rem}
+.moon-ic{display:inline-block;vertical-align:-.16em}
+.mn .moon-ic,.moon b .moon-ic{vertical-align:-.1em}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
 </head>
@@ -281,7 +285,19 @@ function rng(seed){ let s=seed>>>0||1; return ()=>{ s=Math.imul(s^(s>>>15),22468
 const clone = o => JSON.parse(JSON.stringify(o ?? null));
 /* moon: synodic approximation from a known new moon */
 const MOON_NAMES=['new moon','waxing crescent','first quarter','waxing gibbous','full moon','waning gibbous','last quarter','waning crescent'];
-const MOON_GLYPH=['\u25CF','\u263D','\u25D7','\u25D7','\u25CB','\u25D6','\u25D6','\u263E'];
+/* A moon drawn from its phase: the limb on the lit side, closed by the
+   terminator ellipse. Waning is the waxing figure mirrored. The glyph
+   table this replaces had the new moon filled and the full moon hollow,
+   and used one glyph for both quarters. */
+function moonSvg(phase, px){
+  const r=10, x=Math.cos(2*Math.PI*phase), rx=(Math.abs(x)*r).toFixed(2);
+  const back = x>0 ? 0 : 1;                 /* which way the terminator bows */
+  const flip = phase>0.5 ? ' transform="scale(-1,1)"' : '';
+  const lit = `<path d="M 0,-${r} A ${r},${r} 0 0 1 0,${r} A ${rx},${r} 0 0 ${back} 0,-${r} Z" fill="currentColor"${flip}/>`;
+  return `<svg class="moon-ic" width="${px}" height="${px}" viewBox="-11 -11 22 22" aria-hidden="true" focusable="false">`
+    + `<circle r="${r}" fill="rgba(185,195,230,.07)" stroke="currentColor" stroke-opacity=".28" stroke-width="1"/>${lit}</svg>`;
+}
+const moonIcon = (iso, px) => moonSvg(moonAge(iso)/29.530588853, px);
 function moonAge(iso){
   const d=parseDate(iso); d.setHours(12,0,0,0);
   const synodic=29.530588853, known=Date.UTC(2000,0,6,18,14)/86400000;
@@ -289,7 +305,7 @@ function moonAge(iso){
 }
 function moonPhase(iso){
   const age=moonAge(iso), i=Math.floor((age/29.530588853)*8+0.5)%8;
-  return {name:MOON_NAMES[i], glyph:MOON_GLYPH[i], index:i, age, illum:Math.round((1-Math.cos(2*Math.PI*age/29.530588853))/2*100)};
+  return {name:MOON_NAMES[i], index:i, age, phase:age/29.530588853, illum:Math.round((1-Math.cos(2*Math.PI*age/29.530588853))/2*100)};
 }
 
 /* scales 1..5 */
@@ -447,7 +463,7 @@ function clearDraft(){ try{ localStorage.removeItem(DRAFT_KEY); }catch(_){} }
 function renderMoonLabel(){
   const el=$('#f-moon'); if(!el) return;
   const m=moonPhase($('#f-date').value||todayISO());
-  el.innerHTML=`<b>${m.glyph}</b> ${esc(m.name)} \u00b7 ${m.illum}% lit`;
+  el.innerHTML=`<b>${moonSvg(m.phase,17)}</b> ${esc(m.name)} \u00b7 ${m.illum}% lit`;
 }
 document.addEventListener('input', e=>{ if(e.target.closest('#view-write')){ saveDraft(); if(e.target.id==='f-date') renderMoonLabel(); } });
 
@@ -665,7 +681,7 @@ function dreamItem(d, dict){
   const syms=(d.elements||[]).filter(e=>dict.has(norm(e.name)));
   const nm = d.ctx?.nightmare==='yes' ? '<span class="tag nm">nightmare</span>' : '';
   const lu = (d.ctx?.lucid==='yes'||d.ctx?.lucid==='partly') ? '<span class="tag lu">lucid</span>' : '';
-  const mo = `<span title="${esc(moonPhase(d.date).name)}" style="color:var(--flame)">${moonPhase(d.date).glyph}</span>`;
+  const mo = `<span title="${esc(moonPhase(d.date).name)}" style="color:var(--moon)">${moonIcon(d.date,12)}</span>`;
   return `<button class="dream-item" data-action="open-dream" data-id="${esc(d.id)}">
     <span class="d">${mo} ${esc(fmtDate(d.date))} ${nm} ${lu} ${d.analysis?'':'<span class="tag">not analyzed</span>'}</span>
     <p>${esc(d.text)}</p>
@@ -693,7 +709,7 @@ function patternsHTML(){
   if(moons.length>2){
     h+=`<h3>By moon</h3><div class="moons">`+moons.map(i=>{
       const t=p.moonAll[i], n=p.moonN[i]||0, pct=Math.round(n/t*100);
-      return `<div class="mn"><b>${MOON_GLYPH[i]}</b><span>${n}/${t}</span><i style="height:${Math.max(2,pct*0.5)}px"></i></div>`;
+      return `<div class="mn"><b>${moonSvg(i/8,16)}</b><span>${n}/${t}</span><i style="height:${Math.max(2,pct*0.5)}px"></i></div>`;
     }).join('')+`</div><p class="small muted">Nightmares per dream recorded at each phase.</p>`;
   }
   return h;
@@ -712,7 +728,7 @@ function renderLucid(){
     <div class="stat"><b>${lucid.length}</b><span>fully lucid</span></div>
     <div class="stat"><b>${partly.length}</b><span>partly</span></div>
     <div class="stat"><b>${rate}%</b><span>of recorded dreams</span></div></div>`;
-  h+=`<p class="small muted">Tonight: <span style="color:var(--flame)">${m.glyph}</span> ${esc(m.name)}, ${m.illum}% lit.${last?` Last lucid dream: ${esc(fmtDate(last.date))}.`:''}</p>`;
+  h+=`<p class="small muted">Tonight: <span style="color:var(--moon)">${moonSvg(m.phase,14)}</span> ${esc(m.name)}, ${m.illum}% lit.${last?` Last lucid dream: ${esc(fmtDate(last.date))}.`:''}</p>`;
 
   h+=`<h2>Tonight's intention</h2>
     <p class="small muted">Write it as if it has already happened, and read it back as you fall asleep. This is the core of the MILD technique.</p>
